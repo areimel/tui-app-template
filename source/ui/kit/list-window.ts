@@ -1,5 +1,5 @@
 /**
-Stub: owned by K1 (scroll and lists). Pure: no I/O, no timers. Write it test-first.
+Pure windowing math for lists and scrollbars: no I/O, no timers.
 */
 
 export type ListWindow = {
@@ -24,7 +24,50 @@ export function listWindow(
 	height: number,
 	previousStart: number,
 ): ListWindow {
-	const size = Math.max(0, Math.min(count, height));
-	const start = Math.max(0, Math.min(previousStart, count - size, cursor));
+	const size = Math.max(0, Math.min(count, Math.floor(height)));
+	if (size === 0) {
+		return {start: 0, end: 0};
+	}
+
+	const safeCursor = Math.max(0, Math.min(cursor, count - 1));
+	const maxStart = count - size;
+	let start = Math.max(0, Math.min(previousStart, maxStart));
+	if (safeCursor < start) {
+		start = safeCursor;
+	} else if (safeCursor >= start + size) {
+		start = safeCursor - size + 1;
+	}
+
 	return {start, end: start + size};
+}
+
+export type ScrollbarThumb = {
+	/**
+	First thumb row within the track.
+	*/
+	readonly start: number;
+	/**
+	Thumb length in rows (at least 1).
+	*/
+	readonly size: number;
+};
+
+/**
+Thumb for a scrollbar track of `height` rows over `total` content rows viewed from `offset`.
+Returns `undefined` when everything fits (no scrollbar needed).
+*/
+export function scrollbarThumb(
+	total: number,
+	height: number,
+	offset: number,
+): ScrollbarThumb | undefined {
+	if (height <= 0 || total <= height) {
+		return undefined;
+	}
+
+	const size = Math.max(1, Math.round((height * height) / total));
+	const maxOffset = total - height;
+	const clamped = Math.max(0, Math.min(offset, maxOffset));
+	const start = Math.round((clamped / maxOffset) * (height - size));
+	return {start, size};
 }

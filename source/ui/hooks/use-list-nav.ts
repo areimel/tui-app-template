@@ -1,5 +1,5 @@
 /**
-Stub: owned by H1 (hooks). Replace the body; keep the exports and signatures.
+Cursor over a list of `count` rows, driven by `LIST_NAV_BINDINGS` through `useKeys`.
 */
 import {useState} from 'react';
 import {useKeys, type KeyBinding} from '../input/index.js';
@@ -36,19 +36,55 @@ export const LIST_NAV_BINDINGS: ReadonlyArray<KeyBinding<ListNavAction>> = [
 	},
 ];
 
+const DEFAULT_PAGE_SIZE = 10;
+
+function clampIndex(index: number, count: number): number {
+	return Math.max(0, Math.min(index, count - 1));
+}
+
+function stepIndex(
+	index: number,
+	delta: number,
+	count: number,
+	isWrapping: boolean,
+): number {
+	if (count <= 0) {
+		return 0;
+	}
+
+	const from = clampIndex(index, count);
+	if (!isWrapping) {
+		return clampIndex(from + delta, count);
+	}
+
+	const shifted = (from + delta) % count;
+	return shifted < 0 ? shifted + count : shifted;
+}
+
 /**
 Cursor over `count` rows (see `ListNav` in `types.ts`).
 */
 export function useListNav({
 	count,
+	pageSize = DEFAULT_PAGE_SIZE,
 	isActive = true,
-	initialCursor = 0,
+	isWrapping = false,
 	onSelect,
+	initialCursor = 0,
 }: ListNavOptions): ListNav {
-	const [cursor, setCursor] = useState(initialCursor);
-	const clamped = Math.max(0, Math.min(cursor, count - 1));
+	const [state, setState] = useState(() => clampIndex(initialCursor, count));
+	const cursor = clampIndex(state, count);
+	// Re-clamp now so a shrink is not undone when the list grows again.
+	if (cursor !== state) {
+		setState(cursor);
+	}
+
 	const move = (delta: number) => {
-		setCursor(Math.max(0, Math.min(clamped + delta, count - 1)));
+		setState(previous => stepIndex(previous, delta, count, isWrapping));
+	};
+
+	const setCursor = (index: number) => {
+		setState(clampIndex(index, count));
 	};
 
 	useKeys(
@@ -60,11 +96,26 @@ export function useListNav({
 			down() {
 				move(1);
 			},
+			pageUp() {
+				move(-pageSize);
+			},
+			pageDown() {
+				move(pageSize);
+			},
+			top() {
+				setCursor(0);
+			},
+			bottom() {
+				setCursor(count - 1);
+			},
 			select() {
-				onSelect?.(clamped);
+				if (count > 0) {
+					onSelect?.(cursor);
+				}
 			},
 		},
 		{isActive},
 	);
-	return {cursor: clamped, setCursor, move};
+
+	return {cursor, setCursor, move};
 }

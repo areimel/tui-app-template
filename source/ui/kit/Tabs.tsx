@@ -1,21 +1,32 @@
-/**
-Stub: owned by K3 (table, tree, tabs). Replace the body; keep the export name and props type.
-*/
 import {Box} from 'ink';
 import {T} from './T.js';
 import type {TabsProps} from './types.js';
 
 /**
-One-row tab strip (see `TabsProps`).
+One-row tab strip (see `TabsProps`). The selected tab is bracketed, bold and inverse; the rest are
+padded to the same width of marks so the strip does not shift when the selection moves.
 */
-export function Tabs<V extends string>({tabs, value}: TabsProps<V>) {
+export function Tabs<V extends string>({
+	tabs,
+	value,
+	isFocused = false,
+}: TabsProps<V>) {
 	return (
-		<Box>
-			{tabs.map(tab => (
-				<T key={tab.value} bold={tab.value === value}>
-					{tab.value === value ? `[ ${tab.label} ]` : `  ${tab.label}  `}
-				</T>
-			))}
+		<Box flexShrink={0}>
+			{tabs.map(tab => {
+				const isSelected = tab.value === value;
+				return (
+					<T
+						key={tab.value}
+						bold={isSelected}
+						inverse={isSelected && isFocused}
+						tone={isSelected ? 'accent' : 'muted'}
+						wrap="truncate-end"
+					>
+						{isSelected ? `[ ${tab.label} ]` : `  ${tab.label}  `}
+					</T>
+				);
+			})}
 		</Box>
 	);
 }

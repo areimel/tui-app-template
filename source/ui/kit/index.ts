@@ -15,7 +15,7 @@ export {
 export {FieldRow, type FieldRowProps} from './FieldRow.js';
 export {Gauge} from './Gauge.js';
 export {KeyHints, type KeyHint, type KeyHintsProps} from './KeyHints.js';
-export {listWindow, type ListWindow} from './list-window.js';
+export {listWindow, scrollbarThumb, type ListWindow} from './list-window.js';
 export {
 	NumberField,
 	stepNumber,
@@ -25,7 +25,7 @@ export {
 export {optionalProp} from './optional-prop.js';
 export {Panel, PANEL_BORDER_STYLE, type PanelProps} from './Panel.js';
 export {barCells, ProgressBar, type ProgressBarProps} from './ProgressBar.js';
-export {ScrollView} from './ScrollView.js';
+export {ScrollView, Scrollbar} from './ScrollView.js';
 export {SearchInput} from './SearchInput.js';
 export {
 	SelectList,
@@ -78,4 +78,4 @@ export type {
 	TreeRow,
 	VirtualListProps,
 } from './types.js';
-export {VirtualList} from './VirtualList.js';
+export {VirtualList, useListWindow} from './VirtualList.js';
