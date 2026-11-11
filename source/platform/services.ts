@@ -1,6 +1,6 @@
 /**
-Stub: owned by I1 (shell entry). Composes the real services; `cli.tsx` calls it once.
-Replace the body if needed; keep the export and signature.
+Composes the real `Services` (system, fs, http, battery, data files in the config folder, wall clock,
+`process.platform`). `bootstrap.ts` calls it once; `--demo` wraps it with `shell/demo-services.ts`.
 */
 import process from 'node:process';
 import {createDataService} from '../config/json-store.js';

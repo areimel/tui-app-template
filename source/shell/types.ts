@@ -149,6 +149,12 @@ export type PlainContext<C = unknown> = ServiceContext<C> & {
 	Aborted on SIGINT/SIGTERM/SIGHUP.
 	*/
 	readonly signal: AbortSignal;
+	/**
+	The app's service, created by the entry before `runPlain` is called (`undefined` for apps without
+	`createService`). The entry owns it: exit hooks call its `releaseSync`, so `runPlain` must use this
+	one and never create a second.
+	*/
+	readonly service: AppService | undefined;
 };
 
 export type CliFlagSpec = {

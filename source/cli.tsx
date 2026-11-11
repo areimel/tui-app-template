@@ -1,27 +1,24 @@
 #!/usr/bin/env node
+/**
+Entry: parse `<command> [app-id] [flags]` (`flags.ts`), compose the runtime (`bootstrap.ts`), then run
+the TUI (`Shell` in the alternate screen) or the deep-linked app's plain runner, with the exit hooks of
+`lifecycle.ts` installed either way. Exit codes are documented in `flags.ts`.
+*/
 import process from 'node:process';
 import {render} from 'ink';
-import meow from 'meow';
-import App from './apps/keep-awake/app.js';
-import {bootstrap, type Ready} from './apps/keep-awake/bootstrap.js';
-import {
-	HELP_TEXT,
-	MEOW_FLAGS,
-	parseFlags,
-	shouldRunDashboard,
-} from './apps/keep-awake/flags.js';
+import {APP} from './app.config.js';
+import {APPS} from './apps/registry.js';
+import {bootstrap, type Runtime} from './bootstrap.js';
+import {parseArgv, type RunRequest} from './flags.js';
+import {helpText} from './help-text.js';
+import {planRun, type PlainRunner} from './run-plan.js';
 import {installLifecycle} from './lifecycle.js';
-import {runPlain} from './apps/keep-awake/plain-mode.js';
-import {isPidAlive} from './platform/process-alive.js';
-import {readSystemStats} from './platform/system-stats.js';
-import {
-	PREFIX,
-	summarize,
-	type ExitOutcome,
-} from './apps/keep-awake/summary.js';
+import {Shell} from './shell/Shell.js';
+import type {AppDefinition} from './shell/types.js';
 import {detectColorLevel} from './theme/color-level.js';
 
 const LEAVE_ALTERNATE_SCREEN = '\u{1B}[?1049l\u{1B}[?25h';
+const PREFIX = `${APP.command}:`;
 
 function writeOut(line: string): void {
 	process.stdout.write(`${line}\n`);
@@ -29,6 +26,10 @@ function writeOut(line: string): void {
 
 function writeError(line: string): void {
 	process.stderr.write(`${line}\n`);
+}
+
+function warn(line: string): void {
+	writeError(`${PREFIX} warning: ${line}`);
 }
 
 function fail(code: number, lines: readonly string[]): never {
@@ -39,58 +40,56 @@ function fail(code: number, lines: readonly string[]): never {
 	process.exit(code);
 }
 
-async function runDashboard(session: Ready): Promise<number | undefined> {
-	const {controller, saver} = session;
-	let outcome: ExitOutcome | undefined;
-	let hasFinished = false;
+function describe(error: unknown): string {
+	return error instanceof Error
+		? (error.stack ?? error.message)
+		: String(error);
+}
+
+/**
+Stop every app service, then write config and data files. Never rejects.
+*/
+async function shutdown(runtime: Runtime): Promise<void> {
+	await runtime.appServices.stopAll('user');
+	runtime.appServices.releaseAllSync();
+	await Promise.allSettled([
+		runtime.saver.flush(),
+		runtime.services.data.flushAll(),
+	]);
+}
+
+async function runTui(runtime: Runtime, request: RunRequest): Promise<number> {
 	let code = 0;
 	// eslint-disable-next-line @typescript-eslint/naming-convention -- Parameter name of detectColorLevel.
 	const colorLevel = detectColorLevel({env: process.env, isTTY: true});
-
 	const instance = render(
-		<App
-			controller={controller}
-			capabilities={session.capabilities}
-			tracker={session.tracker}
-			saver={saver}
+		<Shell
+			apps={APPS}
+			services={runtime.services}
+			tracker={runtime.tracker}
+			saver={runtime.saver}
+			appConfig={runtime.appConfig}
+			appServices={runtime.appServices}
 			colorLevel={colorLevel}
-			warnings={session.loadWarnings}
-			isPidAlive={isPidAlive}
-			readStats={readSystemStats}
-			onExit={result => {
-				outcome = result;
+			warnings={runtime.loadWarnings}
+			{...(request.app === undefined
+				? {}
+				: {initialRoute: {id: request.app.id}})}
+			onExit={exitCode => {
+				code = exitCode;
 				instance.unmount();
 			}}
 		/>,
 		{exitOnCtrlC: false, alternateScreen: true, incrementalRendering: true},
 	);
 
-	// Unmount (leaving the alternate screen), then print the summary once.
-	const finish = () => {
-		if (hasFinished) {
-			return;
-		}
-
-		hasFinished = true;
-		instance.unmount();
-		const state = controller.getState();
-		outcome ??= summarize(
-			{...state, stopReason: state.stopReason ?? 'signal'},
-			Date.now(),
-		);
-		writeOut(outcome.summary);
-		for (const warning of [...session.loadWarnings, ...session.saveWarnings]) {
-			writeError(`${PREFIX} warning: ${warning}`);
-		}
-
-		code = outcome.code;
-	};
-
 	installLifecycle({
-		controller,
-		saver,
+		appServices: runtime.appServices,
+		flushSync: runtime.flushSync,
 		process,
-		beforeSignalExit: finish,
+		beforeSignalExit() {
+			instance.unmount();
+		},
 		restoreTerminal() {
 			try {
 				instance.unmount();
@@ -103,65 +102,115 @@ async function runDashboard(session: Ready): Promise<number | undefined> {
 			process.stderr.write(text);
 		},
 	});
-	void controller.start();
-	await instance.waitUntilExit();
-	finish();
-	// A signal exit is owned by the lifecycle hook (exit code 128 + N).
-	return controller.getState().stopReason === 'signal' ? undefined : code;
+
+	try {
+		await instance.waitUntilExit();
+	} catch (error) {
+		// A render error: Ink has unmounted; stop the services the quit path would have stopped.
+		await shutdown(runtime);
+		writeError(`${PREFIX} crashed: ${describe(error)}`);
+		code = 1;
+	}
+
+	for (const line of [...runtime.loadWarnings, ...runtime.saveWarnings]) {
+		warn(line);
+	}
+
+	return code;
 }
 
-async function runPlainMode(session: Ready): Promise<number | undefined> {
-	const {controller, saver} = session;
+/**
+Returns `undefined` after a signal: the exit hook owns that exit (128 + N).
+*/
+async function runPlainApp(
+	runtime: Runtime,
+	app: AppDefinition,
+	runPlain: PlainRunner,
+): Promise<number | undefined> {
+	const controller = new AbortController();
 	installLifecycle({
-		controller,
-		saver,
+		appServices: runtime.appServices,
+		flushSync: runtime.flushSync,
 		process,
+		onSignal() {
+			controller.abort();
+		},
 		writeError(text) {
 			process.stderr.write(text);
 		},
 	});
-	for (const warning of session.loadWarnings) {
-		writeError(`${PREFIX} warning: ${warning}`);
+	for (const line of runtime.loadWarnings) {
+		warn(line);
 	}
 
-	void controller.start();
-	const outcome = await runPlain({controller, write: writeOut});
-	return controller.getState().stopReason === 'signal'
-		? undefined
-		: outcome.code;
+	let code: number;
+	try {
+		const service = runtime.appServices.ensure(app, warn);
+		code = await runPlain({
+			...runtime.appServices.contextFor(app, warn),
+			write: writeOut,
+			writeError,
+			signal: controller.signal,
+			service,
+		});
+	} catch (error) {
+		writeError(`${PREFIX} ${app.id} failed: ${describe(error)}`);
+		code = 1;
+	}
+
+	if (controller.signal.aborted) {
+		return undefined;
+	}
+
+	await shutdown(runtime);
+	for (const line of runtime.saveWarnings) {
+		warn(line);
+	}
+
+	return code;
 }
 
-const cli = meow(HELP_TEXT, {
-	importMeta: import.meta,
-	flags: MEOW_FLAGS,
-	booleanDefault: undefined,
-	// Unknown flags are reported by parseFlags, in the same format as other errors.
-	allowUnknownFlags: true,
+const {request, version} = parseArgv(process.argv.slice(2), APPS);
+if (!request.isOk) {
+	fail(2, [...request.error, `Run ${APP.command} --help for usage.`]);
+}
+
+const parsed = request.value;
+if (parsed.kind !== 'run') {
+	process.stdout.write(
+		parsed.kind === 'help' ? helpText(APPS) : `${version}\n`,
+	);
+	process.exit(0);
+}
+
+const {app} = parsed;
+if (app?.platforms !== undefined && !app.platforms.includes(process.platform)) {
+	fail(1, [`${app.title} is not available on ${process.platform}.`]);
+}
+
+const plan = planRun(
+	parsed,
+	{stdin: process.stdin.isTTY, stdout: process.stdout.isTTY},
+	APPS,
+);
+if (plan.mode === 'no-tty') {
+	fail(2, plan.lines);
+}
+
+const runtime = await bootstrap({
+	overrides: parsed.overrides,
+	isDemo: parsed.isDemo,
+	...(parsed.configOverride !== undefined && {
+		configOverride: parsed.configOverride,
+	}),
+	...(app !== undefined && {
+		deepLink: {appId: app.id, flags: parsed.appFlags},
+	}),
 });
-
-const parsed = parseFlags(cli.flags, cli.input);
-if (!parsed.isOk) {
-	fail(2, [...parsed.errors, 'Run coffee-term --help for usage.']);
-}
-
-const input = parsed.value;
-if (input.pid !== undefined && !isPidAlive(input.pid)) {
-	fail(2, [`No such process: ${input.pid}`]);
-}
-
-const session = await bootstrap(input);
-if (session.kind === 'unsupported') {
-	fail(1, [session.message]);
-}
-
-const isDashboard = shouldRunDashboard(input, {
-	stdin: process.stdin.isTTY,
-	stdout: process.stdout.isTTY,
-});
-const code = isDashboard
-	? await runDashboard(session)
-	: await runPlainMode(session);
+const code =
+	plan.mode === 'tui'
+		? await runTui(runtime, parsed)
+		: await runPlainApp(runtime, plan.app, plan.runPlain);
 if (code !== undefined) {
-	await session.saver.flush();
 	process.exit(code);
 }
