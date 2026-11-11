@@ -1,11 +1,12 @@
 /**
-Like ink-testing-library's `render`, but with a chosen terminal size (ink-testing-library is fixed at 100 columns), so full-screen layouts can be checked at real sizes.
+Like ink-testing-library's `render`, but with a chosen terminal size (ink-testing-library is fixed at 100 columns), so full-screen layouts can be checked at real sizes. The tree is wrapped in an `InputRoot` (keyboard routing for `useKeys` / `useScopedInput`); it adds no `ThemeProvider`.
 */
-/* eslint-disable unicorn/prefer-event-target, @typescript-eslint/naming-convention, @typescript-eslint/class-literal-property-style, unicorn/consistent-class-member-order -- Mirrors the stream shapes Ink reads. */
+/* eslint-disable unicorn/prefer-event-target, @typescript-eslint/naming-convention, unicorn/consistent-class-member-order -- Mirrors the stream shapes Ink reads. */
 import {EventEmitter} from 'node:events';
 import {stripVTControlCharacters} from 'node:util';
 import type {ReactElement} from 'react';
 import {render} from 'ink';
+import {InputRoot} from '../../source/ui/input/index.js';
 
 class FakeStdout extends EventEmitter {
 	readonly frames: string[] = [];
@@ -25,8 +26,13 @@ class FakeStdout extends EventEmitter {
 }
 
 class FakeStdin extends EventEmitter {
-	readonly isTTY = true;
+	readonly isTTY: boolean;
 	private data: string | undefined;
+
+	constructor(isTty = true) {
+		super();
+		this.isTTY = isTty;
+	}
 
 	write = (data: string): void => {
 		this.data = data;
@@ -77,14 +83,22 @@ export type SizedRender = {
 	unmount(): void;
 };
 
+export type RenderSizedOptions = {
+	/**
+	Default true. False simulates piped stdin: Ink reports raw mode as unsupported.
+	*/
+	isTty?: boolean;
+};
+
 export function renderSized(
 	node: ReactElement,
 	columns: number,
 	rows: number,
+	{isTty = true}: RenderSizedOptions = {},
 ): SizedRender {
 	const stdout = new FakeStdout(columns, rows);
-	const stdin = new FakeStdin();
-	const instance = render(node, {
+	const stdin = new FakeStdin(isTty);
+	const instance = render(<InputRoot>{node}</InputRoot>, {
 		stdout: stdout as unknown as NodeJS.WriteStream,
 		stderr: new FakeStdout(columns, rows) as unknown as NodeJS.WriteStream,
 		stdin: stdin as unknown as NodeJS.ReadStream,

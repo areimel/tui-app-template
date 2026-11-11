@@ -2,6 +2,48 @@
 
 Guidance for Claude Code and every subagent working in this repo. Read it in full before writing code. The design spec at `docs/superpowers/specs/2026-11-09-coffee-cli-design.md` is the original design; where it disagrees with the source (e.g. breakpoints), the source and this file win.
 
+## Template refactor in progress (read this first)
+
+This repo is being turned from `coffee-term` into a multi-page TUI app template. Design:
+`docs/superpowers/specs/2026-11-11-tui-template-design.md`. Ink references: `.research_docs/`.
+**This section wins over everything below it.** The sections below still describe the original
+keep-awake app, which now lives in `source/apps/keep-awake/` (so `source/core/session` is
+`source/apps/keep-awake/session`, `source/layouts` is `source/apps/keep-awake/layouts`, and so on).
+The package manager is **pnpm**: `pnpm test`, `pnpm run ava <file>` (no `--`), `pnpm run build`.
+
+Dependency direction: `core`, `theme`, `platform`, `config` <- `ui` <- `shell` <- `apps`. `ui/**` never imports `shell/**` or `apps/**`; `shell/**` never imports `apps/**` (the registry reaches `Shell` as a prop from `cli.tsx`).
+
+| Path                                  | Responsibility                                                                                                                                                                                                                 |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `source/app.config.ts`                | Identity (`APP`): name, command, copy, URLs, config dir/env var. Zero imports; rewritten by `scripts/init.ts`; imported by the site.                                                                                           |
+| `source/cli.tsx`, `lifecycle.ts`      | Flags, TTY vs plain, `render(<Shell apps={APPS}>)`, deep link `<cmd> <app-id>`; exit hooks iterate app services.                                                                                                               |
+| `source/core/`                        | Pure: `result.ts` (`Result`, `ok`, `fail`), `store.ts` (external store), `format.ts`, `duration.ts`, `clock-time.ts`.                                                                                                          |
+| `source/config/`                      | `schema.ts` (contract), `validate.ts`, `tracker.ts` (layering, dirty paths), `app-config-store.ts` (per-app sections), `section.ts` (validator helpers), `paths.ts` (pure), `store.ts` + `json-store.ts` (the only fs access). |
+| `source/platform/`                    | `types.ts` (`Services` contract), `services.ts` (composition), `system/`, `fs/`, `http/`, `battery/`. Pure parsers are `*-parse.ts` and `system/cpu.ts`.                                                                       |
+| `source/theme/`                       | Tokens, palettes, colour level, `ThemeProvider`.                                                                                                                                                                               |
+| `source/ui/input/`                    | The only Ink `useInput` (`InputRoot`), scopes, `useKeys`, `useScopedInput`, `useActiveBindings`, key specs (`keys.ts`, pure). Dispatch rule in `types.ts`.                                                                     |
+| `source/ui/kit/`                      | Themed primitives; props contract in `kit/types.ts`; everything exported from `kit/index.ts`.                                                                                                                                  |
+| `source/ui/hooks/`, `source/ui/form/` | `useListNav`, `useScroll`, `usePoll`, `useAsync`, `useExternalStore`; the data-driven `Form`.                                                                                                                                  |
+| `source/shell/`                       | `types.ts` (routes, screen values, `AppDefinition`), `context.tsx` (`ShellProviders` + hooks), router, `AppShell`, `Menu`, overlays, brand, global bindings.                                                                   |
+| `source/apps/`                        | `types.ts` (`defineApp`), `registry.ts` (`APPS`, the one list), one folder per example: `index.ts` (definition), `Screen.tsx`, pure `*-model.ts`. `keep-awake/` is the original coffee-term app (`chrome: 'bare'`).            |
+| `test/`                               | Mirrors `source/`. Helpers: `render-themed`, `render-sized` (both add `InputRoot`), `render-screen` (screen in shell providers), `fake-services`, `fake-shell`, `fake-fs`, `input-ready`, `keys`, `fake-clock`.                |
+| `site/`                               | Astro site; identity via `site/src/config/site.config.ts` (imports `../../../source/app.config.ts`).                                                                                                                           |
+
+Input rules: never call Ink's `useInput` (kit `TextField` and `apps/keep-awake` are legacy exceptions). Actions are `KeyBinding` tables passed to `useKeys`; footer hints and help come from the same tables. Overlays mount an `InputScope kind="modal"` (kit `Dialog` does). Text editing uses `useScopedInput(..., {isCapturing: true})` (kit `TextInput` does). Uppercase keys are bound literally (`'G'`).
+
+Screens read everything through shell hooks: `useScreenSize`, `useServices`, `useRouter`, `useToast`, `useSettings`, `useAppConfig(id, spec)`, `useAppService`. Never `Date.now()` in a screen; use `services.now()`.
+
+Rules for parallel agents (these replace the list at the bottom of this file):
+
+- You own only the files named in your brief (the stub header says `Stub: owned by <role>`). Fill the body; keep every export name and signature. If a signature must change, report it instead.
+- Orchestrator-only: `package.json`, lockfiles, `tsconfig*.json`, `xo.config.js`, `CLAUDE.md`, `readme.md`, `.github/**`, every `*/types.ts`, `config/schema.ts`, `ui/kit/index.ts`, `ui/input/**`, `shell/context.tsx`, `apps/registry.ts`.
+- Do not add dependencies; do not commit; never leave probe files in `source/` or `test/` (use the scratchpad).
+- Pure files (`core/**`, `*-parse.ts`, `ui/input/keys.ts`, `kit/list-window.ts`, `kit/tree-model.ts`, `kit/text-buffer.ts`, `config/paths.ts`, `config/section.ts`, `config/validate.ts`, `config/tracker.ts`) are written test-first.
+- Screen tests use `renderScreen(<Screen />, {columns, rows, services, config})` with `createFakeServices()`; press keys with `view.press(...)` (it waits until input is attached) and assert with `view.waitFor` / `view.waitForText`, never after a fixed sleep. Tests that write to `stdin` directly first mount `<ReadySignal />` from `createReadySignal()` and `await whenReady()`. Give `waitFor` a generous deadline: under the full suite a single commit can take seconds.
+- Other agents are editing other files in this same working tree at the same time. `npx tsc -p tsconfig.test.json` may show errors in files you do not own: ignore those, fix only yours. Never run the full `pnpm test` or the whole ava suite; run only your own test files.
+- Verify with scoped commands: `pnpm run ava <files>` (no `--`), `npx xo <paths>`, `npx prettier --check <paths>`, `npx tsc -p tsconfig.test.json`.
+- Report: files changed, commands run with results, and any contract you think is wrong.
+
 ## Overview
 
 `coffee-term` is a rich terminal (Ink 8 / React 19) equivalent of macOS `caffeinate`: it keeps the machine awake from launch, shows an ANSI Shadow `COFFEE` heading, a coffee cup with animated steam, live machine stats, and lets the user change session options (duration / until / indefinite, display lock, AC-only, minimum battery, wait on PID) and themes (amber, green, Severance) in-app. Linux and macOS only. **Current state:** v1 is built and `npm test` is green. Verified for real on Ubuntu GNOME Wayland (system and display locks, release on every exit path). The macOS adapter is covered by unit tests only (argv and `pmset` fixtures) and has never run on a Mac; the X11 `xset` path is unit-tested only; non-GNOME Wayland has no display lock.

@@ -3,6 +3,7 @@ import type {ReactElement} from 'react';
 import {render} from 'ink-testing-library';
 import {PLAIN_THEME, ThemeProvider} from '../../source/theme/context.js';
 import type {ResolvedTheme} from '../../source/theme/tokens.js';
+import {InputRoot} from '../../source/ui/input/index.js';
 
 export type ThemedRenderResult = ReturnType<typeof render> & {
 	/**
@@ -12,15 +13,17 @@ export type ThemedRenderResult = ReturnType<typeof render> & {
 };
 
 /**
- Ink-testing-library `render` inside a `ThemeProvider` (default `PLAIN_THEME`).
- `rerender` keeps the same theme wrapper.
+ Ink-testing-library `render` inside a `ThemeProvider` (default `PLAIN_THEME`) and an
+ `InputRoot` (so `useKeys` / `useScopedInput` work). `rerender` keeps the same wrappers.
  */
 export function renderThemed(
 	node: ReactElement,
 	theme: ResolvedTheme = PLAIN_THEME,
 ): ThemedRenderResult {
 	const wrap = (child: ReactElement) => (
-		<ThemeProvider theme={theme}>{child}</ThemeProvider>
+		<ThemeProvider theme={theme}>
+			<InputRoot>{child}</InputRoot>
+		</ThemeProvider>
 	);
 	const result = render(wrap(node));
 

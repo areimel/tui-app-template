@@ -1,6 +1,9 @@
 ---
 import "../styles/global.css";
 import { href } from "../lib/urls";
+// Spike: proves the site can import the root identity config (not rendered yet).
+import { SITE_URL } from "../config/site.config";
+void SITE_URL;
 interface Props {
   title: string;
   description?: string;
