@@ -1,9 +1,4 @@
 import test from 'ava';
-import {
-	DEFAULTS,
-	toConfigSession,
-	toSessionOptions,
-} from '../../../source/apps/keep-awake/config-v1/schema.js';
 import {createFakeAdapter, sampleBattery} from './helpers/fake-adapter.js';
 
 test('fake adapter acquires, dies and releases, recording calls', async t => {
@@ -67,17 +62,4 @@ test('fake adapter rejects unavailable kinds and scripts battery', async t => {
 	adapter.setBattery(sampleBattery({percent: 5, acOnline: false}));
 	const battery = await adapter.readBattery();
 	t.is(battery?.percent, 5);
-});
-
-test('config session converts to and from session options', t => {
-	const options = toSessionOptions(
-		{...DEFAULTS.session, end: {mode: 'duration', minutes: 90}},
-		42,
-	);
-	t.deepEqual(options.end, {mode: 'duration', ms: 5_400_000});
-	t.is(options.pid, 42);
-	t.deepEqual(toConfigSession(options), {
-		...DEFAULTS.session,
-		end: {mode: 'duration', minutes: 90},
-	});
 });

@@ -1,12 +1,15 @@
 import {useEffect, useState} from 'react';
-import {
-	readSystemStats,
-	type SystemStats,
-} from '../../../platform/system-stats.js';
+import type {SystemStats} from '../../../platform/system-stats.js';
 
 export type UseStatsOptions = {
-	readStats?: () => SystemStats;
-	now?: () => number;
+	/**
+	Reads the machine stats; the screen passes the shell's system service.
+	*/
+	readStats: () => SystemStats;
+	/**
+	The clock (`services.now`).
+	*/
+	now: () => number;
 	intervalMs?: number;
 	isActive?: boolean;
 };
@@ -17,11 +20,11 @@ export type StatsTick = {stats: SystemStats; now: number};
 The app's single 1 s UI tick: re-reads system stats and the clock once per interval.
 */
 export function useStats({
-	readStats = readSystemStats,
-	now = Date.now,
+	readStats,
+	now,
 	intervalMs = 1000,
 	isActive = true,
-}: UseStatsOptions = {}): StatsTick {
+}: UseStatsOptions): StatsTick {
 	const [tick, setTick] = useState<StatsTick>(() => ({
 		stats: readStats(),
 		now: now(),

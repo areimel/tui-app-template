@@ -1,7 +1,7 @@
 import test, {type ExecutionContext} from 'ava';
 import {HEADING_LINES} from '../../../source/apps/keep-awake/features/heading/heading-art.js';
 import {splitFrame} from '../../helpers/frame-lines.js';
-import {delay, KEYS, startApp, type AppHarness} from './helpers/app-harness.js';
+import {KEYS, startApp, type AppHarness} from './helpers/app-harness.js';
 
 const ART = '██████╗';
 const CUP_RIM = '╭──────────────╮';
@@ -104,49 +104,22 @@ for (const {columns, rows, check} of sizes) {
 	});
 }
 
-test.serial('fits with a timer, a watched pid and a warning', async t => {
+test.serial('fits with a timer and a watched pid', async t => {
 	const app = await startApp({
 		columns: 100,
 		rows: 30,
 		options: {end: {mode: 'duration', ms: 3_600_000}, pid: 4242},
-		warnings: ['Config field "theme" is invalid; using the default.'],
 	});
 	try {
 		await app.waitForPhase('awake');
 		const frame = app.plainFrame();
 		assertFits(t, frame, 100, 30);
 		assertOptionsWhole(t, frame);
-		t.regex(frame, /! Config field/v);
 		t.regex(frame, /PID 4242/v);
 	} finally {
 		app.dispose();
 	}
 });
-
-test.serial(
-	'at 13 rows a timer plus a warning drops the warning, not the Options border',
-	async t => {
-		const app = await startApp({
-			columns: 60,
-			rows: 13,
-			options: {end: {mode: 'duration', ms: 3_600_000}},
-			warnings: [
-				'Config field "theme" is invalid; using the default.',
-				'Config field "session.end" is invalid; using the default.',
-			],
-		});
-		try {
-			await app.waitForPhase('awake');
-			const frame = app.plainFrame();
-			assertFits(t, frame, 60, 13);
-			assertOptionsWhole(t, frame);
-			t.regex(frame, /q quit/v);
-			t.notRegex(frame, /! Config field/v);
-		} finally {
-			app.dispose();
-		}
-	},
-);
 
 async function withApp(
 	run: (app: AppHarness) => Promise<void>,
@@ -177,104 +150,129 @@ test.serial('space pauses (cold cup) and resumes', async t => {
 	});
 });
 
-test.serial('t opens the picker; enter selects and persists', async t => {
-	await withApp(async app => {
-		await app.press('t');
-		t.regex(app.plainFrame(), /Theme[\s\S]*Green/v);
-		t.regex(app.plainFrame(), /enter select/v);
-		await app.press(KEYS.down, KEYS.enter);
-		t.notRegex(app.plainFrame(), /old-school green phosphor/v);
-		t.is(app.tracker.effective().theme, 'green');
-		t.is(app.saved.at(-1)?.theme, 'green');
-	});
-});
-
-test.serial('esc in the picker cancels without saving', async t => {
-	await withApp(async app => {
-		await app.press('t', KEYS.down, KEYS.escape);
-		await delay(60);
-		t.is(app.tracker.effective().theme, 'amber');
-		t.is(app.saved.length, 0);
-		t.regex(app.plainFrame(), /❯ Options/v);
-	});
-});
-
-test.serial('? opens help and esc closes it', async t => {
-	await withApp(async app => {
-		await app.press('?');
-		t.regex(app.plainFrame(), /Help[\s\S]*pause\/resume/v);
-		await app.press(KEYS.escape);
-		await delay(60);
-		t.notRegex(app.plainFrame(), /pause\/resume/v);
-	});
-});
-
-test.serial('changing an option updates the session and saves', async t => {
-	await withApp(async app => {
-		await app.press(KEYS.right); // Mode: indefinite -> timer
-		await app.waitFor(
-			() => app.controller.getState().options.end.mode === 'duration',
-			'timer mode',
-		);
-		t.deepEqual(app.saved.at(-1)?.session.end, {
-			mode: 'duration',
-			minutes: 60,
+test.serial(
+	't, T, ? and q are the shell globals, not Keep Awake keys',
+	async t => {
+		await withApp(async app => {
+			await app.press('t', 'T', '?', 'q');
+			t.deepEqual(app.globals, ['themes', 'nextTheme', 'help', 'quit']);
+			// Keep Awake's own screen did not react.
+			t.is(app.service.getState().phase, 'awake');
+			t.true(app.settings.current().isAnimated);
 		});
-		t.not(app.controller.getState().endsAt, undefined);
-	});
-});
+	},
+);
 
-test.serial('a toggles animation and saves it', async t => {
+test.serial(
+	'changing an option updates the session and saves only that key',
+	async t => {
+		await withApp(async app => {
+			await app.press(KEYS.right); // Mode: indefinite -> timer
+			await app.waitFor(
+				() => app.service.getState().options.end.mode === 'duration',
+				'timer mode',
+			);
+			t.deepEqual(app.config.writes, [
+				{id: 'keep-awake', patch: {end: {mode: 'duration', minutes: 60}}},
+			]);
+			t.not(app.service.getState().endsAt, undefined);
+		});
+	},
+);
+
+test.serial('a toggles animation through the shell settings', async t => {
 	await withApp(async app => {
 		await app.press('a');
-		t.false(app.tracker.effective().ui.animation);
-		t.false(app.saved.at(-1)?.ui.animation);
+		t.false(app.settings.current().isAnimated);
 	});
 });
 
-test.serial('q stops with reason user and releases the locks', async t => {
+test.serial('esc goes back; it does not stop the session', async t => {
 	await withApp(async app => {
-		await app.press('q');
-		await app.waitFor(() => app.exits.length > 0, 'exit');
-		const state = app.controller.getState();
-		t.is(state.stopReason, 'user');
-		t.is(app.adapter.held('system'), undefined);
-		t.is(app.adapter.held('display'), undefined);
-		t.regex(
-			app.exits[0]!.summary,
-			/^coffee-term: stayed awake for 00:00:0\d — Stopped by user$/v,
-		);
-		t.is(app.exits[0]!.code, 0);
+		await app.press(KEYS.escape);
+		await app.waitFor(() => app.globals.includes('back'), 'back');
+		t.deepEqual(app.router.calls, [{type: 'pop'}]);
+		t.is(app.service.getState().phase, 'awake');
+		t.not(app.adapter.held('system'), undefined);
 	});
 });
 
-test.serial('an automatic stop exits with the summary', async t => {
-	const app = await startApp({options: {end: {mode: 'duration', ms: 1000}}});
-	try {
-		await app.waitFor(() => app.exits.length > 0, 'exit');
-		t.is(app.exits.length, 1);
-		t.regex(app.exits[0]!.summary, /— Timer finished$/v);
-		t.is(app.exits[0]!.code, 0);
-	} finally {
-		app.dispose();
-	}
+test.serial(
+	'an automatic stop shows the stopped state; nothing exits',
+	async t => {
+		const app = await startApp({
+			options: {end: {mode: 'duration', ms: 1000}},
+		});
+		try {
+			await app.waitForPhase('stopped');
+			const frame = app.plainFrame();
+			t.regex(frame, /STOPPED/v);
+			t.regex(frame, /Timer finished/v);
+			t.regex(frame, /r new session/v);
+			t.notRegex(frame, /space pause/v);
+			t.is(app.service.getState().stopReason, 'duration');
+			t.is(app.adapter.held('system'), undefined);
+			t.is(app.adapter.held('display'), undefined);
+			t.deepEqual(app.globals, []);
+			t.deepEqual(app.router.calls, []);
+			t.is(app.interrupts(), 0);
+		} finally {
+			app.dispose();
+		}
+	},
+);
+
+test.serial(
+	'r starts a new session after a stop, with the same options',
+	async t => {
+		const app = await startApp({
+			options: {end: {mode: 'duration', ms: 1000}, display: false},
+		});
+		try {
+			await app.waitForPhase('stopped');
+			const first = app.adapter.handles.length;
+			await app.press('r');
+			await app.waitForPhase('awake');
+			t.is(app.adapter.handles.length, first + 1);
+			t.not(app.adapter.held('system'), undefined);
+			t.is(app.adapter.held('display'), undefined);
+			t.deepEqual(app.service.getState().options.end, {
+				mode: 'duration',
+				ms: 1000,
+			});
+			t.regex(app.plainFrame(), /AWAKE/v);
+			t.regex(app.plainFrame(), /space pause/v);
+		} finally {
+			app.dispose();
+		}
+	},
+);
+
+test.serial('r does nothing while the session runs', async t => {
+	await withApp(async app => {
+		const before = app.adapter.handles.length;
+		await app.press('r');
+		t.is(app.adapter.handles.length, before);
+		t.is(app.service.getState().phase, 'awake');
+	});
 });
 
-test.serial('lock failure exits with code 1 and the message', async t => {
-	const app = await startApp({
-		adapter: {acquire: {system: {ok: false, message: 'polkit said no'}}},
-	});
-	try {
-		await app.waitFor(() => app.exits.length > 0, 'exit');
-		t.regex(
-			app.exits[0]!.summary,
-			/Could not hold the system lock: polkit said no/v,
-		);
-		t.is(app.exits[0]!.code, 1);
-	} finally {
-		app.dispose();
-	}
-});
+test.serial(
+	'lock failure shows the stopped state with the message',
+	async t => {
+		const app = await startApp({
+			adapter: {acquire: {system: {ok: false, message: 'polkit said no'}}},
+		});
+		try {
+			await app.waitForPhase('stopped');
+			t.regex(app.plainFrame(), /polkit said no/v);
+			t.is(app.service.getState().stopReason, 'lock-failed');
+			t.deepEqual(app.globals, []);
+		} finally {
+			app.dispose();
+		}
+	},
+);
 
 test.serial(
 	'120x40: framed cup with credits, panels side by side, bottoms aligned',
@@ -302,7 +300,6 @@ test.serial(
 );
 
 const FRAME_100X26 = 23;
-const FRAME_100X40_WARNED = 30;
 const HEADING_ROW_0 = HEADING_LINES[0]!;
 const HEADING_ROW_1 = HEADING_LINES[1]!;
 
@@ -407,22 +404,6 @@ test.serial('80x24: frame hugs the content and stays centred', async t => {
 			assertFrame(t, app.plainFrame().split('\n'), 80, 24, 19);
 		},
 		{columns: 80, rows: 24},
-	);
-});
-
-test.serial('warnings sit inside the frame above the bottom edge', async t => {
-	await withApp(
-		async app => {
-			const lines = assertFrame(
-				t,
-				app.plainFrame().split('\n'),
-				100,
-				40,
-				FRAME_100X40_WARNED,
-			);
-			t.regex(lines.at(-2)!, /┃ ! Config field "theme" is invalid/v);
-		},
-		{columns: 100, rows: 40, warnings: ['Config field "theme" is invalid.']},
 	);
 });
 

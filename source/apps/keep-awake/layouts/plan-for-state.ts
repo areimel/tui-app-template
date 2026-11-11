@@ -1,17 +1,14 @@
 import type {SessionState} from '../session/types.js';
 import type {OptionContext} from '../features/options/option-fields.js';
 import type {StatLine} from '../features/stats/stats-model.js';
-import {ALL_KEY_BINDINGS} from '../hooks/use-keymap.js';
 import type {Layout} from '../hooks/use-layout.js';
 import {planDashboard, type DashboardPlan} from './dashboard-plan.js';
-import {footerRows, type Overlay} from './Footer.js';
+import {footerRows} from './Footer.js';
 import {
-	helpPanelHeight,
 	minStatsCount,
 	optionsPanelHeight,
 	sessionPanelHeight,
 	statsPanelWidth,
-	themePickerHeight,
 } from './region-heights.js';
 
 const HINT_ROWS = 1;
@@ -22,7 +19,6 @@ export type PlanParameters = {
 	now: number;
 	lines: readonly StatLine[];
 	context: OptionContext;
-	overlay: Overlay;
 	warnings: readonly string[];
 };
 
@@ -35,7 +31,6 @@ export function planForState({
 	now,
 	lines,
 	context,
-	overlay,
 	warnings,
 }: PlanParameters): DashboardPlan {
 	return planDashboard({
@@ -51,15 +46,7 @@ export function planForState({
 			minCount: minStatsCount(lines),
 			width: statsPanelWidth(lines),
 		},
-		slotHeight(width) {
-			if (overlay === 'themes') {
-				return themePickerHeight(width);
-			}
-
-			return overlay === 'help'
-				? helpPanelHeight(ALL_KEY_BINDINGS, width)
-				: optionsPanelHeight(state.options, context, width);
-		},
+		slotHeight: width => optionsPanelHeight(state.options, context, width),
 	});
 }
 

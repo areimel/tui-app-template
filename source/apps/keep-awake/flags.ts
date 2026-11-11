@@ -1,242 +1,205 @@
 /**
-Command-line flags: the meow flag table, the help text, and the pure step that turns parsed flags into validated startup input.
+Keep Awake's command-line flags (`<command> keep-awake [flags]`): the flag table the shell parses with
+meow, and the pure step that turns the parsed values into validated startup settings. Booleans have no
+default on purpose (the shell parses with `booleanDefault: undefined`), so an absent flag cannot
+override the saved config. Whether `--pid` is alive is checked by `validateKeepAwakeFlags`, not here.
 */
+import {APP} from '../../app.config.js';
 import {parseClock} from '../../core/clock-time.js';
 import {parseDuration} from '../../core/duration.js';
-import {THEME_NAMES, type ThemeName} from '../../theme/tokens.js';
-import type {FlagOverrides} from './config-v1/merge.js';
+import {fail, ok, type Result} from '../../core/result.js';
+import type {CliFlagSpec, CliFlagValues} from '../../shell/types.js';
+import type {KeepAwakeConfig, KeepAwakeEnd} from './config.js';
 
-export const HELP_TEXT = `
-	Usage
-	  $ coffee-term [options]
+export const KEEP_AWAKE_FLAGS = {
+	duration: {
+		type: 'string',
+		shortFlag: 'd',
+		description: 'Stay awake for a duration (45m, 1h30m, 2h)',
+	},
+	until: {
+		type: 'string',
+		shortFlag: 'u',
+		description: 'Stay awake until a clock time (17:30, 5pm)',
+	},
+	indefinite: {
+		type: 'boolean',
+		description: 'Stay awake until you quit (default)',
+	},
+	pid: {
+		type: 'number',
+		shortFlag: 'p',
+		description: 'Stop when this process exits',
+	},
+	display: {
+		type: 'boolean',
+		description:
+			'Also keep the display awake (default); --no-display keeps only the system awake',
+	},
+	acOnly: {
+		type: 'boolean',
+		description: 'Stop when the machine switches to battery',
+	},
+	minBattery: {
+		type: 'number',
+		description: 'Stop when the battery falls below this percentage (1-99)',
+	},
+} as const satisfies Record<string, CliFlagSpec>;
 
-	Keeps the machine awake from the moment it starts, with a dashboard to
-	change the session live. Flag values apply to this session only.
+const CMD = `${APP.command} keep-awake`;
 
-	Session
-	  --duration, -d <time>   Stay awake for a duration (45m, 1h30m, 2h)
-	  --until, -u <clock>     Stay awake until a clock time (17:30, 5pm)
-	  --indefinite            Stay awake until you quit
-	  --pid, -p <pid>         Stop when this process exits
-	  --display               Also keep the display awake (default)
-	  --no-display            Keep only the system awake; the screen may sleep
-	  --ac-only               Stop when the machine switches to battery
-	  --min-battery <1-99>    Stop when the battery falls below this percentage
-
-	Interface
-	  --theme <name>          amber, green or severance
-	  --no-animation          Static cup, no steam
-	  --plain                 No dashboard: one log line per state change
-	  --config <path>         Use this config file instead of the default
-
-	Examples
-	  $ coffee-term -d 1h30m
-	  $ coffee-term -u 5pm --no-display
-	  $ coffee-term -p 4242 --theme severance
-	  $ coffee-term -d 2h --plain &
-
-	Exit codes: 0 stopped normally, 1 lock or platform failure, 2 bad flags,
-	128+N killed by signal N.
-`;
+export const KEEP_AWAKE_HELP_LINES: readonly string[] = [
+	'Starts keeping the machine awake as soon as it opens. Flag values apply to this',
+	'session only; changes made in the app are what gets saved.',
+	`$ ${CMD} -d 1h30m`,
+	`$ ${CMD} -u 5pm --no-display`,
+	`$ ${CMD} -p 4242 --min-battery 20`,
+	`$ ${CMD} -d 2h --plain &`,
+	'Plain mode logs one line per state change and exits 0 when it stops normally,',
+	'1 on a lock or platform failure, 128+N when killed by signal N.',
+];
 
 /**
-Flag table for meow. Booleans have no default on purpose: with `booleanDefault: undefined` an absent boolean is missing from the result instead of `false`, so it cannot override the saved config.
+What the flags ask for: the settings they override (only the ones passed) and the session-only PID.
 */
-export const MEOW_FLAGS = {
-	theme: {type: 'string'},
-	duration: {type: 'string', shortFlag: 'd'},
-	until: {type: 'string', shortFlag: 'u'},
-	indefinite: {type: 'boolean'},
-	pid: {type: 'string', shortFlag: 'p'},
-	display: {type: 'boolean'},
-	acOnly: {type: 'boolean'},
-	minBattery: {type: 'string'},
-	animation: {type: 'boolean'},
-	plain: {type: 'boolean'},
-	config: {type: 'string'},
-} as const;
-
-/**
-What meow hands back. Every key is absent unless the user passed it.
-*/
-export type RawFlags = {
-	theme?: string | undefined;
-	duration?: string | undefined;
-	until?: string | undefined;
-	indefinite?: boolean | undefined;
-	pid?: string | undefined;
-	display?: boolean | undefined;
-	acOnly?: boolean | undefined;
-	minBattery?: string | undefined;
-	animation?: boolean | undefined;
-	plain?: boolean | undefined;
-	config?: string | undefined;
+export type StartupSettings = {
+	readonly overrides: Partial<KeepAwakeConfig>;
+	readonly pid: number | undefined;
 };
 
-export type StartupInput = {
-	/**
-	Only the settings the user actually passed.
-	*/
-	overrides: FlagOverrides;
-	pid: number | undefined;
-	isPlain: boolean;
-	configOverride: string | undefined;
-};
+const MS_PER_MINUTE = 60_000;
 
-export type FlagsResult =
-	{isOk: true; value: StartupInput} | {isOk: false; errors: string[]};
-
-const INTEGER = /^\d+$/v;
+function show(value: unknown): string {
+	return typeof value === 'string' ? value : String(value);
+}
 
 function parseEnd(
-	raw: RawFlags,
+	flags: CliFlagValues,
 	errors: string[],
-): FlagOverrides['end'] | undefined {
+): KeepAwakeEnd | undefined {
+	const {duration, until, indefinite} = flags;
 	const given = [
-		raw.duration === undefined ? undefined : '--duration',
-		raw.until === undefined ? undefined : '--until',
-		raw.indefinite === true ? '--indefinite' : undefined,
+		duration === undefined ? undefined : '--duration',
+		until === undefined ? undefined : '--until',
+		indefinite === true ? '--indefinite' : undefined,
 	].filter(name => name !== undefined);
 	if (given.length > 1) {
 		errors.push(`Use only one of ${given.join(', ')}`);
 		return undefined;
 	}
 
-	if (raw.duration !== undefined) {
-		const ms = parseDuration(raw.duration);
+	if (duration !== undefined) {
+		const ms = parseDuration(show(duration));
 		if (ms === undefined) {
-			errors.push(`Invalid --duration "${raw.duration}": try 45m, 1h30m or 2h`);
+			errors.push(
+				`Invalid --duration "${show(duration)}": try 45m, 1h30m or 2h`,
+			);
 			return undefined;
 		}
 
-		return {mode: 'duration', minutes: ms / 60_000};
+		return {mode: 'duration', minutes: ms / MS_PER_MINUTE};
 	}
 
-	if (raw.until !== undefined) {
-		const clock = parseClock(raw.until);
+	if (until !== undefined) {
+		const clock = parseClock(show(until));
 		if (clock === undefined) {
-			errors.push(`Invalid --until "${raw.until}": try 17:30 or 5pm`);
+			errors.push(`Invalid --until "${show(until)}": try 17:30 or 5pm`);
 			return undefined;
 		}
 
 		return {mode: 'until', clock};
 	}
 
-	return raw.indefinite === true ? {mode: 'indefinite'} : undefined;
-}
-
-function parseTheme(
-	value: string | undefined,
-	errors: string[],
-): ThemeName | undefined {
-	if (value === undefined) {
-		return undefined;
-	}
-
-	const name = THEME_NAMES.find(theme => theme === value.toLowerCase());
-	if (name === undefined) {
-		errors.push(`Unknown --theme "${value}": choose ${THEME_NAMES.join(', ')}`);
-	}
-
-	return name;
+	return indefinite === true ? {mode: 'indefinite'} : undefined;
 }
 
 function parseInteger(
 	flag: string,
-	value: string | undefined,
-	range: {min: number; max: number},
+	value: string | number | boolean | undefined,
+	range: {readonly min: number; readonly max: number},
 	errors: string[],
 ): number | undefined {
 	if (value === undefined) {
 		return undefined;
 	}
 
-	const trimmed = value.trim();
-	const number = Number(trimmed);
-	if (!INTEGER.test(trimmed) || number < range.min || number > range.max) {
+	if (
+		typeof value !== 'number' ||
+		!Number.isSafeInteger(value) ||
+		value < range.min ||
+		value > range.max
+	) {
 		const bounds =
 			range.max === Number.MAX_SAFE_INTEGER
 				? 'a positive whole number'
 				: `a whole number from ${range.min} to ${range.max}`;
-		errors.push(`Invalid ${flag} "${value}": expected ${bounds}`);
+		errors.push(`Invalid ${flag} "${show(value)}": expected ${bounds}`);
 		return undefined;
 	}
 
-	return number;
-}
-
-const KNOWN_FLAGS = new Set(Object.keys(MEOW_FLAGS));
-
-/**
-Flags meow passed through that are not in the table, as typed (`--foo-bar`).
-*/
-function unknownFlags(raw: RawFlags): string[] {
-	return Object.keys(raw)
-		.filter(key => !KNOWN_FLAGS.has(key))
-		.map(
-			key =>
-				`--${key.replaceAll(/\p{Uppercase_Letter}/gv, letter => `-${letter.toLowerCase()}`)}`,
-		);
+	return value;
 }
 
 /**
-Validate parsed flags. Pure: no process or file access (checking that `--pid` is alive is the caller's job).
+Validate the parsed flags. Pure: no process access.
 */
-export function parseFlags(
-	raw: RawFlags,
-	input: readonly string[] = [],
-): FlagsResult {
-	const errors: string[] = [
-		...unknownFlags(raw).map(name => `Unknown flag ${name}`),
-		...input.map(argument => `Unexpected argument "${argument}"`),
-	];
-	const end = parseEnd(raw, errors);
-	const theme = parseTheme(raw.theme, errors);
+export function parseKeepAwakeFlags(
+	flags: CliFlagValues,
+): Result<StartupSettings, string[]> {
+	const errors: string[] = [];
+	const end = parseEnd(flags, errors);
 	const minBattery = parseInteger(
 		'--min-battery',
-		raw.minBattery,
+		flags['minBattery'],
 		{min: 1, max: 99},
 		errors,
 	);
 	const pid = parseInteger(
 		'--pid',
-		raw.pid,
+		flags['pid'],
 		{min: 1, max: Number.MAX_SAFE_INTEGER},
 		errors,
 	);
-	if (raw.config?.trim() === '') {
-		errors.push('Invalid --config: expected a file path');
-	}
-
 	if (errors.length > 0) {
-		return {isOk: false, errors};
+		return fail(errors);
 	}
 
-	const overrides: FlagOverrides = {
-		...(theme !== undefined && {theme}),
-		...(end !== undefined && {end}),
-		...(raw.display !== undefined && {display: raw.display}),
-		...(raw.acOnly !== undefined && {acOnly: raw.acOnly}),
-		...(minBattery !== undefined && {minBattery}),
-		...(raw.animation !== undefined && {animation: raw.animation}),
-	};
-	return {
-		isOk: true,
-		value: {
-			overrides,
-			pid,
-			isPlain: raw.plain === true,
-			configOverride: raw.config,
+	const {display, acOnly} = flags;
+	return ok({
+		overrides: {
+			...(end !== undefined && {end}),
+			...(typeof display === 'boolean' && {display}),
+			...(typeof acOnly === 'boolean' && {acOnly}),
+			...(minBattery !== undefined && {minBattery}),
 		},
-	};
+		pid,
+	});
 }
 
 /**
-The dashboard needs a terminal on both ends: Ink draws to stdout and reads keys from stdin in raw mode (which throws on a pipe or `/dev/null`). Anything else runs plain mode.
+`AppCli.validateFlags`: the flag errors, plus a dead `--pid` (checked with the injected probe).
 */
-export function shouldRunDashboard(
-	input: Pick<StartupInput, 'isPlain'>,
-	tty: {stdin: boolean | undefined; stdout: boolean | undefined},
-): boolean {
-	return !input.isPlain && tty.stdin === true && tty.stdout === true;
+export function validateKeepAwakeFlags(
+	flags: CliFlagValues,
+	isPidAlive: (pid: number) => boolean,
+): readonly string[] {
+	const parsed = parseKeepAwakeFlags(flags);
+	if (!parsed.isOk) {
+		return parsed.error;
+	}
+
+	const {pid} = parsed.value;
+	return pid !== undefined && !isPidAlive(pid)
+		? [`No such process: ${pid}`]
+		: [];
+}
+
+/**
+The config the session starts with: the saved settings with the flag overrides on top.
+*/
+export function layerFlags(
+	config: KeepAwakeConfig,
+	startup: StartupSettings,
+): KeepAwakeConfig {
+	return {...config, ...startup.overrides};
 }

@@ -1,15 +1,16 @@
 /**
-The one-line exit summary and exit code, shared by the dashboard and plain mode.
+The one-line summary of a stopped session and its exit code, used by plain mode (the dashboard shows the stopped state instead of exiting).
 */
+import {APP} from '../../app.config.js';
 import {formatElapsed} from '../../core/format.js';
 import {describeStopReason, sessionElapsedMs} from './session/selectors.js';
 import type {SessionState} from './session/types.js';
 
-export const PREFIX = 'coffee-term:';
+export const PREFIX = `${APP.command}:`;
 
 export type ExitOutcome = {
 	/**
-	The line printed to stdout once the dashboard is gone.
+	The line printed to stdout when the session ends.
 	*/
 	summary: string;
 	code: number;

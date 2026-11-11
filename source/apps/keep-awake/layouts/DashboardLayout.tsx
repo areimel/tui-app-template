@@ -33,10 +33,6 @@ export type DashboardLayoutProps = {
 	*/
 	readonly options: ReactNode;
 	/**
-	Theme picker or help; takes the options slot while open.
-	*/
-	readonly overlay?: ReactNode;
-	/**
 	Key hints: the frame's bottom edge (their own row in minimal mode).
 	*/
 	readonly hints: ReactNode;
@@ -83,7 +79,7 @@ function Panels({
 }
 
 /**
-Arranges the regions; decides nothing itself. Everything but `minimal` sits in the heavy outer frame, centred and hugging the content (width and height): the first art row (or the compact title) in its top edge, the rest of the art then 2 blank rows (1 with the title) inside, the key hints in its bottom edge and warnings on its last rows. `full`: the framed cup column left of the panel column (Session and Stats side by side or stacked, then the options slot); both columns stretch to end on the same row. `stacked`: one column, cup (if shown) above the panels. `minimal`: status line (or the open overlay), warnings and hints, unframed. The root is exactly the terminal size so the alternate screen never scrolls.
+Arranges the regions; decides nothing itself. Everything but `minimal` sits in the heavy outer frame, centred and hugging the content (width and height): the first art row (or the compact title) in its top edge, the rest of the art then 2 blank rows (1 with the title) inside, the key hints in its bottom edge and warnings on its last rows. `full`: the framed cup column left of the panel column (Session and Stats side by side or stacked, then the options slot); both columns stretch to end on the same row. `stacked`: one column, cup (if shown) above the panels. `minimal`: status line, warnings and hints, unframed. The root is exactly the terminal size so the alternate screen never scrolls.
 */
 export function DashboardLayout({
 	layout,
@@ -93,19 +89,17 @@ export function DashboardLayout({
 	statusLine,
 	stats,
 	options,
-	overlay,
 	hints,
 	warnings,
 	backgroundColor,
 }: DashboardLayoutProps) {
-	const slot = overlay ?? options;
 	const panels = (
 		<Panels
 			plan={plan}
 			session={session}
 			statusLine={statusLine}
 			stats={stats}
-			slot={slot}
+			slot={options}
 		/>
 	);
 	let body: ReactNode;
@@ -148,7 +142,7 @@ export function DashboardLayout({
 		return (
 			<Box {...root}>
 				<Box flexGrow={1} flexShrink={1} overflow="hidden">
-					<Box width={layout.columns}>{overlay ?? statusLine}</Box>
+					<Box width={layout.columns}>{statusLine}</Box>
 				</Box>
 				<Box flexDirection="column" flexShrink={0}>
 					{warnings}

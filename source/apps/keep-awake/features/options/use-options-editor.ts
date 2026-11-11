@@ -1,5 +1,6 @@
 import {useEffect, useRef, useState} from 'react';
-import {useInput} from 'ink';
+import {useKeys} from '../../../../ui/input/index.js';
+import {OPTIONS_BINDINGS} from '../../bindings.js';
 import type {SessionOptions} from '../../session/types.js';
 import {
 	OPTION_FIELDS,
@@ -98,21 +99,30 @@ export function useOptionsEditor({
 		}
 	};
 
-	useInput(
-		(input, key) => {
-			if (input === 'k' || key.upArrow) {
+	useKeys(
+		OPTIONS_BINDINGS,
+		{
+			up() {
 				move(-1);
-			} else if (input === 'j' || key.downArrow) {
+			},
+			down() {
 				move(1);
-			} else if (key.leftArrow || key.rightArrow) {
-				change(key.rightArrow ? 1 : -1);
-			} else if (focused?.kind === 'text' && key.return) {
-				if (focused.disabledReason(context) === undefined) {
-					setEditing(focused.id);
-				}
-			} else if (focused?.kind === 'toggle' && key.return) {
+			},
+			decrease() {
+				change(-1);
+			},
+			increase() {
 				change(1);
-			}
+			},
+			edit() {
+				if (focused?.kind === 'text') {
+					if (focused.disabledReason(context) === undefined) {
+						setEditing(focused.id);
+					}
+				} else if (focused?.kind === 'toggle') {
+					change(1);
+				}
+			},
 		},
 		{isActive: isActive && editingId === undefined},
 	);

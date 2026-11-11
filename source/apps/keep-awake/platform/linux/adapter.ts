@@ -1,6 +1,7 @@
 import process from 'node:process';
 import {readFileSync} from 'node:fs';
 import {spawn as nodeSpawn} from 'node:child_process';
+import {APP} from '../../../../app.config.js';
 import type {
 	Adapter,
 	BatteryInfo,
@@ -35,7 +36,7 @@ Arguments for the system lock: blocks sleep and idle, tied to the node pid via `
 export function systemInhibitArgs(reason: string, pid: number): string[] {
 	return [
 		'--what=sleep:idle',
-		'--who=coffee-term',
+		`--who=${APP.command}`,
 		`--why=${reason}`,
 		'--mode=block',
 		'tail',
@@ -55,7 +56,7 @@ export function gnomeInhibitArgs(reason: string, pid: number): string[] {
 		'--reason',
 		reason,
 		'--app-id',
-		'coffee-term',
+		APP.command,
 		'tail',
 		`--pid=${pid}`,
 		'-f',

@@ -9,8 +9,6 @@ import {
 } from '../features/options/option-fields.js';
 import type {StatLine} from '../features/stats/stats-model.js';
 import {buildStatus} from '../features/status/status-model.js';
-import {THEMES} from '../../../theme/palettes.js';
-import {THEME_NAMES} from '../../../theme/tokens.js';
 import {PANEL_CHROME_COLUMNS, PANEL_CHROME_ROWS} from './dashboard-plan.js';
 
 export {PANEL_CHROME_COLUMNS} from './dashboard-plan.js';
@@ -132,49 +130,6 @@ export function optionsPanelHeight(
 	}
 
 	return rows;
-}
-
-/**
-Height of a panel holding `lines` (each wrapped at the panel's inner width).
-*/
-export function linesPanelHeight(
-	lines: readonly string[],
-	width: number,
-): number {
-	return lines.reduce(
-		(rows, line) => rows + wrappedRows(line, inner(width)),
-		PANEL_CHROME_ROWS,
-	);
-}
-
-/**
-Height of `HelpOverlay`: one row per binding, the note line and the close hint.
-*/
-export function helpPanelHeight(
-	bindings: ReadonlyArray<{keys: string; label: string}>,
-	width: number,
-): number {
-	const keyWidth = Math.max(0, ...bindings.map(({keys}) => keys.length));
-	return linesPanelHeight(
-		[
-			...bindings.map(({label}) => `${'k'.repeat(keyWidth)} ${label}`),
-			'The app exits when a stop condition is met. Space pauses.',
-			'Esc close',
-		],
-		width,
-	);
-}
-
-/**
-Height of `ThemePicker`: one row per theme (its hints are at most this long).
-*/
-const THEME_HINT_SAMPLE = 'old-school green phosphor';
-
-export function themePickerHeight(width: number): number {
-	return linesPanelHeight(
-		THEME_NAMES.map(name => `❯ ● ${THEMES[name].label} ${THEME_HINT_SAMPLE}`),
-		width,
-	);
 }
 
 /**

@@ -3,6 +3,7 @@ Bookkeeping for lock handles on behalf of the supervisor: which handle is curren
 
 Guarantee: a handle is either tracked here (and released by `releaseAll` / `releaseAllSync`) or released the moment its `acquire` resolves, when that acquire was revoked meanwhile. No handle can leak.
 */
+import {APP} from '../../../app.config.js';
 import {
 	LOCK_KINDS,
 	type Adapter,
@@ -30,8 +31,8 @@ export type LockManager = {
 };
 
 const REASONS: Record<LockKind, string> = {
-	system: 'coffee-term is keeping the machine awake',
-	display: 'coffee-term is keeping the display on',
+	system: `${APP.command} is keeping the machine awake`,
+	display: `${APP.command} is keeping the display on`,
 };
 
 export const errorMessage = (error: unknown, fallback: string): string =>

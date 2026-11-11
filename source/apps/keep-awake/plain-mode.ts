@@ -10,7 +10,10 @@ import {LOCK_KINDS, type LockKind} from './platform/types.js';
 import {PREFIX, summarize, type ExitOutcome} from './summary.js';
 
 export type PlainModeOptions = {
-	controller: SessionController;
+	/**
+	The session to log: the service, or any controller.
+	*/
+	session: Pick<SessionController, 'getState' | 'subscribe'>;
 	/**
 	Writes one line (without the newline) to stdout.
 	*/
@@ -95,8 +98,8 @@ export function describeState(state: SessionState): string | undefined {
 /**
 Log state changes until the session stops, then print the summary. Resolves with the summary and exit code.
 */
-export async function runPlain({
-	controller,
+export async function runPlainSession({
+	session,
 	write,
 }: PlainModeOptions): Promise<ExitOutcome> {
 	return new Promise(resolve => {
@@ -125,7 +128,7 @@ export async function runPlain({
 			write(line);
 		};
 
-		const unsubscribe = controller.subscribe(onState);
-		onState(controller.getState());
+		const unsubscribe = session.subscribe(onState);
+		onState(session.getState());
 	});
 }

@@ -25,3 +25,28 @@ test('findApp finds by id', t => {
 	t.is(findApp('tasks')?.title, 'Tasks');
 	t.is(findApp('nope'), undefined);
 });
+
+test('the registry holds the seven example apps in menu order', t => {
+	t.deepEqual(
+		APPS.map(app => app.id),
+		[
+			'system-monitor',
+			'file-explorer',
+			'log-viewer',
+			'tasks',
+			'http-client',
+			'gallery',
+			'keep-awake',
+		],
+	);
+});
+
+test('keep-awake is the bare, service-backed, Linux and macOS app', t => {
+	const app = findApp('keep-awake');
+	t.is(app?.title, 'Keep Awake');
+	t.is(app?.chrome, 'bare');
+	t.deepEqual(app?.platforms, ['linux', 'darwin']);
+	t.is(typeof app?.createService, 'function');
+	t.truthy(app?.menuBadge);
+	t.truthy(app?.cli?.runPlain);
+});

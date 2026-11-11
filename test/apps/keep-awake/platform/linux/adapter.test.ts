@@ -3,6 +3,7 @@ import {EventEmitter} from 'node:events';
 import {execFile, spawnSync, type ChildProcess} from 'node:child_process';
 import process from 'node:process';
 import test from 'ava';
+import {APP} from '../../../../../source/app.config.js';
 import {
 	createLinuxAdapter,
 	gnomeInhibitArgs,
@@ -25,7 +26,7 @@ const run = async (command: string, args: string[]) =>
 test('systemInhibitArgs is exact', t => {
 	t.deepEqual(systemInhibitArgs('Keeping awake', 99), [
 		'--what=sleep:idle',
-		'--who=coffee-term',
+		`--who=${APP.command}`,
 		'--why=Keeping awake',
 		'--mode=block',
 		'tail',
@@ -43,7 +44,7 @@ test('gnomeInhibitArgs is exact and never uses --inhibit-only', t => {
 		'--reason',
 		'Keeping awake',
 		'--app-id',
-		'coffee-term',
+		APP.command,
 		'tail',
 		'--pid=99',
 		'-f',
@@ -230,7 +231,7 @@ const listedLines = async (
 const systemLines = async (reason: string) =>
 	listedLines('systemd-inhibit', ['--list', '--no-pager'], reason);
 const gnomeLines = async () =>
-	listedLines('gnome-session-inhibit', ['-l'], 'coffee-term');
+	listedLines('gnome-session-inhibit', ['-l'], APP.command);
 const tailLines = async () =>
 	listedLines('pgrep', ['-f', `^tail --pid=${process.pid} `], '');
 

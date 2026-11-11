@@ -109,6 +109,11 @@ export function describeEnds(endsAt: number | undefined, now: number): string {
 }
 
 /**
+Shown under a stopped session: the process no longer exits when a stop condition is met.
+*/
+export const RESTART_NOTE = 'Press r to start a new session.';
+
+/**
 Everything `SessionStatus` shows, as plain data.
 */
 export function buildStatus(state: SessionState, now: number): StatusModel {
@@ -128,6 +133,7 @@ export function buildStatus(state: SessionState, now: number): StatusModel {
 		pid:
 			state.options.pid === undefined ? undefined : String(state.options.pid),
 		message: state.message ?? stopText,
-		notes: state.notes,
+		notes:
+			state.phase === 'stopped' ? [...state.notes, RESTART_NOTE] : state.notes,
 	};
 }

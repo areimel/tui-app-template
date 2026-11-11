@@ -1,4 +1,5 @@
 import test from 'ava';
+import {APP} from '../../../../source/app.config.js';
 import {
 	createUnsupportedAdapter,
 	unsupportedMessage,
@@ -7,7 +8,7 @@ import {
 test('unsupportedMessage covers Windows, WSL and other platforms', t => {
 	t.is(
 		unsupportedMessage('win32', false),
-		'coffee-term does not support Windows yet. It runs on Linux and macOS.',
+		`${APP.command} does not support Windows yet. It runs on Linux and macOS.`,
 	);
 	t.regex(unsupportedMessage('linux', true), /WSL/v);
 	t.regex(unsupportedMessage('linux', true), /Windows/v);

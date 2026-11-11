@@ -1,19 +1,20 @@
+import {APP} from '../../../app.config.js';
 import type {Adapter} from './types.js';
 
 /**
-User-facing explanation of why this platform cannot run coffee-term.
+User-facing explanation of why this platform cannot run Keep Awake.
 */
 export function unsupportedMessage(
 	platform: NodeJS.Platform,
 	isWsl: boolean,
 ): string {
 	if (isWsl) {
-		return 'coffee-term does not support WSL. Inhibitors on the Linux side cannot keep Windows awake. Run it on Linux or macOS directly.';
+		return `${APP.command} does not support WSL. Inhibitors on the Linux side cannot keep Windows awake. Run it on Linux or macOS directly.`;
 	}
 
 	return platform === 'win32'
-		? 'coffee-term does not support Windows yet. It runs on Linux and macOS.'
-		: `coffee-term does not support ${platform}. It runs on Linux and macOS.`;
+		? `${APP.command} does not support Windows yet. It runs on Linux and macOS.`
+		: `${APP.command} does not support ${platform}. It runs on Linux and macOS.`;
 }
 
 /**

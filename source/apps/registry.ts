@@ -6,6 +6,7 @@ here, its tests (`test/apps/<id>/`) and its site guide page.
 import fileExplorer from './file-explorer/index.js';
 import gallery from './gallery/index.js';
 import httpClient from './http-client/index.js';
+import keepAwake from './keep-awake/index.js';
 import logViewer from './log-viewer/index.js';
 import systemMonitor from './system-monitor/index.js';
 import tasks from './tasks/index.js';
@@ -18,7 +19,7 @@ export const APPS: readonly AppDefinition[] = [
 	tasks,
 	httpClient,
 	gallery,
-	// Wave 2 (KA) adds Keep Awake here: `keepAwake,` with `import keepAwake from './keep-awake/index.js';`
+	keepAwake,
 ];
 
 /**

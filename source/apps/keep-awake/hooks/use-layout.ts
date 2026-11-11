@@ -1,4 +1,4 @@
-import {useWindowSize} from 'ink';
+import {useScreenSize} from '../../../shell/context.js';
 import {CREDITS_ROWS} from '../features/cup/credits.js';
 import {
 	CUP_FRAME_COLUMNS,
@@ -110,10 +110,10 @@ export function computeLayout(columns: number, rows: number): Layout {
 }
 
 /**
-Current layout; pass `size` to override the terminal size (tests, previews).
+Current layout for the screen size (`chrome: 'bare'`: the whole terminal); pass `size` to override it (tests, previews).
 */
 export function useLayout(size?: TerminalSize): Layout {
-	const windowSize = useWindowSize();
-	const {columns, rows} = size ?? windowSize;
+	const screenSize = useScreenSize();
+	const {columns, rows} = size ?? screenSize;
 	return computeLayout(columns, rows);
 }
