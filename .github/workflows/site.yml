@@ -3,9 +3,21 @@ name: Microsite
 on:
   push:
     branches: [main]
-    paths: ['site/**', '.github/workflows/site.yml']
+    paths:
+      [
+        'site/**',
+        'source/app.config.ts',
+        'pnpm-lock.yaml',
+        '.github/workflows/site.yml',
+      ]
   pull_request:
-    paths: ['site/**', '.github/workflows/site.yml']
+    paths:
+      [
+        'site/**',
+        'source/app.config.ts',
+        'pnpm-lock.yaml',
+        '.github/workflows/site.yml',
+      ]
   workflow_dispatch:
 
 permissions:
@@ -20,23 +32,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      # The pnpm version comes from the packageManager field in package.json.
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
-          cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            site/package-lock.json
-      # The site build resolves the root tsconfig.json, which extends
-      # @sindresorhus/tsconfig, so the root devDependencies must be present.
-      - run: npm ci --ignore-scripts
-      - run: npm ci
+          cache: pnpm
+      # One workspace install covers the app and the site. The site build
+      # resolves the root tsconfig.json, which extends @sindresorhus/tsconfig,
+      # and imports source/app.config.ts, so root dependencies must be present.
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run format:check && pnpm run check
         working-directory: site
-      - run: npm run format:check && npm run check
+      - run: pnpm exec playwright install --with-deps chromium
         working-directory: site
-      - run: npx playwright install --with-deps chromium
-        working-directory: site
-      - run: npm run test:e2e
+      - run: pnpm run test:e2e
         working-directory: site
       - uses: actions/upload-pages-artifact@v5
         with:

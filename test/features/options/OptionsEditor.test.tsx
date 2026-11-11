@@ -1,8 +1,8 @@
-import {setTimeout as delay} from 'node:timers/promises';
 import test from 'ava';
 import type {SessionOptions} from '../../../source/core/session/types.js';
 import {OptionsEditor} from '../../../source/features/options/OptionsEditor.js';
 import type {OptionPatch} from '../../../source/features/options/option-fields.js';
+import {delay, pressKeys} from '../../helpers/keys.js';
 import {renderThemed} from '../../helpers/render-themed.js';
 
 const DOWN = '\u{1B}[B';
@@ -58,11 +58,7 @@ function setup({
 		/>,
 	);
 	const press = async (...keys: string[]) => {
-		for (const key of keys) {
-			view.stdin.write(key);
-			// eslint-disable-next-line no-await-in-loop
-			await delay(30);
-		}
+		await pressKeys(view.stdin, ...keys);
 	};
 
 	return {view, patches, editing, press};

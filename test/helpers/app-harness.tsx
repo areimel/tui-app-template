@@ -21,6 +21,7 @@ import {
 	type FakeAdapterOptions,
 } from './fake-adapter.js';
 import {renderSized, type SizedRender} from './render-sized.js';
+import {delay, pressKeys, waitFor} from './keys.js';
 
 export const STATS: SystemStats = {
 	uptimeSeconds: 10_920,
@@ -28,19 +29,7 @@ export const STATS: SystemStats = {
 	hostname: 'test-host',
 };
 
-export const KEYS = {
-	up: '\u{1B}[A',
-	down: '\u{1B}[B',
-	right: '\u{1B}[C',
-	left: '\u{1B}[D',
-	enter: '\r',
-	escape: '\u{1B}',
-} as const;
-
-export const delay = async (ms: number) =>
-	new Promise(resolve => {
-		setTimeout(resolve, ms);
-	});
+export {KEYS, delay} from './keys.js';
 
 export type AppHarness = SizedRender & {
 	adapter: FakeAdapter;
@@ -124,18 +113,6 @@ export async function startApp({
 		rows,
 	);
 
-	const waitFor = async (isDone: () => boolean, label: string) => {
-		const deadline = Date.now() + 5000;
-		while (!isDone()) {
-			if (Date.now() > deadline) {
-				throw new Error(`Timed out waiting for ${label}`);
-			}
-
-			// eslint-disable-next-line no-await-in-loop -- Polling.
-			await delay(10);
-		}
-	};
-
 	void controller.start();
 	return {
 		...rendered,
@@ -153,11 +130,7 @@ export async function startApp({
 			await delay(30); // Let Ink draw it.
 		},
 		async press(...keys) {
-			for (const key of keys) {
-				rendered.stdin.write(key);
-				// eslint-disable-next-line no-await-in-loop -- Keys are sequential.
-				await delay(30);
-			}
+			await pressKeys(rendered.stdin, ...keys);
 		},
 		dispose() {
 			rendered.unmount();

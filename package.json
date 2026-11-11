@@ -41,7 +41,7 @@
 		"start": "node dist/cli.js",
 		"test": "prettier --check . && xo && tsc -p tsconfig.test.json && TSX_TSCONFIG_PATH=tsconfig.test.json ava",
 		"ava": "TSX_TSCONFIG_PATH=tsconfig.test.json ava",
-		"prepublishOnly": "rm -rf dist && npm run build"
+		"prepublishOnly": "rm -rf dist && pnpm run build"
 	},
 	"files": [
 		"dist",
@@ -84,9 +84,5 @@
 		"timeout": "30s"
 	},
 	"prettier": "@vdemedes/prettier-config",
-	"overrides": {
-		"minimatch": "^11.0.5",
-		"glob": "^14.0.4",
-		"katex": "^0.19.1"
-	}
+	"packageManager": "pnpm@11.22.0"
 }

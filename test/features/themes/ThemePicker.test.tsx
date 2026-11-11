@@ -1,7 +1,7 @@
-import {setTimeout as delay} from 'node:timers/promises';
 import test from 'ava';
 import {ThemePicker} from '../../../source/features/themes/ThemePicker.js';
 import type {ThemeName} from '../../../source/theme/tokens.js';
+import {pressKeys} from '../../helpers/keys.js';
 import {renderThemed} from '../../helpers/render-themed.js';
 
 function setup(current: ThemeName, isActive = true) {
@@ -22,8 +22,7 @@ function setup(current: ThemeName, isActive = true) {
 		/>,
 	);
 	const press = async (key: string) => {
-		view.stdin.write(key);
-		await delay(30);
+		await pressKeys(view.stdin, key);
 	};
 
 	return {view, calls, press};
