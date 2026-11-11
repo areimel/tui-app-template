@@ -2,6 +2,8 @@
 The HTTP Client example: a request form, async send and cancel, Body/Headers/Raw tabs with a JSON tree, and history.
 */
 import {defineApp} from '../types.js';
+import {HTTP_BINDINGS} from './bindings.js';
+import {HTTP_CONFIG} from './config.js';
 import {Screen} from './Screen.js';
 
 export const APP_ID = 'http-client';
@@ -12,4 +14,6 @@ export default defineApp({
 	description: 'Send requests and inspect the response as a JSON tree',
 	glyph: '⇄',
 	screen: Screen,
+	bindings: HTTP_BINDINGS,
+	config: HTTP_CONFIG,
 });
