@@ -39,6 +39,7 @@
 		"build:watch": "tsc --watch",
 		"dev": "tsx source/cli.tsx",
 		"start": "node dist/cli.js",
+		"init": "tsx scripts/init.ts",
 		"test": "prettier --check . && xo && tsc -p tsconfig.test.json && TSX_TSCONFIG_PATH=tsconfig.test.json ava",
 		"ava": "TSX_TSCONFIG_PATH=tsconfig.test.json ava",
 		"prepublishOnly": "rm -rf dist && pnpm run build"
