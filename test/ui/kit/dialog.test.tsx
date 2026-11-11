@@ -132,3 +132,39 @@ test('screen bindings are blocked while the dialog is open and work after', asyn
 	t.is(fired, 1);
 	r2.unmount();
 });
+
+test('Dialog onCancel fires on Esc from inside the modal scope; a parent binding does not', async t => {
+	const log: string[] = [];
+	const {ReadySignal, whenReady} = createReadySignal();
+	function Parent() {
+		// The mistake the doc warns about: this registers in the screen scope.
+		useKeys([{action: 'cancel', keys: ['esc'], label: 'cancel'}], {
+			cancel() {
+				log.push('parent');
+			},
+		});
+		return (
+			<ThemeProvider theme={PLAIN_THEME}>
+				<Box width={40} height={10}>
+					<ReadySignal />
+					<Dialog
+						title="Esc"
+						width={20}
+						onCancel={() => {
+							log.push('dialog');
+						}}
+					>
+						<T>body</T>
+					</Dialog>
+				</Box>
+			</ThemeProvider>
+		);
+	}
+
+	const r = renderSized(<Parent />, 40, 10);
+	await whenReady();
+	await pressKeys(r.stdin, '\u{1B}');
+	await waitFor(() => log.length > 0, 'esc handled');
+	t.deepEqual(log, ['dialog']);
+	r.unmount();
+});

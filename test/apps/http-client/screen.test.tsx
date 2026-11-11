@@ -2,7 +2,7 @@ import test from 'ava';
 import {KEYS} from '../../helpers/render-screen.js';
 import {HTTP_BINDINGS} from '../../../source/apps/http-client/bindings.js';
 import app from '../../../source/apps/http-client/index.js';
-import {respond, sent, setup, text} from './harness.js';
+import {SECTION, respond, sent, setup, text} from './harness.js';
 
 test('the definition lists its key bindings and config', t => {
 	t.is(app.id, 'http-client');
@@ -49,9 +49,12 @@ test('sending shows the response as a JSON tree', async t => {
 test('editing the URL and sending uses the new URL', async t => {
 	const {fake, view} = setup({
 		http: respond(),
-		config: {last: {method: 'GET', url: 'https://', header: '', body: ''}},
+		config: {
+			last: {method: 'GET', url: 'https://h.test/', header: '', body: ''},
+		},
 	});
 	await view.press(KEYS.down, KEYS.enter);
+	await view.press(...Array.from({length: 7}, () => KEYS.backspace));
 	await view.press('example.test/data');
 	await view.press(KEYS.enter);
 	await view.waitForText('https://example.test/data');
@@ -77,15 +80,20 @@ test('the body field appears for POST and is sent', async t => {
 				method: 'POST',
 				url: 'https://x.test/',
 				header: '',
-				body: '{"a":1}',
+				body: 'saved bodies are dropped on load',
 			},
 		},
 	});
 	await view.waitForText('Body');
+	t.false(text(view).includes('saved bodies'));
+	await view.press(KEYS.down, KEYS.down, KEYS.down, KEYS.enter);
+	await view.press('{"a":1}', KEYS.enter);
+	await view.waitForText('{"a":1}');
 	await view.press('s');
 	await view.waitForText('201 Created');
 	t.is(sent(fake)[0]?.body, '{"a":1}');
 	t.is(sent(fake)[0]?.headers?.['Content-Type'], 'application/json');
+	t.false(JSON.stringify(view.config.section(SECTION)).includes('"a"'));
 	view.unmount();
 });
 

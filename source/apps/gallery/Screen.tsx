@@ -8,7 +8,7 @@ import {useSettings, useScreenSize, useToast} from '../../shell/context.js';
 import {THEME_NAMES} from '../../theme/tokens.js';
 import {useScroll} from '../../ui/hooks/index.js';
 import {useKeys} from '../../ui/input/index.js';
-import {ScrollView, StatusBar, T, Tabs} from '../../ui/kit/index.js';
+import {ScrollView, StatusBar, Tabs} from '../../ui/kit/index.js';
 import {
 	ENTER_BINDINGS,
 	LEAVE_BINDINGS,
@@ -17,11 +17,9 @@ import {
 } from './bindings.js';
 import {DemoDialogs} from './DemoDialogs.js';
 import {GALLERY_TABS, type DialogKind} from './tabs/index.js';
-import {visibleTabRange} from './tabs-window.js';
 
 const TAB_ROW = 1;
 const STATUS_ROW = 1;
-const ARROW_COLUMNS = 2;
 
 export function Screen() {
 	const {columns, rows} = useScreenSize();
@@ -100,11 +98,6 @@ export function Screen() {
 	}
 
 	const contentWidth = Math.max(1, columns - 1);
-	const range = visibleTabRange(
-		GALLERY_TABS.map(item => item.label),
-		index,
-		columns - ARROW_COLUMNS,
-	);
 	const {content: Content} = tab;
 	const status = isInside
 		? `${tab.label}: esc leaves the sample`
@@ -112,15 +105,12 @@ export function Screen() {
 
 	return (
 		<Box flexDirection="column" width={columns} height={rows}>
-			<Box width={columns}>
-				<T tone="muted">{range.start > 0 ? '‹' : ' '}</T>
-				<Tabs
-					tabs={GALLERY_TABS.slice(range.start, range.end)}
-					value={tab.value}
-					isFocused={!isInside}
-				/>
-				<T tone="muted">{range.end < GALLERY_TABS.length ? '›' : ' '}</T>
-			</Box>
+			<Tabs
+				tabs={GALLERY_TABS}
+				value={tab.value}
+				isFocused={!isInside}
+				width={columns}
+			/>
 			<ScrollView
 				hasScrollbar
 				height={viewport}

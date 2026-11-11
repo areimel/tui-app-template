@@ -6,10 +6,11 @@ import type {
 import {
 	advanceSample,
 	batteryLine,
+	cleanProcesses,
 	filterProcesses,
-	formatBytes,
 	formatCpu,
 	HISTORY_SIZE,
+	hostLine,
 	nextSort,
 	pushHistory,
 	sortProcesses,
@@ -118,12 +119,7 @@ test('an unchanged snapshot keeps usage and history', t => {
 	t.is(again.snapshot.hostname, 'x');
 });
 
-test('formats bytes and cpu', t => {
-	const gib = 1024 ** 3;
-	t.is(formatBytes(512), '512B');
-	t.is(formatBytes(5 * 1024 * 1024), '5.0M');
-	t.is(formatBytes(300 * 1024 * 1024), '300M');
-	t.is(formatBytes(1.5 * gib), '1.5G');
+test('formats cpu', t => {
 	t.is(formatCpu(0.14), '0.1');
 	t.is(formatCpu(250.4), '250');
 });
@@ -215,4 +211,25 @@ test('coreGrid lays cores out column-major', t => {
 		[1, 3],
 	]);
 	t.deepEqual(coreGrid(3, 1), [[0, 1, 2]]);
+});
+
+test('cleanProcesses strips escapes from names and users', t => {
+	const [cleaned] = cleanProcesses([
+		{
+			pid: 7,
+			name: 'evil\u{1B}[2J\u{1B}]0;pwned\u{7}',
+			user: 'r\u{9B}31moot',
+			cpuPercent: 0,
+			memoryBytes: 0,
+		},
+	]);
+	t.is(cleaned?.name, 'evil');
+	t.is(cleaned?.user, 'root');
+});
+
+test('hostLine strips escapes from the hostname', t => {
+	t.regex(
+		hostLine({...DEFAULT_SNAPSHOT, hostname: 'h\u{1B}[2Jost'}, 3),
+		/^host · /v,
+	);
 });

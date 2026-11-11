@@ -5,6 +5,7 @@ and drive `follow`. Used by `fake-services.ts`; import it directly only for fs-o
 import {Buffer} from 'node:buffer';
 import {posix} from 'node:path';
 import {fail, ok} from '../../source/core/result.js';
+import {tailOfText} from '../../source/platform/fs/entries.js';
 import type {
 	DirEntry,
 	DirEntryKind,
@@ -27,9 +28,18 @@ export type FakeFsOptions = {
 	readonly home?: string;
 	readonly cwd?: string;
 	/**
-	`modifiedMs` of every entry. Default 0.
+	`modifiedMs` of every entry without its own in `modified`. Default 0.
 	*/
 	readonly modifiedMs?: number;
+	/**
+	Absolute path → `modifiedMs` of that entry.
+	*/
+	readonly modified?: Readonly<Record<string, number>>;
+	/**
+	Absolute path → error message: every read of that path (`list`, `preview`, `readText`, `readTail`,
+	`follow`) fails with it, e.g. `{'/home/tester/locked': 'Permission denied: /home/tester/locked'}`.
+	*/
+	readonly errors?: Readonly<Record<string, string>>;
 };
 
 export type FakeFsControl = {
@@ -88,6 +98,15 @@ export function createFakeFs(options: FakeFsOptions = {}): {
 		]),
 	);
 	const followers = new Map<string, Set<(text: string) => void>>();
+	const normalized = (record: Readonly<Record<string, unknown>> | undefined) =>
+		new Map(
+			Object.entries(record ?? {}).map(([path, value]) => [
+				posix.normalize(path),
+				value,
+			]),
+		);
+	const modified = normalized(options.modified) as Map<string, number>;
+	const errors = normalized(options.errors) as Map<string, string>;
 
 	const childrenOf = (dir: string) => {
 		const prefix = dir === '/' ? '/' : `${dir}/`;
@@ -127,7 +146,7 @@ export function createFakeFs(options: FakeFsOptions = {}): {
 			kind,
 			targetKind: undefined,
 			sizeBytes,
-			modifiedMs: options.modifiedMs ?? 0,
+			modifiedMs: modified.get(path) ?? options.modifiedMs ?? 0,
 			isHidden: name.startsWith('.'),
 		};
 	};
@@ -137,6 +156,11 @@ export function createFakeFs(options: FakeFsOptions = {}): {
 		cwd: () => options.cwd ?? home,
 		async list(rawPath) {
 			const path = posix.normalize(rawPath);
+			const error = errors.get(path);
+			if (error !== undefined) {
+				return fail(error);
+			}
+
 			const kind = kindOf(path);
 			if (kind !== 'dir') {
 				return fail(
@@ -150,6 +174,11 @@ export function createFakeFs(options: FakeFsOptions = {}): {
 		},
 		async preview(rawPath, maxBytes) {
 			const path = posix.normalize(rawPath);
+			const error = errors.get(path);
+			if (error !== undefined) {
+				return fail(error);
+			}
+
 			const file = files.get(path);
 			if (kindOf(path) === 'dir') {
 				return ok({kind: 'dir', entryCount: childrenOf(path).length});
@@ -160,22 +189,55 @@ export function createFakeFs(options: FakeFsOptions = {}): {
 				: ok(previewOf(file, maxBytes));
 		},
 		async readText(rawPath, maxBytes) {
-			const file = files.get(posix.normalize(rawPath));
+			const path = posix.normalize(rawPath);
+			const file = files.get(path);
+			const error = errors.get(path);
+			if (error !== undefined) {
+				return fail(error);
+			}
+
 			return typeof file === 'string'
 				? ok(file.slice(0, maxBytes))
 				: fail(`Not a text file: ${rawPath}`);
 		},
-		follow(rawPath, onChunk, onError) {
+		async readTail(rawPath, maxBytes) {
 			const path = posix.normalize(rawPath);
-			if (typeof files.get(path) !== 'string') {
-				onError?.(`No such file: ${path}`);
+			const file = files.get(path);
+			const error = errors.get(path);
+			if (error !== undefined) {
+				return fail(error);
+			}
+
+			return typeof file === 'string'
+				? ok(tailOfText(file, maxBytes))
+				: fail(`Not a text file: ${rawPath}`);
+		},
+		follow(rawPath, onChunk, onError, followOptions) {
+			const path = posix.normalize(rawPath);
+			const file = files.get(path);
+			if (typeof file !== 'string' || errors.has(path)) {
+				onError?.(errors.get(path) ?? `No such file: ${path}`);
 				return () => undefined;
 			}
 
+			let isStopped = false;
 			const set = followers.get(path) ?? new Set();
 			followers.set(path, set);
 			set.add(onChunk);
+			// Text appended since `fromBytes` arrives first, on the next microtask (like a poll).
+			const bytes = Buffer.from(file);
+			const from = followOptions?.fromBytes ?? bytes.length;
+			if (from < bytes.length) {
+				const missed = bytes.subarray(from).toString('utf8');
+				queueMicrotask(() => {
+					if (!isStopped) {
+						onChunk(missed);
+					}
+				});
+			}
+
 			return () => {
+				isStopped = true;
 				set.delete(onChunk);
 			};
 		},

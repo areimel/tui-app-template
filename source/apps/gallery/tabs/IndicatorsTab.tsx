@@ -1,7 +1,6 @@
 /**
 Indicators: ProgressBar, Gauge, Sparkline, Spinner.
 */
-import {useSettings} from '../../../shell/context.js';
 import {Gauge, ProgressBar, Sparkline, Spinner} from '../../../ui/kit/index.js';
 import {Sample} from '../Sample.js';
 import {SPARK_VALUES} from '../samples.js';
@@ -10,7 +9,6 @@ import type {TabProps} from './types.js';
 const MAX_BAR = 40;
 
 export function IndicatorsTab({width}: TabProps) {
-	const {isAnimated} = useSettings();
 	const bar = Math.min(width, MAX_BAR);
 	return (
 		<>
@@ -28,7 +26,7 @@ export function IndicatorsTab({width}: TabProps) {
 				<Sparkline values={SPARK_VALUES} width={Math.min(width, 20)} />
 			</Sample>
 			<Sample name="Spinner" note="animated; still when animation is off">
-				<Spinner label="Loading" {...(isAnimated ? {} : {frame: 0})} />
+				<Spinner label="Loading" />
 			</Sample>
 		</>
 	);

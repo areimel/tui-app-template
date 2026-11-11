@@ -4,10 +4,10 @@ Presentational; sizes come from `LayoutPlan`.
 */
 import {Box} from 'ink';
 import type {BatteryInfo} from '../../platform/types.js';
+import {formatBytes} from '../../core/format.js';
 import {Gauge, Sparkline, T} from '../../ui/kit/index.js';
 import {
 	batteryLine,
-	formatBytes,
 	fraction,
 	hostLine,
 	loadText,
@@ -16,6 +16,7 @@ import {
 import {coreGrid, type LayoutPlan} from './monitor-layout.js';
 
 const LABEL_WIDTH = 3;
+const COMPACT = {isCompact: true} as const;
 const SPARK_MIN = 8;
 const SPARK_MAX = 40;
 
@@ -96,7 +97,7 @@ export function Overview({
 }: OverviewProps) {
 	const {memory} = sample.snapshot;
 	const usedText = (used: number, total: number) =>
-		`${formatBytes(used)}/${formatBytes(total)}`;
+		`${formatBytes(used, COMPACT)}/${formatBytes(total, COMPACT)}`;
 	return (
 		<Box flexDirection="column" width={width}>
 			{plan.showHost ? (

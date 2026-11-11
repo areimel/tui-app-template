@@ -2,7 +2,7 @@ import type {AsyncState} from '../../ui/hooks/types.js';
 import {useScroll} from '../../ui/hooks/use-scroll.js';
 import type {DirEntry, FilePreview} from '../../platform/types.js';
 import {Panel, ScrollView, T} from '../../ui/kit/index.js';
-import {previewLines} from './explorer-model.js';
+import {previewLines, previewTitle} from './explorer-model.js';
 
 export type PreviewResult = {
 	readonly path: string;
@@ -19,11 +19,6 @@ export type PreviewPaneProps = {
 	readonly height: number;
 	readonly isFocused: boolean;
 };
-
-const clipTitle = (name: string, width: number) =>
-	[...name].length <= width
-		? name
-		: `…${[...name].slice(-Math.max(1, width - 1)).join('')}`;
 
 function TextBody({
 	preview,
@@ -122,7 +117,7 @@ export function PreviewPane({
 
 	return (
 		<Panel
-			title={clipTitle(entry?.name ?? 'Preview', Math.max(1, inner - 4))}
+			title={previewTitle(entry?.name ?? 'Preview', Math.max(1, inner - 4))}
 			isFocused={isFocused}
 			width={width}
 			height={height}

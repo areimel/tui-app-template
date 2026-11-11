@@ -54,7 +54,13 @@ function editBuffer(
 }
 
 /**
-Single-line text input (see `TextInputProps`).
+Cells the `[ ` and ` ]` brackets take.
+*/
+export const TEXT_INPUT_CHROME = 4;
+
+/**
+Single-line text input (see `TextInputProps`), drawn in the same `[ value ]` brackets as `ValueBox`
+so an idle input reads as a field, not a label, without colour; bold brackets while active.
 */
 export function TextInput({
 	value,
@@ -100,7 +106,7 @@ export function TextInput({
 	const shown =
 		width === undefined
 			? {text: value, caretColumn: caret}
-			: visibleSlice(buffer, width);
+			: visibleSlice(buffer, Math.max(1, width - TEXT_INPUT_CHROME));
 	const cells = [...shown.text];
 	const before = cells.slice(0, shown.caretColumn).join('');
 	const under = cells[shown.caretColumn];
@@ -109,6 +115,7 @@ export function TextInput({
 	return (
 		<Box flexDirection="column">
 			<Box>
+				<T bold={isActive}>[ </T>
 				{isEmpty ? (
 					<>
 						{isActive ? <T inverse> </T> : null}
@@ -121,6 +128,7 @@ export function TextInput({
 						<T>{after}</T>
 					</>
 				)}
+				<T bold={isActive}> ]</T>
 			</Box>
 			{error === undefined ? null : <T tone="err">! {error}</T>}
 		</Box>

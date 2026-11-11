@@ -1,11 +1,11 @@
 /**
-Pure response model: size and time labels, content detection (JSON tree or text), sorted headers, raw
-text and hard wrapping into scrollable rows.
+Pure response model: cleaning what the server sent, content detection (JSON tree or text), sorted
+headers, raw text and hard wrapping into scrollable rows.
 */
-import type {HttpResponse} from '../../platform/types.js';
+import {sanitizeLine, sanitizeText} from '../../core/sanitize.js';
+import type {HttpError, HttpResponse} from '../../platform/types.js';
 import {jsonToTree} from '../../ui/kit/tree-model.js';
 import type {TreeNode, TreeRow} from '../../ui/kit/types.js';
-import {isControlCode} from './text-util.js';
 
 export const MAX_TREE_CHARS = 500_000;
 export const MAX_TEXT_ROWS = 2000;
@@ -22,41 +22,30 @@ export const RESPONSE_TABS: ReadonlyArray<{
 	{value: 'raw', label: 'Raw'},
 ];
 
-export function formatBytes(bytes: number): string {
-	if (bytes < 1024) {
-		return `${bytes} B`;
-	}
-
-	return bytes < 1024 * 1024
-		? `${(bytes / 1024).toFixed(1)} KB`
-		: `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+/**
+The response with everything the server controls made safe to draw: status text, header names and
+values (one line each) and the body (escape sequences and controls removed, newlines kept). Applied
+once, as the response arrives; everything below works on the clean copy.
+*/
+export function cleanResponse(response: HttpResponse): HttpResponse {
+	return {
+		...response,
+		statusText: sanitizeLine(response.statusText),
+		headers: Object.fromEntries(
+			Object.entries(response.headers).map(([name, value]) => [
+				sanitizeLine(name),
+				sanitizeLine(value),
+			]),
+		),
+		body: sanitizeText(response.body),
+	};
 }
 
 /**
-`240 ms` below a second, else `1.25 s`.
+A transport error safe to draw (its message may quote the server or the URL).
 */
-export function formatMillis(ms: number): string {
-	const rounded = Math.max(0, Math.round(ms));
-	return rounded < 1000 ? `${rounded} ms` : `${(rounded / 1000).toFixed(2)} s`;
-}
-
-/**
-Elapsed time while waiting: `0.4 s`.
-*/
-export function formatWaiting(ms: number): string {
-	return `${(Math.max(0, ms) / 1000).toFixed(1)} s`;
-}
-
-/**
-Replaces tabs and drops control characters (ANSI escapes in a body must not reach the terminal).
-*/
-export function sanitizeText(text: string): string {
-	return [...text.replaceAll('\t', '  ').replaceAll('\r\n', '\n')]
-		.filter(
-			character =>
-				character === '\n' || !isControlCode(character.codePointAt(0)),
-		)
-		.join('');
+export function cleanError(error: HttpError): HttpError {
+	return {...error, message: sanitizeLine(error.message)};
 }
 
 /**
@@ -66,7 +55,7 @@ one space so they keep a row.
 export function wrapRows(text: string, width: number): string[] {
 	const size = Math.max(1, width);
 	const rows: string[] = [];
-	for (const line of sanitizeText(text.slice(0, MAX_TEXT_CHARS)).split('\n')) {
+	for (const line of text.slice(0, MAX_TEXT_CHARS).split('\n')) {
 		const characters = [...line];
 		if (characters.length === 0) {
 			rows.push(' ');

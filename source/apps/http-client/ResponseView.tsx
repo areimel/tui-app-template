@@ -4,6 +4,7 @@ expand state and the scroll offset; mount it with a `key` per response so they r
 */
 import {useMemo, useState} from 'react';
 import {Box} from 'ink';
+import {formatBytes, formatMillis} from '../../core/format.js';
 import type {HttpResponse} from '../../platform/types.js';
 import {useListNav, useScroll} from '../../ui/hooks/index.js';
 import {useKeys} from '../../ui/input/index.js';
@@ -15,8 +16,6 @@ import {statusBadge} from './request-model.js';
 import {
 	allParents,
 	bodyView,
-	formatBytes,
-	formatMillis,
 	headersText,
 	parentIndex,
 	RESPONSE_TABS,
@@ -162,7 +161,12 @@ export function ResponseView({
 					</T>
 				}
 			/>
-			<Tabs tabs={RESPONSE_TABS} value={tab} isFocused={isActive} />
+			<Tabs
+				tabs={RESPONSE_TABS}
+				value={tab}
+				isFocused={isActive}
+				width={width}
+			/>
 			{isTree ? (
 				<JsonTree
 					nodes={nodes}

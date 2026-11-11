@@ -86,9 +86,14 @@ export type FakeServicesControl = {
 	readonly battery: {set(info: BatteryInfo | undefined): void};
 	readonly data: {
 		/**
-		Current raw value of a data file (what the last save wrote).
+		Current raw content of a data file: the latest save, else the `dataFiles` value it started with.
 		*/
 		get(name: string): unknown;
+		/**
+		The value of the latest save of `name` in this run, `undefined` when it was never saved (so a
+		test can tell "nothing was written" from "the seed is still there").
+		*/
+		lastSaved(name: string): unknown;
 		/**
 		Every save, in order.
 		*/
@@ -209,7 +214,12 @@ function createFakeData(
 			// Saves are immediate.
 		},
 	};
-	return {data, get: (name: string) => files.get(name)};
+	return {
+		data,
+		get: (name: string) => files.get(name),
+		lastSaved: (name: string) =>
+			saves.findLast(save => save.name === name)?.value,
+	};
 }
 
 export function createFakeServices(
@@ -291,7 +301,7 @@ export function createFakeServices(
 					battery = info;
 				},
 			},
-			data: {get: fakeData.get, saves},
+			data: {get: fakeData.get, lastSaved: fakeData.lastSaved, saves},
 		},
 	};
 }

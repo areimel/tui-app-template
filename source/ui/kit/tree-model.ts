@@ -1,6 +1,8 @@
 /**
 Pure tree helpers for `Tree`: flattening by expand state and JSON conversion.
 */
+import {truncate} from '../../core/format.js';
+import {sanitizeLine} from '../../core/sanitize.js';
 import type {TreeNode, TreeRow} from './types.js';
 
 /**
@@ -24,8 +26,7 @@ export function flattenTree(
 const MAX_DETAIL = 200;
 const IDENTIFIER = /^[$A-Z_a-z][\w$]*$/v;
 
-const clip = (text: string): string =>
-	text.length > MAX_DETAIL ? `${text.slice(0, MAX_DETAIL - 1)}…` : text;
+const clip = (text: string): string => truncate(text, MAX_DETAIL);
 
 function keyPath(parent: string, key: string): string {
 	return IDENTIFIER.test(key)
@@ -44,7 +45,8 @@ const isContainer = (value: unknown): value is Record<string, unknown> =>
 
 function jsonNode(id: string, label: string, value: unknown): TreeNode {
 	if (!isContainer(value)) {
-		return {id, label, detail: clip(JSON.stringify(value) ?? 'undefined')};
+		const shown = typeof value === 'string' ? sanitizeLine(value) : value;
+		return {id, label, detail: clip(JSON.stringify(shown) ?? 'undefined')};
 	}
 
 	const isArray = Array.isArray(value);
@@ -53,7 +55,7 @@ function jsonNode(id: string, label: string, value: unknown): TreeNode {
 	const children = entries.map(([key, child]) =>
 		jsonNode(
 			isArray ? `${id}[${key}]` : keyPath(id, key),
-			isArray ? `[${key}]` : key,
+			isArray ? `[${key}]` : sanitizeLine(key),
 			child,
 		),
 	);
@@ -66,7 +68,9 @@ function jsonNode(id: string, label: string, value: unknown): TreeNode {
 A JSON value as tree nodes. An object or array yields its entries as the top-level nodes (ids are JSON
 paths like `$.items[0]`, labels the key or `[index]`); a scalar yields one node labelled `rootId`.
 `detail` is a scalar's JSON text (`null`, `"text"`, long strings clipped with `…`) or a container's
-`{n}` / `[n]` size. Used by the HTTP client and gallery.
+`{n}` / `[n]` size. Keys and string values are passed through `sanitizeLine` first (they come from
+outside, e.g. an HTTP body: escape sequences must never reach the terminal, not even as the visible
+`\u001b[2J` that `JSON.stringify` would make of them). Used by the HTTP client and gallery.
 */
 export function jsonToTree(value: unknown, rootId = '$'): readonly TreeNode[] {
 	const root = jsonNode(rootId, rootId, value);

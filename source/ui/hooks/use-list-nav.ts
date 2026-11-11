@@ -6,18 +6,19 @@ import {useKeys, type KeyBinding} from '../input/index.js';
 import type {ListNav, ListNavAction, ListNavOptions} from './types.js';
 
 /**
-The keys `useListNav` registers; screens may list them in `AppDefinition.bindings`.
+The keys `useListNav` registers; screens may list them in `AppDefinition.bindings`. Up and down share
+the footer hint `↑↓ move`.
 */
 export const LIST_NAV_BINDINGS: ReadonlyArray<KeyBinding<ListNavAction>> = [
 	{
 		action: 'up',
 		keys: ['up', 'k'],
-		label: 'up',
+		label: 'move',
 		caption: '↑↓',
 		hint: 1,
 		group: 'Navigation',
 	},
-	{action: 'down', keys: ['down', 'j'], label: 'down', group: 'Navigation'},
+	{action: 'down', keys: ['down', 'j'], label: 'move', group: 'Navigation'},
 	{action: 'pageUp', keys: ['pageup'], label: 'page up', group: 'Navigation'},
 	{
 		action: 'pageDown',

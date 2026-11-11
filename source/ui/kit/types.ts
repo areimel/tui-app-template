@@ -109,6 +109,11 @@ export type TabsProps<V extends string> = {
 	readonly tabs: ReadonlyArray<{readonly value: V; readonly label: string}>;
 	readonly value: V;
 	readonly isFocused?: boolean;
+	/**
+	Columns available. When the tabs need more, a window around the selected tab is shown with `‹`
+	/ `›` markers for the hidden ones (`tabsWindow` in `tabs-window.ts`). Default: unbounded.
+	*/
+	readonly width?: number;
 };
 
 export type TreeNode = {
@@ -146,7 +151,8 @@ export type TreeProps = {
 };
 
 /**
-Single-line text input. Registers a capturing scoped input while `isActive`: typing, paste (multi-char
+Single-line text input, drawn as `[ text ]` like the other field values (bold brackets and a block
+caret while active). Registers a capturing scoped input while `isActive`: typing, paste (multi-char
 input), Backspace/Delete, ←/→/Home/End, Enter submits, Esc cancels. Global keys do not fire while it
 is active (only Ctrl+C does). Edit state is `text-buffer.ts`.
 */
@@ -155,7 +161,8 @@ export type TextInputProps = {
 	readonly isActive: boolean;
 	readonly placeholder?: string;
 	/**
-	Visible width in cells; longer text scrolls to keep the caret visible.
+	Width in cells including the `[ ` ` ]` brackets (`TEXT_INPUT_CHROME`); longer text scrolls to keep
+	the caret visible.
 	*/
 	readonly width?: number;
 	/**
@@ -189,7 +196,11 @@ export type CheckListProps<V extends string> = {
 A centred, opaque, bordered box drawn over the screen (`position="absolute"`, painted with a layer of
 spaces because the amber/green themes have no `bg`), with its children in a `modal` `InputScope`.
 Render it LAST inside a box with explicit width and height (the shell's body box is one). Mount it only
-while open; the parent handles closing through bindings registered inside it.
+while open.
+
+Keys for the dialog MUST be registered by a component rendered INSIDE it (a child): the modal scope
+blocks the screen's scope, so `useKeys` in the parent that renders the dialog never fires while it is
+open. `onCancel` covers the usual Esc without a helper component.
 */
 export type DialogProps = {
 	readonly title: string;
@@ -206,6 +217,10 @@ export type DialogProps = {
 	Scope id for debugging. Default `dialog`.
 	*/
 	readonly id?: string;
+	/**
+	Esc calls it (registered inside the modal scope, where it can fire).
+	*/
+	readonly onCancel?: () => void;
 	readonly children?: ReactNode;
 };
 
@@ -228,62 +243,10 @@ export type ConfirmDialogProps = {
 	readonly onCancel: () => void;
 };
 
-/**
-A one-cell spinner. Animated components take a `frame` (0 = static), so tests need no timers; the
-parent drives it (Ink `useAnimation`).
-*/
-export type SpinnerProps = {
-	readonly label?: string;
-	readonly frame?: number;
-	readonly tone?: TokenName;
-};
-
-/**
-`▁▂▃▄▅▆▇█` bars of the last `width` values (older values drop off the left).
-*/
-export type SparklineProps = {
-	readonly values: readonly number[];
-	readonly width: number;
-	/**
-	Value drawn as a full bar. Default: the largest value shown.
-	*/
-	readonly max?: number;
-	readonly tone?: TokenName;
-};
-
-/**
-`label [███░░░] 42%  detail` on one row; the bar tone moves to `warn` at 75% and `err` at 90%.
-*/
-export type GaugeProps = {
-	readonly label: string;
-	/**
-	Fraction 0..1 (clamped).
-	*/
-	readonly value: number;
-	/**
-	Total width of the row in cells.
-	*/
-	readonly width: number;
-	readonly detail?: string;
-	/**
-	Label column width (pad/truncate) so several gauges line up.
-	*/
-	readonly labelWidth?: number;
-};
-
-/**
-One row: `left` truncates, `right` keeps its size.
-*/
-export type StatusBarProps = {
-	readonly left?: ReactNode;
-	readonly right?: ReactNode;
-	readonly width: number;
-};
-
-/**
-A short message with a tone glyph (`✓`, `!`, `✗`). The shell shows and times it out.
-*/
-export type ToastProps = {
-	readonly text: string;
-	readonly tone?: ToastTone;
-};
+export type {
+	GaugeProps,
+	SparklineProps,
+	SpinnerProps,
+	StatusBarProps,
+	ToastProps,
+} from './indicator-types.js';

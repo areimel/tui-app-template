@@ -1,7 +1,11 @@
 import {setTimeout as delay} from 'node:timers/promises';
+import {useEffect} from 'react';
 import test from 'ava';
 import {Text} from 'ink';
-import {usePoll} from '../../../source/ui/hooks/use-poll.js';
+import {
+	usePoll,
+	usePollWithRefresh,
+} from '../../../source/ui/hooks/use-poll.js';
 import {waitFor} from '../../helpers/keys.js';
 import {renderThemed} from '../../helpers/render-themed.js';
 
@@ -78,4 +82,29 @@ test('unmount clears the timer', async t => {
 	const frozen = source.calls;
 	await delay(60);
 	t.is(source.calls, frozen);
+});
+
+const handle: {refresh?: () => void} = {};
+
+function RefreshProbe({read}: {read: () => string}) {
+	const [value, refresh] = usePollWithRefresh(read, {
+		intervalMs: 60_000,
+		isActive: false,
+	});
+	useEffect(() => {
+		handle.refresh = refresh;
+	}, [refresh]);
+	return <Text>value={value}</Text>;
+}
+
+test('usePollWithRefresh reads on demand, even while inactive', async t => {
+	const source = counter();
+	const view = renderThemed(<RefreshProbe read={source.read} />);
+	await waitLong(() => view.plainFrame().includes('value=n1'), 'initial read');
+	await delay(30);
+	t.is(source.calls, 1, 'inactive: no timer reads');
+	handle.refresh?.();
+	await waitLong(() => view.plainFrame().includes('value=n2'), 'refreshed');
+	t.is(source.calls, 2);
+	view.unmount();
 });

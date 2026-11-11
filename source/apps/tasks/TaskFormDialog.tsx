@@ -1,21 +1,14 @@
 /**
 The add/edit dialog: the generic `Form` inside a kit `Dialog`. Mounted only while open, so its draft
-starts fresh each time.
+starts fresh each time. Ctrl+S (or Enter on "Done") submits through the form, which runs the whole-draft
+check first; Esc cancels through the dialog.
 */
-import {useMemo, useState} from 'react';
-import {Dialog, T, type KeyHint} from '../../ui/kit/index.js';
+import {useState} from 'react';
+import {Dialog, type KeyHint} from '../../ui/kit/index.js';
 import {Form} from '../../ui/form/index.js';
-import {useKeys, type KeyBinding} from '../../ui/input/index.js';
-import {taskFields} from './task-fields.js';
+import {TASK_FIELDS} from './task-fields.js';
 import {validateDraft, type TaskDraft} from './task-draft.js';
 import type {TaskInput} from './tasks-model.js';
-
-type DialogAction = 'save' | 'cancel';
-
-export const DIALOG_BINDINGS: ReadonlyArray<KeyBinding<DialogAction>> = [
-	{action: 'save', keys: ['ctrl+s'], label: 'save', group: 'Task form'},
-	{action: 'cancel', keys: ['esc'], label: 'cancel', group: 'Task form'},
-];
 
 const BROWSING_HINTS: readonly KeyHint[] = [
 	{keys: '↑↓', label: 'field'},
@@ -31,24 +24,9 @@ const EDITING_HINTS: readonly KeyHint[] = [
 ];
 
 /**
-Border, padding, marker column, label column and gap around the form's value column.
+Dialog border and padding on each side of the form.
 */
-const VALUE_COLUMN_OFFSET = 4 + 2 + 9 + 4;
-
-/**
-Registers the dialog's keys. It must render inside the `Dialog`: a hook in the parent would register
-in the screen's scope, which a modal blocks.
-*/
-function DialogKeys({
-	onSave,
-	onCancel,
-}: {
-	readonly onSave: () => void;
-	readonly onCancel: () => void;
-}) {
-	useKeys(DIALOG_BINDINGS, {save: onSave, cancel: onCancel});
-	return undefined;
-}
+const DIALOG_CHROME = 4;
 
 export type TaskFormDialogProps = {
 	readonly title: string;
@@ -68,21 +46,7 @@ export function TaskFormDialog({
 	onCancel,
 }: TaskFormDialogProps) {
 	const [draft, setDraft] = useState(initial);
-	const [error, setError] = useState<string | undefined>();
 	const [isEditing, setIsEditing] = useState(false);
-	const fields = useMemo(
-		() => taskFields(Math.max(8, width - VALUE_COLUMN_OFFSET), isEdit),
-		[width, isEdit],
-	);
-
-	const save = () => {
-		const result = validateDraft(draft);
-		if (result.isOk) {
-			onSave(result.value.input, result.value.isDone);
-		} else {
-			setError(result.error);
-		}
-	};
 
 	return (
 		<Dialog
@@ -90,20 +54,29 @@ export function TaskFormDialog({
 			width={width}
 			id="task-form"
 			hints={isEditing ? EDITING_HINTS : BROWSING_HINTS}
+			onCancel={onCancel}
 		>
-			<DialogKeys onSave={save} onCancel={onCancel} />
 			<Form
 				isActive
-				fields={fields}
+				fields={TASK_FIELDS}
 				value={draft}
-				context={undefined}
+				context={{isEdit}}
+				width={width - DIALOG_CHROME}
+				validate={value => {
+					const result = validateDraft(value);
+					return result.isOk ? undefined : result.error;
+				}}
 				onChange={patch => {
 					setDraft(previous => ({...previous, ...patch}));
-					setError(undefined);
+				}}
+				onSubmit={value => {
+					const result = validateDraft(value);
+					if (result.isOk) {
+						onSave(result.value.input, result.value.isDone);
+					}
 				}}
 				onEditingChange={setIsEditing}
 			/>
-			{error === undefined ? undefined : <T tone="err">{`! ${error}`}</T>}
 		</Dialog>
 	);
 }

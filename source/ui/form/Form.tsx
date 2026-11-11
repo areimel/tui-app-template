@@ -1,11 +1,21 @@
 import {Box} from 'ink';
+import {truncate} from '../../core/format.js';
 import {FieldRow} from '../kit/FieldRow.js';
 import {NumberField} from '../kit/NumberField.js';
+import {optionalProp} from '../kit/optional-prop.js';
+import {T} from '../kit/T.js';
 import {TextInput} from '../kit/TextInput.js';
 import {Toggle} from '../kit/Toggle.js';
 import {ValueBox} from '../kit/ValueBox.js';
+import {valueWidth as valueColumn} from './form-model.js';
 import type {FormField, FormProps} from './types.js';
 import {useForm} from './use-form.js';
+
+/**
+Cells `ValueBox` adds around a value (`[ ` and ` ]`), and a choice's `‹ ` / ` ›` on top.
+*/
+const BOX_CHROME = 4;
+const CHOICE_CHROME = BOX_CHROME + 4;
 
 type ControlProps<T, Ctx> = {
 	readonly field: FormField<T, Ctx>;
@@ -14,10 +24,17 @@ type ControlProps<T, Ctx> = {
 	readonly isEditing: boolean;
 	readonly draft: string;
 	readonly error: string | undefined;
+	/**
+	Width of the value column, when the form is bounded.
+	*/
+	readonly width: number | undefined;
 	readonly onDraft: (text: string) => void;
 	readonly onSubmit: (text: string) => void;
 	readonly onCancel: () => void;
 };
+
+const fit = (text: string, width: number | undefined, chrome: number) =>
+	width === undefined ? text : truncate(text, Math.max(1, width - chrome));
 
 function Control<T, Ctx>({
 	field,
@@ -26,6 +43,7 @@ function Control<T, Ctx>({
 	isEditing,
 	draft,
 	error,
+	width,
 	onDraft,
 	onSubmit,
 	onCancel,
@@ -49,7 +67,7 @@ function Control<T, Ctx>({
 			return (
 				<ValueBox
 					isFocused={isFocused}
-				>{`‹ ${field.display(value)} ›`}</ValueBox>
+				>{`‹ ${fit(field.display(value), width, CHOICE_CHROME)} ›`}</ValueBox>
 			);
 		}
 
@@ -59,13 +77,16 @@ function Control<T, Ctx>({
 					isActive
 					value={draft}
 					placeholder={field.display(value)}
-					{...(error === undefined ? {} : {error})}
+					{...optionalProp('width', width)}
+					{...optionalProp('error', error)}
 					onChange={onDraft}
 					onSubmit={onSubmit}
 					onCancel={onCancel}
 				/>
 			) : (
-				<ValueBox isFocused={isFocused}>{field.display(value)}</ValueBox>
+				<ValueBox isFocused={isFocused}>
+					{fit(field.display(value), width, BOX_CHROME)}
+				</ValueBox>
 			);
 		}
 	}
@@ -75,14 +96,15 @@ function Control<T, Ctx>({
 Data-driven settings form (see `FormProps` and the key list in `types.ts`).
 */
 export function Form<T, Ctx>(props: FormProps<T, Ctx>) {
-	const {value, context, isActive, labelWidth} = props;
+	const {value, context, isActive, labelWidth, width} = props;
 	const form = useForm(props);
-	const width =
+	const labelColumn =
 		labelWidth ??
 		Math.max(0, ...form.visibleFields.map(field => [...field.label].length));
+	const valueWidth = valueColumn(width, labelColumn);
 
 	return (
-		<Box flexDirection="column">
+		<Box flexDirection="column" {...optionalProp('width', width)}>
 			{form.visibleFields.map((field, index) => {
 				const reason = field.disabledReason(context);
 				const isFocused = isActive && index === form.cursor;
@@ -93,8 +115,8 @@ export function Form<T, Ctx>(props: FormProps<T, Ctx>) {
 						label={field.label}
 						isFocused={isFocused}
 						isDisabled={reason !== undefined}
-						labelWidth={width}
-						{...(reason === undefined ? {} : {hint: reason})}
+						labelWidth={labelColumn}
+						{...optionalProp('hint', reason)}
 					>
 						<Control
 							field={field}
@@ -103,6 +125,7 @@ export function Form<T, Ctx>(props: FormProps<T, Ctx>) {
 							isEditing={isEditing}
 							draft={form.draft}
 							error={isEditing ? form.error : undefined}
+							width={valueWidth}
 							onDraft={form.setDraft}
 							onSubmit={text => {
 								if (field.kind === 'text') {
@@ -114,6 +137,9 @@ export function Form<T, Ctx>(props: FormProps<T, Ctx>) {
 					</FieldRow>
 				);
 			})}
+			{form.submitError === undefined ? null : (
+				<T tone="err" wrap="truncate-end">{`! ${form.submitError}`}</T>
+			)}
 		</Box>
 	);
 }

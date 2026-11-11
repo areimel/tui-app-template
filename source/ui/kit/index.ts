@@ -39,6 +39,7 @@ export {StatusBar} from './StatusBar.js';
 export {T, toneProps, type ThemedTextProps} from './T.js';
 export {Table} from './Table.js';
 export {Tabs} from './Tabs.js';
+export {tabsWindow, TAB_CHROME, type TabsWindow} from './tabs-window.js';
 export {
 	createBuffer,
 	deleteBackward,

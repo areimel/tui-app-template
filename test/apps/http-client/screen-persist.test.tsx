@@ -1,4 +1,5 @@
 import test from 'ava';
+import {assertFits} from '../../helpers/assert-frame.js';
 import {KEYS} from '../../helpers/render-screen.js';
 import {SECTION, respond, sent, setup, text} from './harness.js';
 
@@ -27,7 +28,7 @@ test('the history dialog lists requests and enter reloads one', async t => {
 	t.regex(text(view), /‹ GET ›/v);
 	await view.press('h', KEYS.enter);
 	await view.waitForText('‹ POST ›');
-	t.true(text(view).includes('{"a":1}'));
+	t.false(text(view).includes('{"a":1}'), 'bodies are never kept');
 	view.unmount();
 });
 
@@ -63,23 +64,32 @@ test('sent requests are recorded (newest first, deduped) and the last one is sav
 	view.unmount();
 });
 
-test('credential-like headers are sent but never saved', async t => {
+test('headers off the allowlist and URL secrets are sent but never saved', async t => {
 	const {fake, view} = setup({
 		http: respond(),
 		config: {
 			last: {
 				method: 'GET',
 				url: 'https://x.test/',
-				header: 'X-Api-Key: hunter2',
+				header: 'X-Api-Key: on-disk-before',
 				body: '',
 			},
 		},
 	});
+	await view.waitForText('(none)');
+	t.false(text(view).includes('on-disk-before'), 'scrubbed on load');
+	await view.press(KEYS.down, KEYS.enter);
+	await view.press('?token=hunter3&page=2', KEYS.enter);
+	await view.press(KEYS.down, KEYS.enter, 'X-Api-Key: hunter2', KEYS.enter);
+	await view.waitForText('X-Api-Key: hunter2');
 	await view.press('s');
 	await view.waitForText('200 OK');
 	t.deepEqual(sent(fake)[0]?.headers, {'X-Api-Key': 'hunter2'});
+	t.is(sent(fake)[0]?.url, 'https://x.test/?token=hunter3&page=2');
 	const section = view.config.section(SECTION);
 	t.false(JSON.stringify(section).includes('hunter2'));
+	t.false(JSON.stringify(section).includes('hunter3'));
+	t.is((section?.['last'] as {url: string}).url, 'https://x.test/?page=2');
 	t.is((section?.['last'] as {header: string}).header, '');
 	view.unmount();
 });
@@ -142,19 +152,15 @@ for (const [columns, rows] of SIZES) {
 				last: {
 					method: 'POST',
 					url: long,
-					header: 'X-Long: ' + 'h'.repeat(80),
-					body: 'b'.repeat(90),
+					header: 'Accept: ' + 'h'.repeat(80),
+					body: '',
 				},
 			},
 			columns,
 			rows,
 		});
 		const check = (label: string) => {
-			const lines = view.lines();
-			t.true(lines.length <= rows, `${label}: ${lines.length} rows > ${rows}`);
-			for (const line of lines) {
-				t.true([...line].length <= columns, `${label}: wide line ${line}`);
-			}
+			assertFits(t, view, {columns, rows}, label);
 		};
 
 		await view.waitForText('Request');

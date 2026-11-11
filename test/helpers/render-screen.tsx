@@ -18,7 +18,7 @@ import {
 	AppServiceProvider,
 	ShellProviders,
 } from '../../source/shell/context.js';
-import {GLOBAL_BINDINGS} from '../../source/shell/global-bindings.js';
+import {globalBindingsFor} from '../../source/shell/global-bindings.js';
 import type {
 	AppService,
 	Route,
@@ -144,13 +144,16 @@ export function renderScreen(
 	const appConfig = createFakeAppConfig(options.config);
 	const {ReadySignal, whenReady} = createReadySignal();
 
+	/**
+	The shell's global table for the current depth (`globalBindingsFor`): no `back` at the menu.
+	*/
 	function Globals({router}: {readonly router: Router}) {
 		const record = (action: string) => () => {
 			globals.push(action);
 		};
 
 		useKeys(
-			GLOBAL_BINDINGS,
+			globalBindingsFor(router.depth),
 			{
 				back() {
 					globals.push('back');

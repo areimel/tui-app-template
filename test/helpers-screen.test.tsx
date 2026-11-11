@@ -172,3 +172,16 @@ test('the app service is provided', async t => {
 	t.regex(view.plainFrame(), /service running/v);
 	view.unmount();
 });
+
+test('renderScreen registers globals for the depth, like the shell: no back at the menu', async t => {
+	const atMenu = renderScreen(<Text>menu</Text>, {route: {id: 'menu'}});
+	const deep = renderScreen(<Text>page</Text>);
+	t.is(atMenu.router.depth(), 1);
+	await atMenu.press(KEYS.escape, '?');
+	await atMenu.waitFor(() => atMenu.globals.includes('help'), 'help');
+	t.deepEqual(atMenu.globals, ['help']);
+	await deep.press(KEYS.escape);
+	await deep.waitFor(() => deep.globals.includes('back'), 'back');
+	atMenu.unmount();
+	deep.unmount();
+});

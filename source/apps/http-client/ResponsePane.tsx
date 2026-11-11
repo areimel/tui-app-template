@@ -2,11 +2,11 @@
 The Response pane: idle hint, loading spinner, error, or the finished `ResponseView`.
 */
 import {Box} from 'ink';
+import {formatSeconds} from '../../core/format.js';
 import type {HttpError, HttpResponse} from '../../platform/types.js';
 import {Badge, Panel, Spinner, T} from '../../ui/kit/index.js';
 import {innerSize, type PaneSize} from './layout.js';
 import {ResponseView} from './ResponseView.js';
-import {formatWaiting} from './response-model.js';
 
 /**
 What the pane shows. `problem` is a form error that blocked sending.
@@ -45,7 +45,7 @@ function Message({content}: {readonly content: ResponseContent}) {
 			return (
 				<Box flexDirection="column">
 					<Spinner
-						label={`${content.label} ${formatWaiting(content.elapsedMs)}`}
+						label={`${content.label} ${formatSeconds(content.elapsedMs)}`}
 					/>
 					<T tone="muted" wrap="truncate-end">
 						x or esc cancels the request

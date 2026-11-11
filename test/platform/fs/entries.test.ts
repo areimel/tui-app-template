@@ -3,6 +3,8 @@ import test from 'ava';
 import {
 	arrangeEntries,
 	previewFromBytes,
+	tailFromBytes,
+	tailOfText,
 } from '../../../source/platform/fs/entries.js';
 import type {DirEntry} from '../../../source/platform/types.js';
 
@@ -95,6 +97,41 @@ test('empty file is empty text', t => {
 	t.deepEqual(previewFromBytes(new Uint8Array(), 0), {
 		kind: 'text',
 		lines: [],
+		isTruncated: false,
+	});
+});
+
+const encode = (text: string) => new TextEncoder().encode(text);
+
+test('tailFromBytes keeps everything when the file was read whole', t => {
+	t.is(tailFromBytes(encode('a\nb\n'), false), 'a\nb\n');
+	t.is(tailFromBytes(encode(''), false), '');
+});
+
+test('tailFromBytes drops the partial first line of a cut read', t => {
+	t.is(tailFromBytes(encode('rt of line\nnext\nlast'), true), 'next\nlast');
+	t.is(tailFromBytes(encode('no newline at all'), true), '');
+});
+
+test('tailFromBytes copes with a multi-byte character cut at the start', t => {
+	const bytes = encode('é…\nok\n').subarray(1);
+	t.is(tailFromBytes(bytes, true), 'ok\n');
+});
+
+test('tailOfText takes the last bytes of a string', t => {
+	t.deepEqual(tailOfText('one\ntwo\nthree\n', 8), {
+		text: 'three\n',
+		endBytes: 14,
+		isTruncated: true,
+	});
+	t.deepEqual(tailOfText('one\ntwo\nthree\n', 6), {
+		text: 'three\n',
+		endBytes: 14,
+		isTruncated: true,
+	});
+	t.deepEqual(tailOfText('a\n', 100), {
+		text: 'a\n',
+		endBytes: 2,
 		isTruncated: false,
 	});
 });

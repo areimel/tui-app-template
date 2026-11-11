@@ -8,8 +8,14 @@ export type TasksConfig = {
 	readonly filter: TaskFilter;
 };
 
+export const APP_ID = 'tasks';
+
 const DEFAULTS: TasksConfig = {filter: 'all'};
 
-export const TASKS_CONFIG = defineSection<TasksConfig>('apps.tasks', DEFAULTS, {
-	filter: oneOf(FILTERS),
-});
+export const TASKS_CONFIG = defineSection<TasksConfig>(
+	`apps.${APP_ID}`,
+	DEFAULTS,
+	{
+		filter: oneOf(FILTERS),
+	},
+);

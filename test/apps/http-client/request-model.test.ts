@@ -5,11 +5,9 @@ import {
 	buildRequest,
 	hasBodyMethod,
 	isHeaderName,
-	isSensitiveHeader,
 	parseHeader,
 	parseUrl,
 	pushHistory,
-	scrubForSave,
 	statusBadge,
 	type HistoryEntry,
 } from '../../../source/apps/http-client/request-model.js';
@@ -160,40 +158,6 @@ test('pushHistory puts the newest first, dedupes and caps', t => {
 
 	t.is(many.length, HISTORY_LIMIT);
 	t.is(many[0]?.url, `https://h.test/${HISTORY_LIMIT + 4}`);
-});
-
-const sensitiveCases: ReadonlyArray<[string, boolean]> = [
-	['Authorization: Bearer abc', true],
-	['authorization:x', true],
-	['Cookie: a=b', true],
-	['Proxy-Authorization: Basic x', true],
-	['X-Api-Key: 1', true],
-	['X-Auth-Token: 1', true],
-	['Client-Secret: 1', true],
-	['Accept: text/plain', false],
-	['X-Trace: 1', false],
-	['', false],
-];
-
-for (const [input, isSensitive] of sensitiveCases) {
-	test(`isSensitiveHeader ${JSON.stringify(input)}`, t => {
-		t.is(isSensitiveHeader(input), isSensitive);
-	});
-}
-
-test('scrubForSave drops credential headers and caps long text', t => {
-	t.is(
-		scrubForSave({...DEFAULT_FORM, header: 'Authorization: Bearer abc'}).header,
-		'',
-	);
-	t.is(
-		scrubForSave({...DEFAULT_FORM, header: 'Accept: a'}).header,
-		'Accept: a',
-	);
-	t.is(
-		scrubForSave({...DEFAULT_FORM, body: 'x'.repeat(5000)}).body.length,
-		2000,
-	);
 });
 
 const statusCases: ReadonlyArray<[number, string, string, string]> = [

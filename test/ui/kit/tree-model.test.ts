@@ -51,3 +51,9 @@ test('jsonToTree clips long strings', t => {
 	t.true((node?.detail?.length ?? 0) <= 200);
 	t.true(node?.detail?.endsWith('…'));
 });
+
+test('jsonToTree strips escape sequences from keys and values', t => {
+	const [node] = jsonToTree({'k\u{1B}[2Jey': 'v\u{1B}]0;pwned\u{7}al'});
+	t.is(node?.label, 'key');
+	t.is(node?.detail, '"val"');
+});

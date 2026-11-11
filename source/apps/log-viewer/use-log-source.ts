@@ -4,6 +4,7 @@ Where the log lines come from: a followed file (`params.path`) or the demo gener
 The hook keeps no state for a previous path: mount it with a `key` on the path (the screen does).
 */
 import {useCallback, useEffect, useLayoutEffect, useRef, useState} from 'react';
+import {sanitizeLine} from '../../core/sanitize.js';
 import {useServices} from '../../shell/context.js';
 import type {Services} from '../../platform/types.js';
 import {demoLines} from './demo-lines.js';
@@ -23,7 +24,7 @@ export const DEMO_BACKLOG = 40;
 const DEMO_SPACING_MS = 250;
 
 /**
-Most of a file read when it is opened.
+How much of the END of a file is read when it is opened (its latest lines).
 */
 export const READ_CAP_BYTES = 256 * 1024;
 
@@ -40,10 +41,13 @@ export type LogSource = {
 
 type SetBuffer = (update: (previous: LogBuffer) => LogBuffer) => void;
 
+/**
+The file name (safe to draw), or `demo`.
+*/
 export function sourceLabel(path: string | undefined): string {
 	return path === undefined
 		? 'demo'
-		: (path.split(/[\/\\]/v).findLast(part => part !== '') ?? path);
+		: sanitizeLine(path.split(/[\/\\]/v).findLast(part => part !== '') ?? path);
 }
 
 function demoBacklog(now: number): LogBuffer {
@@ -88,7 +92,8 @@ type FileHandlers = {
 };
 
 /**
-Read the file, then follow it. Returns stop.
+Read the end of the file, then follow it from exactly where that read stopped (nothing is missed or
+repeated in between). Returns stop.
 */
 function startFile(
 	services: Services,
@@ -97,23 +102,26 @@ function startFile(
 ): () => void {
 	let isCurrent = true;
 	let stop: (() => void) | undefined;
-	void services.fs.readText(path, READ_CAP_BYTES).then(result => {
+	void services.fs.readTail(path, READ_CAP_BYTES).then(result => {
 		if (!isCurrent) {
 			return;
 		}
 
 		if (!result.isOk) {
-			onLoaded(result.error);
+			onLoaded(sanitizeLine(result.error));
 			return;
 		}
 
-		// A file cut at the cap ends mid-line: drop that fragment.
-		const isCut =
-			new TextEncoder().encode(result.value).length >= READ_CAP_BYTES;
-		const loaded = appendChunk(EMPTY_BUFFER, result.value);
-		setBuffer(() => (isCut ? {...loaded, pending: ''} : loaded));
+		setBuffer(() => appendChunk(EMPTY_BUFFER, result.value.text));
 		onLoaded(undefined);
-		stop = services.fs.follow(path, onChunk, onError);
+		stop = services.fs.follow(
+			path,
+			onChunk,
+			message => {
+				onError(sanitizeLine(message));
+			},
+			{fromBytes: result.value.endBytes},
+		);
 	});
 	return () => {
 		isCurrent = false;
@@ -122,7 +130,7 @@ function startFile(
 }
 
 /**
-Lines for `path` (the file's start up to the read cap, then appended chunks) or, without a path, a
+Lines for `path` (the file's last `READ_CAP_BYTES`, then appended chunks) or, without a path, a
 deterministic demo stream. While `isPaused`, incoming file chunks queue up and the demo stands still.
 */
 export function useLogSource(

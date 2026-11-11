@@ -5,7 +5,7 @@ Freezing stops all timers (the last values stay); `refresh` reads everything now
 import {useCallback, useEffect, useRef, useState} from 'react';
 import type {BatteryInfo, ProcessInfo} from '../../platform/types.js';
 import {useServices} from '../../shell/context.js';
-import {advanceSample, type Sample} from './monitor-model.js';
+import {advanceSample, cleanProcesses, type Sample} from './monitor-model.js';
 
 const SAMPLE_MS = 1000;
 const PROCESS_MS = 2000;
@@ -61,7 +61,7 @@ export function useMonitorData(isFrozen: boolean): MonitorData {
 			.listProcesses()
 			.then(result => {
 				if (result.isOk) {
-					finish(result.value, undefined);
+					finish(cleanProcesses(result.value), undefined);
 				} else {
 					finish(undefined, result.error);
 				}

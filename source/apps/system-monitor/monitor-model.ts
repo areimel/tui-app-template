@@ -3,6 +3,7 @@ Pure model of the System Monitor: sorting and filtering processes, the CPU histo
 percent formatting, and the row budget that decides what fits a given body size.
 */
 import {formatUptime} from '../../core/format.js';
+import {sanitizeLine} from '../../core/sanitize.js';
 import type {
 	BatteryInfo,
 	CpuTimes,
@@ -10,6 +11,22 @@ import type {
 	SystemSnapshot,
 } from '../../platform/types.js';
 import {cpuUsage} from '../../platform/system/cpu.js';
+
+// ---- Untrusted text --------------------------------------------------------------------------------
+
+/**
+Processes with their names and users made safe to draw (a process can name itself anything, escape
+sequences included). Applied once, as each list arrives.
+*/
+export function cleanProcesses(
+	processes: readonly ProcessInfo[],
+): ProcessInfo[] {
+	return processes.map(process => ({
+		...process,
+		name: sanitizeLine(process.name),
+		user: process.user === undefined ? undefined : sanitizeLine(process.user),
+	}));
+}
 
 // ---- Sorting and filtering ---------------------------------------------------------------------
 
@@ -160,24 +177,6 @@ export function advanceSample(
 
 // ---- Formatting -------------------------------------------------------------------------------
 
-const BYTE_UNITS = ['B', 'K', 'M', 'G', 'T'] as const;
-
-/**
-Compact binary size: `512B`, `11M`, `1.1G` (one decimal below 10, whole numbers above).
-*/
-export function formatBytes(bytes: number): string {
-	let value = Math.max(0, bytes);
-	let unit = 0;
-	while (value >= 1024 && unit < BYTE_UNITS.length - 1) {
-		value /= 1024;
-		unit++;
-	}
-
-	const text =
-		unit > 0 && value < 10 ? value.toFixed(1) : String(Math.round(value));
-	return `${text}${BYTE_UNITS[unit]}`;
-}
-
 /**
 Process CPU as ps reports it: one decimal below 100, whole above.
 */
@@ -191,7 +190,7 @@ export function hostLine(
 	snapshot: SystemSnapshot,
 	processCount: number,
 ): string {
-	return `${snapshot.hostname} · ${snapshot.platform} · up ${formatUptime(snapshot.uptimeSeconds)} · ${processCount} procs`;
+	return `${sanitizeLine(snapshot.hostname)} · ${snapshot.platform} · up ${formatUptime(snapshot.uptimeSeconds)} · ${processCount} procs`;
 }
 
 export function batteryLine(info: BatteryInfo): string {

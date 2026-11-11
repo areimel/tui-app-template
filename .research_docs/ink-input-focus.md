@@ -305,3 +305,22 @@ Note: `matchKey(bindings, input, key)` in the brief maps to `matchKeys` above (r
 5. Esc has about 20 ms latency and a rare leak (`'[A'` text) when split by more than 20 ms; do not bind Esc to anything destructive without a confirmation.
 6. Tests: write one key per `await`, use the `KEYS` table, wait >= 25 ms after Esc, unmount trees.
 7. Unverified on real terminals: Backspace/Delete byte variance, kitty negotiation, `useCursor` placement, Ctrl+Shift combos, bracketed paste in practice (only simulated).
+
+## 10. Template gotcha: a dialog's keys must be registered INSIDE the dialog
+
+In this template `Dialog` (and `ConfirmDialog`) mount a `modal` `InputScope` around their children
+(`source/ui/input/scope.tsx`). While it is mounted it is the top scope, so only bindings registered
+_inside_ it run; the screen's scope and the globals get nothing. A `useKeys(...)` call in the screen
+component that renders `<Dialog>` registers in the SCREEN scope and silently never fires while the
+dialog is open (no error, no warning: the binding is just unreachable and also missing from the
+footer).
+
+Do one of:
+
+- pass `onCancel` to `Dialog` for Esc (it registers inside the modal scope for you);
+- render a small child component that calls `useKeys` (e.g. `<Dialog ...><HistoryList .../></Dialog>`
+  where `HistoryList` calls `useListNav` / `useKeys`);
+- put kit content inside: `Form`, `useListNav` lists and `TextInput` register where they render.
+
+A quick check in tests: the dialog's hints appear in the footer (`useActiveBindings().reachable`)
+only when the bindings live inside the modal scope.

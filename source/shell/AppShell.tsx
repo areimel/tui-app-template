@@ -20,7 +20,8 @@ import {
 	Toast,
 	type ToastTone,
 } from '../ui/kit/index.js';
-import {chromeTitle, truncateText} from './chrome-text.js';
+import {truncate} from '../core/format.js';
+import {chromeTitle} from './chrome-text.js';
 import {AppServiceProvider, ScreenSizeProvider} from './context.js';
 import {shellLayout, type ShellLayout} from './screen-size.js';
 import {MENU_ROUTE, type AppDefinition, type AppService} from './types.js';
@@ -58,7 +59,7 @@ function Footer({width, toast}: FooterProps) {
 	}
 
 	if (toast !== undefined) {
-		const text = truncateText(toast.text, Math.max(0, width - TOAST_PREFIX));
+		const text = truncate(toast.text, Math.max(0, width - TOAST_PREFIX));
 		return (
 			<Box flexShrink={0}>
 				<Toast text={text} {...optionalProp('tone', toast.tone)} />

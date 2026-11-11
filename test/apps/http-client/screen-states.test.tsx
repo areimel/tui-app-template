@@ -1,4 +1,9 @@
 import test from 'ava';
+import {
+	assertNoEscapes,
+	HOSTILE,
+	HOSTILE_LEFTOVERS,
+} from '../../helpers/assert-frame.js';
 import {KEYS} from '../../helpers/render-screen.js';
 import type {HttpError} from '../../../source/platform/types.js';
 import {failWith, pending, respond, sent, setup, text} from './harness.js';
@@ -99,14 +104,14 @@ test('an invalid URL typed in the form is rejected with a message', async t => {
 	view.unmount();
 });
 
-test('a saved invalid URL blocks sending with a message', async t => {
+test('a saved non-http URL is dropped on load and sending asks for one', async t => {
 	const {fake, view} = setup({
 		http: respond(),
 		config: {last: {method: 'GET', url: 'ftp://x.test', header: '', body: ''}},
 	});
 	await view.press('s');
 	await view.waitForText('Not sent');
-	t.true(text(view).includes('Use an http'));
+	t.true(text(view).includes('Enter a URL'));
 	t.is(sent(fake).length, 0);
 	view.unmount();
 });
@@ -125,4 +130,34 @@ test('enter in the Response pane sends while there is nothing to browse', async 
 	await view.waitForText('200 OK');
 	t.is(sent(fake).length, 1);
 	view.unmount();
+});
+
+test('escape sequences in a response never reach the terminal', async t => {
+	const {view} = setup({
+		http: respond({
+			statusText: `OK${HOSTILE}`,
+			headers: {[`x-evil${HOSTILE}`]: `v${HOSTILE}al`},
+			body: JSON.stringify({[`k${HOSTILE}ey`]: `v${HOSTILE}al`}),
+		}),
+	});
+	await view.press('s');
+	await view.waitForText('kxey');
+	t.regex(text(view), /200 OK/v);
+	assertNoEscapes(t, view, HOSTILE_LEFTOVERS);
+	view.unmount();
+});
+
+test('escape sequences in a body shown as text and in an error never reach the terminal', async t => {
+	const {view} = setup({http: respond({body: `plain ${HOSTILE}text`})});
+	await view.press('s');
+	await view.waitForText('plain xtext');
+	assertNoEscapes(t, view, HOSTILE_LEFTOVERS);
+	view.unmount();
+	const failing = setup({
+		http: failWith({kind: 'network', message: `down ${HOSTILE}now`}),
+	});
+	await failing.view.press('s');
+	await failing.view.waitForText('down xnow');
+	assertNoEscapes(t, failing.view, HOSTILE_LEFTOVERS);
+	failing.view.unmount();
 });

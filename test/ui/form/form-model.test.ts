@@ -4,7 +4,9 @@ import {
 	activation,
 	changePatch,
 	clampCursor,
+	enterAction,
 	moveCursor,
+	valueWidth,
 	visibleFields,
 } from '../../../source/ui/form/form-model.js';
 import type {FormField} from '../../../source/ui/form/types.js';
@@ -64,13 +66,35 @@ test('clampCursor / moveCursor', t => {
 	t.is(moveCursor(1, 1, 3), 2);
 });
 
-test('visibleFields filters by isVisible', t => {
+test('visibleFields filters by isVisible with the value and the context', t => {
 	const hidden = {...number, isVisible: (v: V) => v.show};
 	t.deepEqual(
-		visibleFields([toggle, hidden], {...value, show: false}).map(f => f.id),
+		visibleFields([toggle, hidden], {...value, show: false}, true).map(
+			f => f.id,
+		),
 		['t'],
 	);
-	t.is(visibleFields([toggle, hidden], value).length, 2);
+	t.is(visibleFields([toggle, hidden], value, true).length, 2);
+	const contextual = {
+		...number,
+		isVisible: (_: V, isShown: boolean) => isShown,
+	};
+	t.is(visibleFields([toggle, contextual], value, false).length, 1);
+	t.is(visibleFields([toggle, contextual], value, true).length, 2);
+});
+
+test('valueWidth leaves room for the marker, label and gap', t => {
+	t.is(valueWidth(undefined, 6), undefined);
+	t.is(valueWidth(40, 6), 31);
+	t.is(valueWidth(5, 6), 1);
+});
+
+test('enterAction submits on the last non-text row of a submittable form', t => {
+	t.is(enterAction(toggle, 2, 3, true), 'submit');
+	t.is(enterAction(toggle, 1, 3, true), 'activate');
+	t.is(enterAction(toggle, 2, 3, false), 'activate');
+	t.is(enterAction(text, 2, 3, true), 'activate');
+	t.is(enterAction(undefined, 0, 0, true), 'activate');
 });
 
 test('changePatch per kind, disabled and missing', t => {

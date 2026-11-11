@@ -80,6 +80,11 @@ export type SizedRender = {
 	The latest frame with colour codes stripped (`''` before the first render).
 	*/
 	plainFrame(): string;
+	/**
+	The latest frame exactly as written (no stripping). Under ava colour is off, so any escape
+	sequence in it came from the rendered text (see `assertNoEscapes`).
+	*/
+	rawFrame(): string;
 	unmount(): void;
 };
 
@@ -109,6 +114,7 @@ export function renderSized(
 	return {
 		stdin,
 		plainFrame: () => stripVTControlCharacters(stdout.frames.at(-1) ?? ''),
+		rawFrame: () => stdout.frames.at(-1) ?? '',
 		unmount() {
 			instance.unmount();
 			instance.cleanup();

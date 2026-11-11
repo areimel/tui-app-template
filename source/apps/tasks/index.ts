@@ -3,10 +3,10 @@ The Tasks example: add and edit tasks in a dialog form, toggle them done, confir
 */
 import {defineApp} from '../types.js';
 import {TASKS_BINDINGS} from './bindings.js';
-import {TASKS_CONFIG} from './config.js';
+import {APP_ID, TASKS_CONFIG} from './config.js';
 import {Screen} from './Screen.js';
 
-export const APP_ID = 'tasks';
+export {APP_ID} from './config.js';
 
 export default defineApp({
 	id: APP_ID,

@@ -1,10 +1,19 @@
 import test from 'ava';
+import {
+	assertFits,
+	assertNoEscapes,
+	HOSTILE,
+	HOSTILE_LEFTOVERS,
+} from '../../helpers/assert-frame.js';
 import {createFakeServices} from '../../helpers/fake-services.js';
 import {delay} from '../../helpers/keys.js';
 import {KEYS, renderScreen} from '../../helpers/render-screen.js';
 import {Screen} from '../../../source/apps/log-viewer/Screen.js';
-import {DEMO_BACKLOG} from '../../../source/apps/log-viewer/use-log-source.js';
-import {APP_ID} from '../../../source/apps/log-viewer/app-id.js';
+import {
+	DEMO_BACKLOG,
+	READ_CAP_BYTES,
+} from '../../../source/apps/log-viewer/use-log-source.js';
+import {APP_ID} from '../../../source/apps/log-viewer/config.js';
 
 const PATH = '/logs/big.log';
 const route = {id: APP_ID, params: {path: PATH}};
@@ -54,6 +63,38 @@ test('file mode loads the file then shows followed chunks', async t => {
 	t.is(lineCount(view), 4);
 	view.unmount();
 	t.is(fake.control.fs.followed().length, 0);
+});
+
+test('a file bigger than the read cap opens at its latest lines and keeps following', async t => {
+	const line = (n: number) =>
+		`INFO entry ${String(n).padStart(6, '0')} ${'x'.repeat(40)}`;
+	const count = Math.ceil(READ_CAP_BYTES / 50) + 500;
+	const {fake, view} = fileSetup(numbered(count, line));
+	await view.waitForText(`entry ${String(count).padStart(6, '0')}`);
+	const shown = lineCount(view);
+	t.true(shown < count, 'only the tail was read');
+	t.true(shown > 1000, 'a large tail was read');
+	fake.control.fs.appendFile(PATH, 'ERROR after the tail\n');
+	await view.waitForText('after the tail');
+	t.is(lineCount(view), shown + 1);
+	view.unmount();
+});
+
+test('escape sequences in lines and the file name never reach the terminal', async t => {
+	const path = `/logs/evil${HOSTILE}.log`;
+	const fake = createFakeServices({
+		files: {[path]: `INFO start ${HOSTILE}end\n`},
+	});
+	const view = renderScreen(<Screen />, {
+		...DEFAULT_SIZE,
+		services: fake.services,
+		route: {id: APP_ID, params: {path}},
+	});
+	await view.waitForText('start xend');
+	fake.control.fs.appendFile(path, `WARN more ${HOSTILE}tail\n`);
+	await view.waitForText('more xtail');
+	assertNoEscapes(t, view, HOSTILE_LEFTOVERS);
+	view.unmount();
 });
 
 test('a missing file shows the error', async t => {
@@ -222,11 +263,7 @@ for (const [columns, rows] of sizes) {
 		await view.waitForText('lines');
 		fake.control.fs.appendFile(PATH, 'ERROR tail\n');
 		await view.waitFor(() => lineCount(view) === 81, 'tail counted');
-		const lines = view.lines();
-		t.true(lines.length <= rows, `height ${lines.length} <= ${rows}`);
-		for (const line of lines) {
-			t.true([...line].length <= columns, `width of "${line}"`);
-		}
+		assertFits(t, view, {columns, rows});
 
 		t.regex(view.plainFrame(), /…/v);
 		t.regex(view.plainFrame(), /FOLLOW/v);

@@ -1,8 +1,14 @@
 /**
 Pure File Explorer logic: paths, row formatting, pane layout and the remembered cursor per folder. No
 I/O and no clock reads (dates are formatted from a given timestamp).
+
+Names, paths and preview text come from the disk and may hold escape sequences: every helper here that
+returns text to draw passes it through `sanitizeLine` (the entries themselves keep the real names, so
+they can still be opened).
 */
 import {posix} from 'node:path';
+import {formatBytes, truncate} from '../../core/format.js';
+import {sanitizeLine} from '../../core/sanitize.js';
 import type {EntrySort} from '../../platform/fs/entries.js';
 import type {DirEntry} from '../../platform/types.js';
 import type {ScreenSize} from '../../shell/types.js';
@@ -47,34 +53,32 @@ export const baseName = (path: string): string =>
 
 const ELLIPSIS = '…';
 
-/**
-Truncate to `width` cells with an ellipsis; no padding.
-*/
-function clip(text: string, width: number): string {
-	const cells = [...text];
-	if (cells.length <= width) {
-		return text;
-	}
-
-	return width <= 1
-		? ELLIPSIS.slice(0, Math.max(0, width))
-		: `${cells.slice(0, width - 1).join('')}${ELLIPSIS}`;
-}
-
 const fit = (text: string, width: number): string =>
-	clip(text, width).padEnd(width);
+	truncate(text, width).padEnd(width);
 
 /**
-The path with `home` shown as `~`.
+The path with `home` shown as `~`, safe to draw.
 */
 export function displayPath(path: string, home: string): string {
 	if (path === home) {
 		return '~';
 	}
 
-	return home !== '/' && path.startsWith(`${home}/`)
-		? `~${path.slice(home.length)}`
-		: path;
+	return sanitizeLine(
+		home !== '/' && path.startsWith(`${home}/`)
+			? `~${path.slice(home.length)}`
+			: path,
+	);
+}
+
+/**
+The preview pane's title: the entry name, safe to draw, keeping its END when cut (`…long-name.txt`).
+*/
+export function previewTitle(name: string, width: number): string {
+	const characters = [...sanitizeLine(name)];
+	return characters.length <= width
+		? characters.join('')
+		: `${ELLIPSIS}${characters.slice(-Math.max(1, width - 1)).join('')}`;
 }
 
 /**
@@ -97,28 +101,6 @@ export function breadcrumb(path: string, home: string, width: number): string {
 
 	const last = [...(parts.at(-1) ?? '')];
 	return `${ELLIPSIS}${last.slice(Math.max(0, last.length - (limit - 1))).join('')}`;
-}
-
-const UNITS = ['B', 'KB', 'MB', 'GB', 'TB'];
-
-/**
-`1.5 KB`, `10 KB`, `812 B`; `-` when unknown.
-*/
-export function formatBytes(bytes: number | undefined): string {
-	if (bytes === undefined || !Number.isFinite(bytes) || bytes < 0) {
-		return '-';
-	}
-
-	let value = bytes;
-	let unit = 0;
-	while (value >= 1024 && unit < UNITS.length - 1) {
-		value /= 1024;
-		unit++;
-	}
-
-	return unit === 0
-		? `${Math.round(value)} B`
-		: `${value < 10 ? value.toFixed(1) : Math.round(value)} ${UNITS[unit] ?? ''}`;
 }
 
 /**
@@ -196,7 +178,8 @@ export function formatRow(entry: DirEntry, columns: RowColumns): RowParts {
 	const isDirectory =
 		entry.kind === 'dir' ||
 		(entry.kind === 'symlink' && entry.targetKind === 'dir');
-	const label = isDirectory ? `${entry.name}/` : entry.name;
+	const name = sanitizeLine(entry.name);
+	const label = isDirectory ? `${name}/` : name;
 	return {
 		glyph: entryGlyph(entry),
 		name: fit(label, columns.nameWidth),
@@ -285,14 +268,15 @@ export function restoreIndex(
 }
 
 /**
-Text lines ready to draw one per row: tabs become two spaces, at most `maxLines` kept.
+Text lines ready to draw one per row (escapes and controls removed, tabs as two spaces), at most
+`maxLines` kept.
 */
 export function previewLines(
 	lines: readonly string[],
 	maxLines = PREVIEW_MAX_LINES,
 ): {readonly lines: string[]; readonly isCapped: boolean} {
 	return {
-		lines: lines.slice(0, maxLines).map(line => line.replaceAll('\t', '  ')),
+		lines: lines.slice(0, maxLines).map(line => sanitizeLine(line)),
 		isCapped: lines.length > maxLines,
 	};
 }

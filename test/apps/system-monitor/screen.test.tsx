@@ -1,4 +1,3 @@
-import {stripVTControlCharacters} from 'node:util';
 import test from 'ava';
 import type {ProcessInfo} from '../../../source/platform/types.js';
 import {Screen} from '../../../source/apps/system-monitor/Screen.js';
@@ -8,6 +7,12 @@ import {
 	createFakeServices,
 } from '../../helpers/render-screen.js';
 import {delay} from '../../helpers/keys.js';
+import {
+	assertFits,
+	assertNoEscapes,
+	HOSTILE,
+	HOSTILE_LEFTOVERS,
+} from '../../helpers/assert-frame.js';
 
 const proc = (
 	pid: number,
@@ -228,11 +233,7 @@ for (const [columns, rows] of [
 		for (const keys of [[], ['/', 'a', 'b'], [KEYS.enter, KEYS.space]]) {
 			// eslint-disable-next-line no-await-in-loop
 			await view.press(...keys);
-			const lines = stripVTControlCharacters(view.plainFrame()).split('\n');
-			t.true(lines.length <= rows, `rows ${lines.length} > ${rows}`);
-			for (const line of lines) {
-				t.true([...line].length <= columns, `wide line: ${line}`);
-			}
+			assertFits(t, view, {columns, rows}, keys.join(''));
 		}
 
 		view.unmount();
@@ -272,5 +273,25 @@ test('invalid saved config falls back to cpu descending', async t => {
 	});
 	await view.waitForText('bravo');
 	t.deepEqual(order(view.lines()), ['bravo', 'alpha', 'charlie', 'delta']);
+	view.unmount();
+});
+
+test('escape sequences in process names, users and the hostname never reach the terminal', async t => {
+	const fake = createFakeServices({
+		processes: [
+			{
+				pid: 66,
+				name: `evil${HOSTILE}proc`,
+				user: `us${HOSTILE}er`,
+				cpuPercent: 99,
+				memoryBytes: 1e6,
+			},
+		],
+		snapshot: {hostname: `ho${HOSTILE}st`},
+	});
+	const {view} = mount({columns: 116, rows: 38}, fake);
+	await view.waitForText('evilxproc');
+	await view.waitForText('hoxst');
+	assertNoEscapes(t, view, HOSTILE_LEFTOVERS);
 	view.unmount();
 });

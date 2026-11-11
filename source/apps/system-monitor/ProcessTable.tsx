@@ -3,7 +3,8 @@ The process table: columns chosen by width, tones for heavy processes.
 */
 import type {ProcessInfo} from '../../platform/types.js';
 import {Table, type TableColumn} from '../../ui/kit/index.js';
-import {formatBytes, formatCpu, type SortState} from './monitor-model.js';
+import {formatBytes} from '../../core/format.js';
+import {formatCpu, type SortState} from './monitor-model.js';
 
 const WIDE_ENOUGH_FOR_USER = 50;
 
@@ -36,7 +37,7 @@ export function processColumns(width: number): Array<TableColumn<ProcessInfo>> {
 			title: 'MEM',
 			width: 6,
 			align: 'right',
-			cell: p => formatBytes(p.memoryBytes),
+			cell: p => formatBytes(p.memoryBytes, {isCompact: true}),
 		},
 	];
 }

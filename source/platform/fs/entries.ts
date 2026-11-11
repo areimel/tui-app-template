@@ -1,7 +1,7 @@
 /**
 Pure helpers over `DirEntry` lists and file bytes. No I/O.
 */
-import type {DirEntry, FilePreview} from '../types.js';
+import type {DirEntry, FilePreview, FileTail} from '../types.js';
 
 export type EntrySort = 'name' | 'size' | 'modified';
 
@@ -97,4 +97,36 @@ export function previewFromBytes(
 	}
 
 	return {kind: 'text', lines, isTruncated: totalBytes > bytes.length};
+}
+
+/**
+Text of the bytes read from the end of a file. When `isCut` (the bytes do not start at the beginning
+of the file) everything up to and including the first newline is dropped, so the text starts on a
+whole line; callers read ONE byte before the window they want, so a window that starts exactly on a
+line loses nothing. Invalid UTF-8 at the cut is dropped with that partial line.
+*/
+export function tailFromBytes(bytes: Uint8Array, isCut: boolean): string {
+	const text = new TextDecoder('utf-8').decode(bytes);
+	if (!isCut) {
+		return text;
+	}
+
+	const newline = text.indexOf('\n');
+	return newline === -1 ? '' : text.slice(newline + 1);
+}
+
+/**
+`readTail` over an in-memory string (the fake and demo file services use it; the real one reads the
+same window from disk).
+*/
+export function tailOfText(text: string, maxBytes: number): FileTail {
+	const bytes = new TextEncoder().encode(text);
+	const start = Math.max(0, bytes.length - Math.max(0, maxBytes));
+	const isTruncated = start > 0;
+	const window = bytes.subarray(isTruncated ? start - 1 : 0);
+	return {
+		text: tailFromBytes(window, isTruncated),
+		endBytes: bytes.length,
+		isTruncated,
+	};
 }

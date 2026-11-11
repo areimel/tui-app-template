@@ -9,8 +9,42 @@ The fields the cursor can visit.
 export function visibleFields<T, Ctx>(
 	fields: ReadonlyArray<FormField<T, Ctx>>,
 	value: T,
+	context: Ctx,
 ): Array<FormField<T, Ctx>> {
-	return fields.filter(field => field.isVisible(value));
+	return fields.filter(field => field.isVisible(value, context));
+}
+
+/**
+Cells before a row's value: the marker gutter (2), the label column and its gap (1).
+*/
+export const ROW_CHROME = 3;
+
+/**
+Width of the value column of a form `width` cells wide with labels `labelWidth` wide (at least 1);
+`undefined` when the form is unbounded.
+*/
+export function valueWidth(
+	width: number | undefined,
+	labelWidth: number,
+): number | undefined {
+	return width === undefined
+		? undefined
+		: Math.max(1, width - ROW_CHROME - labelWidth);
+}
+
+/**
+What Enter does on the row at `cursor` of `count`: submit on the last row of a submittable form
+(unless it is a text field, which Enter edits), else the usual activation.
+*/
+export function enterAction<T, Ctx>(
+	field: FormField<T, Ctx> | undefined,
+	cursor: number,
+	count: number,
+	canSubmit: boolean,
+): 'submit' | 'activate' {
+	return canSubmit && cursor === count - 1 && field?.kind !== 'text'
+		? 'submit'
+		: 'activate';
 }
 
 /**

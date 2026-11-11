@@ -4,12 +4,8 @@ The windowed log pane: one row per line (level glyph + label, then the text), on
 import {Box} from 'ink';
 import type {TokenName} from '../../theme/tokens.js';
 import {T, VirtualList} from '../../ui/kit/index.js';
-import {
-	splitHighlights,
-	truncateText,
-	type Level,
-	type LogLine,
-} from './log-model.js';
+import {truncate} from '../../core/format.js';
+import {splitHighlights, type Level, type LogLine} from './log-model.js';
 
 type LevelView = {
 	readonly glyph: string;
@@ -42,7 +38,7 @@ type LogRowProps = {
 function LogRow({line, term, width}: LogRowProps) {
 	const view = LEVEL_VIEWS[line.level];
 	const textTone: TokenName = line.level === 'info' ? 'text' : view.tone;
-	const text = truncateText(line.text, Math.max(0, width - PREFIX_CELLS));
+	const text = truncate(line.text, Math.max(0, width - PREFIX_CELLS));
 	return (
 		<Box width={width} height={1} overflow="hidden">
 			<T bold tone={view.tone}>

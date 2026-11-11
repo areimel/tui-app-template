@@ -1,6 +1,11 @@
 import test from 'ava';
-import {fail} from '../../../source/core/result.js';
 import {Screen} from '../../../source/apps/file-explorer/Screen.js';
+import {
+	assertFits,
+	assertNoEscapes,
+	HOSTILE,
+	HOSTILE_LEFTOVERS,
+} from '../../helpers/assert-frame.js';
 import {
 	createFakeServices,
 	KEYS,
@@ -33,24 +38,17 @@ type MountOptions = {
 	readonly rows?: number;
 	readonly config?: Record<string, Record<string, unknown>>;
 	readonly params?: Record<string, string>;
+	readonly files?: Record<string, string>;
 };
 
 function mount(options: MountOptions = {}) {
-	const base = createFakeServices({
-		files: FILES,
+	const {services} = createFakeServices({
+		files: {...FILES, ...options.files},
 		modifiedMs: Date.UTC(2026, 10, 11),
-	});
-	const services = {
-		...base.services,
-		fs: {
-			...base.services.fs,
-			async list(path: string) {
-				return path.endsWith('/locked')
-					? fail(`EACCES: permission denied, scandir '${path}'`)
-					: base.services.fs.list(path);
-			},
+		errors: {
+			[`${HOME}/locked`]: `EACCES: permission denied, scandir '${HOME}/locked'`,
 		},
-	};
+	});
 	const view = renderScreen(<Screen />, {
 		columns: options.columns ?? 116,
 		rows: options.rows ?? 38,
@@ -272,6 +270,18 @@ test('config seeds hidden files and sort', async t => {
 	view.unmount();
 });
 
+test('escape sequences in names, paths and contents never reach the terminal', async t => {
+	const view = mount({
+		files: {[`${HOME}/aaa${HOSTILE}/bad${HOSTILE}.txt`]: `one${HOSTILE}two\n`},
+	});
+	await view.waitForText('apple.txt');
+	await view.press(KEYS.enter);
+	await view.waitForText('badx.txt');
+	await view.waitForText('onextwo');
+	assertNoEscapes(t, view, HOSTILE_LEFTOVERS);
+	view.unmount();
+});
+
 const SIZES: Array<[number, number]> = [
 	[116, 38],
 	[76, 22],
@@ -283,17 +293,11 @@ for (const [columns, rows] of SIZES) {
 	test(`fits a ${columns}x${rows} body`, async t => {
 		const view = mount({columns, rows});
 		await view.waitForText('apple.txt');
-		const lines = view.lines();
-		t.true(lines.length <= rows, `rows ${lines.length}`);
-		for (const line of lines) {
-			t.true([...line].length <= columns, `width of "${line}"`);
-		}
-
-		t.true(lines.at(-1)?.includes('sort: name') === true);
+		assertFits(t, view, {columns, rows}, 'list');
+		t.true(view.lines().at(-1)?.includes('sort: name') === true);
 		await view.press('j', 'j', 'j', 'j', 'j', 'j');
 		await view.press(KEYS.tab);
-		t.true(view.lines().length <= rows);
-		t.true(view.lines().every(line => [...line].length <= columns));
+		assertFits(t, view, {columns, rows}, 'preview');
 		view.unmount();
 	});
 }

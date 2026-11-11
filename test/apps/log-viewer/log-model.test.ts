@@ -14,12 +14,10 @@ import {
 	findMatches,
 	firstMatchFrom,
 	indexOfId,
-	sanitize,
 	splitChunk,
 	splitHighlights,
 	stepMatch,
 	toggleLevel,
-	truncateText,
 	type Level,
 } from '../../../source/apps/log-viewer/log-model.js';
 
@@ -76,8 +74,14 @@ for (const [text, level] of levelCases) {
 	});
 }
 
-test('sanitize strips colour codes, controls and tabs', t => {
-	t.is(sanitize('\u{1B}[31mred\u{1B}[0m\tx\u{7}'), 'red    x');
+test('appended lines lose colour codes, escapes and controls', t => {
+	const buffer = texts([
+		'\u{1B}[31mred\u{1B}[0m\tx\u{7}\n\u{1B}]0;title\u{7}ok\n',
+	]);
+	t.deepEqual(
+		buffer.lines.map(line => line.text),
+		['red  x', 'ok'],
+	);
 });
 
 test('the buffer keeps the newest MAX_LINES and ids keep rising', t => {
@@ -147,12 +151,6 @@ test('indexOfId finds a line, the next later one, or the last', t => {
 	t.is(indexOfId(lines, 2), 2);
 	t.is(indexOfId(lines, 99), 3);
 	t.is(indexOfId([], 0), -1);
-});
-
-test('truncateText ends in an ellipsis only when cut', t => {
-	t.is(truncateText('abcdef', 6), 'abcdef');
-	t.is(truncateText('abcdef', 4), 'abc…');
-	t.is(truncateText('abcdef', 0), '');
 });
 
 test('splitHighlights splits around every occurrence', t => {

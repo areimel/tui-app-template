@@ -4,6 +4,7 @@ disk and every timestamp is fixed.
 */
 import {posix} from 'node:path';
 import {fail, ok} from '../core/result.js';
+import {tailOfText} from '../platform/fs/entries.js';
 import type {
 	DirEntry,
 	DirEntryKind,
@@ -117,6 +118,12 @@ export function createDemoFs(
 			const file = tree.get(posix.normalize(rawPath));
 			return typeof file === 'string'
 				? ok(file.slice(0, maxBytes))
+				: fail(`Not a text file: ${rawPath}`);
+		},
+		async readTail(rawPath, maxBytes) {
+			const file = tree.get(posix.normalize(rawPath));
+			return typeof file === 'string'
+				? ok(tailOfText(file, maxBytes))
 				: fail(`Not a text file: ${rawPath}`);
 		},
 		follow(rawPath, _onChunk, onError) {

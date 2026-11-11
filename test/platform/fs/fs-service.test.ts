@@ -131,6 +131,52 @@ test('readText is capped and fails for missing files', async t => {
 	});
 });
 
+test('readTail returns the last whole lines and the size read', async t => {
+	await withDir(async dir => {
+		const file = join(dir, 'big.log');
+		await writeFile(file, 'line one\nline two\nline three\n');
+		const tail = await fs.readTail(file, 14);
+		t.deepEqual(tail, {
+			isOk: true,
+			value: {text: 'line three\n', endBytes: 29, isTruncated: true},
+		});
+		const whole = await fs.readTail(file, 1000);
+		t.deepEqual(whole, {
+			isOk: true,
+			value: {
+				text: 'line one\nline two\nline three\n',
+				endBytes: 29,
+				isTruncated: false,
+			},
+		});
+		const missing = await fs.readTail(join(dir, 'zzz'), 10);
+		t.false(missing.isOk);
+	});
+});
+
+test('follow from an offset delivers what was appended since', async t => {
+	await withDir(async dir => {
+		const file = join(dir, 'log.txt');
+		await writeFile(file, 'old\n');
+		const tail = await fs.readTail(file, 100);
+		const endBytes = tail.isOk ? tail.value.endBytes : 0;
+		await appendFile(file, 'between\n');
+		let received = '';
+		const stop = fs.follow(
+			file,
+			text => {
+				received += text;
+			},
+			undefined,
+			{fromBytes: endBytes},
+		);
+		await appendFile(file, 'after\n');
+		await pollUntil(() => received === 'between\nafter\n');
+		t.is(received, 'between\nafter\n');
+		stop();
+	});
+});
+
 test('follow emits appended text, restarts on truncation and stops on dispose', async t => {
 	await withDir(async dir => {
 		const file = join(dir, 'log.txt');

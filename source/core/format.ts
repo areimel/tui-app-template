@@ -67,3 +67,66 @@ export function formatRemaining(
 ): string {
 	return endsAt === undefined ? 'no limit' : formatElapsed(endsAt - now);
 }
+
+const LONG_UNITS = ['B', 'KB', 'MB', 'GB', 'TB'] as const;
+const COMPACT_UNITS = ['B', 'K', 'M', 'G', 'T'] as const;
+
+export type FormatBytesOptions = {
+	/**
+	`1.1G` (tables) instead of `1.1 GB`. Default false.
+	*/
+	readonly isCompact?: boolean;
+};
+
+/**
+A binary size: `812 B`, `1.5 KB`, `10 KB`, `3.0 GB` (one decimal below 10 of a unit, whole above), or
+compact `512B`, `5.0M`, `1.5G`. Negative clamps to zero; `undefined` or not finite is `-`.
+*/
+export function formatBytes(
+	bytes: number | undefined,
+	{isCompact = false}: FormatBytesOptions = {},
+): string {
+	if (bytes === undefined || !Number.isFinite(bytes)) {
+		return '-';
+	}
+
+	const units = isCompact ? COMPACT_UNITS : LONG_UNITS;
+	let value = Math.max(0, bytes);
+	let unit = 0;
+	while (value >= 1024 && unit < units.length - 1) {
+		value /= 1024;
+		unit++;
+	}
+
+	const number =
+		unit > 0 && value < 10 ? value.toFixed(1) : String(Math.round(value));
+	return `${number}${isCompact ? '' : ' '}${units[unit] ?? ''}`;
+}
+
+/**
+A short duration: `240 ms` below a second, else `1.25 s`. Negative clamps to zero.
+*/
+export function formatMillis(ms: number): string {
+	const rounded = Math.max(0, Math.round(ms));
+	return rounded < 1000 ? `${rounded} ms` : `${(rounded / 1000).toFixed(2)} s`;
+}
+
+/**
+Elapsed seconds with one decimal, e.g. `0.4 s` (a running wait). Negative clamps to zero.
+*/
+export function formatSeconds(ms: number): string {
+	return `${(Math.max(0, ms) / 1000).toFixed(1)} s`;
+}
+
+/**
+`text` cut to `width` characters, ending in `…` when something was cut (`''` for no width). Counts code
+points, not terminal cells.
+*/
+export function truncate(text: string, width: number): string {
+	const characters = [...text];
+	if (characters.length <= width) {
+		return text;
+	}
+
+	return width <= 0 ? '' : `${characters.slice(0, width - 1).join('')}…`;
+}

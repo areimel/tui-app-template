@@ -1,24 +1,12 @@
 /**
 Pure text for the shell chrome: the title in the top edge and its truncation.
 */
+import {truncate} from '../core/format.js';
 
 /**
 Separator between the menu and the open app in the title.
 */
 export const BREADCRUMB_SEPARATOR = '›';
-
-/**
-`text` cut to `maxWidth` cells with a trailing `…` (cells = code points; every glyph the chrome uses is
-one cell wide).
-*/
-export function truncateText(text: string, maxWidth: number): string {
-	const chars = [...text];
-	if (chars.length <= maxWidth) {
-		return text;
-	}
-
-	return maxWidth <= 0 ? '' : `${chars.slice(0, maxWidth - 1).join('')}…`;
-}
 
 /**
 The title: `brand` on the menu (`appTitle` undefined), else `Menu › App`. When it does not fit, the app
@@ -30,9 +18,9 @@ export function chromeTitle(
 	maxWidth: number,
 ): string {
 	if (appTitle === undefined) {
-		return truncateText(brand, maxWidth);
+		return truncate(brand, maxWidth);
 	}
 
 	const full = `Menu ${BREADCRUMB_SEPARATOR} ${appTitle}`;
-	return [...full].length <= maxWidth ? full : truncateText(appTitle, maxWidth);
+	return [...full].length <= maxWidth ? full : truncate(appTitle, maxWidth);
 }

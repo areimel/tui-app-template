@@ -11,8 +11,7 @@ import {
 } from '../../shell/context.js';
 import {useKeys} from '../../ui/input/index.js';
 import {SearchInput} from '../../ui/kit/index.js';
-import {APP_ID} from './app-id.js';
-import {LOG_VIEWER_CONFIG} from './config.js';
+import {APP_ID, LOG_VIEWER_CONFIG} from './config.js';
 import {LOG_BINDINGS} from './keys.js';
 import {LogPane} from './LogPane.js';
 import {LogStatus} from './LogStatus.js';

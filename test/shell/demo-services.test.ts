@@ -111,6 +111,14 @@ test('the file tree previews text, binary and directories and reads text', async
 	);
 });
 
+test('readTail serves the end of a demo file', async t => {
+	const {fs} = make();
+	const tail = unwrap(await fs.readTail(`${DEMO_HOME}/logs/app.log`, 200));
+	t.true(tail.isTruncated);
+	t.true(tail.text.length > 0 && tail.text.length <= 200);
+	t.false(await isOk(fs.readTail(`${DEMO_HOME}/documents`, 10)));
+});
+
 test('the file tree rejects missing paths and files listed as directories', async t => {
 	const {fs} = make();
 	t.false(await isOk(fs.list('/nowhere')));

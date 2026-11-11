@@ -3,10 +3,10 @@ The HTTP Client example: a request form, async send and cancel, Body/Headers/Raw
 */
 import {defineApp} from '../types.js';
 import {HTTP_BINDINGS} from './bindings.js';
-import {HTTP_CONFIG} from './config.js';
+import {APP_ID, HTTP_CONFIG} from './config.js';
 import {Screen} from './Screen.js';
 
-export const APP_ID = 'http-client';
+export {APP_ID} from './config.js';
 
 export default defineApp({
 	id: APP_ID,

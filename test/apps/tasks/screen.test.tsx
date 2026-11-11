@@ -2,6 +2,7 @@ import test from 'ava';
 import {Screen} from '../../../source/apps/tasks/Screen.js';
 import tasksApp from '../../../source/apps/tasks/index.js';
 import type {Task, TaskFile} from '../../../source/apps/tasks/tasks-model.js';
+import {assertFits} from '../../helpers/assert-frame.js';
 import {
 	createFakeServices,
 	KEYS,
@@ -46,9 +47,9 @@ function mount({columns = 76, rows = 22, file = SEED, config}: Options = {}) {
 		services: fake.services,
 		...(config !== undefined && {config}),
 	});
-	const saved = () => fake.control.data.get(FILE) as TaskFile;
-	const saveCount = () => fake.control.data.saves.length;
-	return {...fake, view, saved, saveCount};
+	const saved = () => fake.control.data.lastSaved(FILE) as TaskFile;
+	const isUnsaved = () => fake.control.data.lastSaved(FILE) === undefined;
+	return {...fake, view, saved, isUnsaved};
 }
 
 const hasText = (view: {plainFrame(): string}, text: string) =>
@@ -78,13 +79,13 @@ test('list shows boxes, priority, overdue marker, detail and tab counts', async 
 });
 
 test('add through the dialog: required title, bad date, then success', async t => {
-	const {view, saved, saveCount} = mount({file: {nextId: 1, tasks: []}});
+	const {view, saved, isUnsaved} = mount({file: {nextId: 1, tasks: []}});
 	await view.waitForText('Press a');
 	await view.press('a');
 	await view.waitForText('Add task');
 	await view.press(CTRL_S);
 	await view.waitForText('! Title is required.');
-	t.is(saveCount(), 0);
+	t.true(isUnsaved());
 
 	await view.press(KEYS.enter, 'Pay bills', KEYS.enter);
 	await view.waitForText('Pay bills');
@@ -114,12 +115,12 @@ test('add through the dialog: required title, bad date, then success', async t =
 });
 
 test('invalid date on the form is rejected before save', async t => {
-	const {view, saveCount} = mount({file: {nextId: 1, tasks: []}});
+	const {view, isUnsaved} = mount({file: {nextId: 1, tasks: []}});
 	await view.waitForText('Press a');
 	await view.press('a', KEYS.enter, 'x', KEYS.enter);
 	await view.press(KEYS.down, KEYS.down, KEYS.enter, 'soon', KEYS.enter);
 	await view.waitForText('Due must be a real date');
-	t.is(saveCount(), 0);
+	t.true(isUnsaved());
 	view.unmount();
 });
 
@@ -149,7 +150,7 @@ test('edit changes the highlighted task, including done', async t => {
 });
 
 test('esc cancels a text edit first, then the dialog', async t => {
-	const {view, saveCount} = mount();
+	const {view, isUnsaved} = mount();
 	await view.waitForText('Pay rent');
 	await view.press('e', KEYS.enter, 'ZZZ');
 	await view.waitForText('Pay rentZZZ');
@@ -158,7 +159,7 @@ test('esc cancels a text edit first, then the dialog', async t => {
 	t.true(hasText(view, 'Edit task'));
 	await view.press(KEYS.escape);
 	await view.waitFor(() => !hasText(view, 'Edit task'), 'dialog closed');
-	t.is(saveCount(), 0);
+	t.true(isUnsaved());
 	view.unmount();
 });
 
@@ -200,7 +201,7 @@ test('the saved filter is restored', async t => {
 });
 
 test('delete asks first; cancel keeps, confirm removes, u restores', async t => {
-	const {view, saved, saveCount} = mount();
+	const {view, saved, isUnsaved} = mount();
 	await view.waitForText('Pay rent');
 	await view.press('d');
 	await view.waitForText('Delete "Pay rent"?');
@@ -208,7 +209,7 @@ test('delete asks first; cancel keeps, confirm removes, u restores', async t => 
 	await view.press(KEYS.escape);
 	await view.waitFor(() => !hasText(view, 'Delete task'), 'cancelled');
 	t.true(hasText(view, 'Pay rent'));
-	t.is(saveCount(), 0);
+	t.true(isUnsaved());
 
 	await view.press('d', 'y');
 	await view.waitFor(() => !hasText(view, 'Pay rent'), 'deleted');
@@ -231,12 +232,12 @@ test('delete asks first; cancel keeps, confirm removes, u restores', async t => 
 });
 
 test('screen keys are blocked while the dialog is open', async t => {
-	const {view, saveCount} = mount();
+	const {view, isUnsaved} = mount();
 	await view.waitForText('Pay rent');
 	await view.press('a');
 	await view.waitForText('Add task');
 	await view.press('x', 'd', 'p', 'u', KEYS.tab, 'q', '?');
-	t.is(saveCount(), 0);
+	t.true(isUnsaved());
 	t.deepEqual(view.globals, []);
 	t.true(hasText(view, 'Add task'));
 	t.deepEqual(view.config.writes, []);
@@ -285,23 +286,17 @@ for (const [columns, rows] of [
 	test(`fits at ${columns}x${rows}, list and dialogs`, async t => {
 		const {view} = mount({columns, rows});
 		await view.waitForText('Pay rent');
-		const isFitting = () =>
-			view.plainFrame().split('\n').length <= rows &&
-			view
-				.plainFrame()
-				.split('\n')
-				.every(line => [...line].length <= columns);
-		t.true(isFitting(), 'list');
+		assertFits(t, view, {columns, rows}, 'list');
 		await view.press('e');
 		await view.waitForText('Edit task');
-		t.true(isFitting(), 'edit dialog');
+		assertFits(t, view, {columns, rows}, 'edit dialog');
 		t.regex(view.plainFrame(), /Done/v);
 		t.regex(view.plainFrame(), /╰/v);
 		await view.press(KEYS.escape);
 		await view.waitFor(() => !hasText(view, 'Edit task'), 'closed');
 		await view.press('d');
 		await view.waitForText('Delete task');
-		t.true(isFitting(), 'confirm dialog');
+		assertFits(t, view, {columns, rows}, 'confirm dialog');
 		view.unmount();
 	});
 }

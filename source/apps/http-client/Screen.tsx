@@ -4,6 +4,7 @@ cancellable; history and the last request persist in the app config.
 */
 import {useLayoutEffect, useRef, useState} from 'react';
 import {Box} from 'ink';
+import {fail, ok} from '../../core/result.js';
 import type {HttpError, HttpResponse} from '../../platform/types.js';
 import {
 	useAppConfig,
@@ -19,7 +20,7 @@ import {
 	MAIN_BINDINGS,
 	SEND_HERE_BINDINGS,
 } from './bindings.js';
-import {HTTP_CONFIG} from './config.js';
+import {APP_ID, HTTP_CONFIG} from './config.js';
 import {HistoryDialog} from './HistoryDialog.js';
 import {planLayout} from './layout.js';
 import {RequestPane} from './RequestPane.js';
@@ -27,13 +28,13 @@ import {
 	buildRequest,
 	formFromEntry,
 	pushHistory,
-	scrubForSave,
 	hasBodyMethod,
 	type RequestForm,
 } from './request-model.js';
 import {ResponsePane, type ResponseContent} from './ResponsePane.js';
+import {scrubForSave} from './save-scrub.js';
+import {cleanError, cleanResponse} from './response-model.js';
 
-const APP_ID = 'http-client';
 const DIALOG_WIDTH = 64;
 
 type Pane = 'request' | 'response';
@@ -95,7 +96,10 @@ export function Screen() {
 		HttpError,
 		[Parameters<typeof services.http.send>[0], RequestForm]
 	>(async (signal, httpRequest, sent) => {
-		const result = await services.http.send(httpRequest, signal);
+		const raw = await services.http.send(httpRequest, signal);
+		const result = raw.isOk
+			? ok(cleanResponse(raw.value))
+			: fail(cleanError(raw.error));
 		if (!signal.aborted) {
 			updateConfig({
 				history: pushHistory(historyRef.current, {

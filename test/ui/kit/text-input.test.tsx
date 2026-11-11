@@ -127,26 +127,35 @@ test('inactive input ignores keys, so bindings run', async t => {
 	view.unmount();
 });
 
+test('an idle input is bracketed like other field values', async t => {
+	const view = await mount({log: [], initial: 'idle', isActive: false});
+	t.true(view.plainFrame().includes('[ idle ]'));
+	view.unmount();
+});
+
 test('placeholder shows when empty; error shows with a marker', async t => {
 	const view = await mount({log: [], placeholder: 'type here', error: 'bad'});
-	t.true(view.plainFrame().includes('type here'));
+	t.true(
+		view.plainFrame().includes('[  type here ]'),
+		'caret cell, then the placeholder',
+	);
 	t.true(view.plainFrame().includes('! bad'));
 	view.unmount();
 });
 
 test('long text scrolls inside the width and keeps the caret visible', async t => {
 	const log: Log = [];
-	const view = await mount({log, initial: 'abcdefghij', width: 5});
+	const view = await mount({log, initial: 'abcdefghij', width: 9});
 	const text = () => view.plainFrame().split('\n', 2)[1] ?? '';
-	t.is(text().trim(), 'ghij');
+	t.regex(text(), /^\[ ghij +\]/v);
 	await pressKeys(view.stdin, KEYS.home);
-	await waitFor(() => text().trim() === 'abcde', 'scrolled back');
+	await waitFor(() => text().startsWith('[ abcde ]'), 'scrolled back');
 	view.unmount();
 });
 
 test('search input shows the prompt and match count', async t => {
 	const view = await mount({log: [], initial: 'ab', search: true});
-	t.true(view.plainFrame().includes('/ ab'));
+	t.regex(view.plainFrame(), /\/ \[ ab +\]/v);
 	t.true(view.plainFrame().includes('1 match'));
 	view.unmount();
 });

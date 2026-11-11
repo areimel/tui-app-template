@@ -2,13 +2,11 @@ import test from 'ava';
 import {
 	allParents,
 	bodyView,
-	formatBytes,
-	formatMillis,
-	formatWaiting,
+	cleanError,
+	cleanResponse,
 	headersText,
 	parentIndex,
 	rawText,
-	sanitizeText,
 	sortedHeaders,
 	topLevelParents,
 	wrapRows,
@@ -16,23 +14,26 @@ import {
 import {flattenTree} from '../../../source/ui/kit/tree-model.js';
 import {httpResponse} from '../../helpers/fake-services.js';
 
-test('formatBytes', t => {
-	t.is(formatBytes(0), '0 B');
-	t.is(formatBytes(1023), '1023 B');
-	t.is(formatBytes(1536), '1.5 KB');
-	t.is(formatBytes(3 * 1024 * 1024), '3.0 MB');
+const HOSTILE = '\u{1B}[2J\u{1B}]0;pwned\u{7}';
+
+test('cleanResponse strips escapes from status, headers and body', t => {
+	const clean = cleanResponse(
+		httpResponse({
+			statusText: `OK${HOSTILE}`,
+			headers: {[`x-a${HOSTILE}`]: `v${HOSTILE}\nw`},
+			body: `a\u{1B}[31mred\u{0}\tb\r\nc${HOSTILE}`,
+		}),
+	);
+	t.is(clean.statusText, 'OK');
+	t.deepEqual(clean.headers, {'x-a': 'v w'});
+	t.is(clean.body, 'ared  b\nc');
 });
 
-test('formatMillis and formatWaiting', t => {
-	t.is(formatMillis(12), '12 ms');
-	t.is(formatMillis(999.6), '1.00 s');
-	t.is(formatMillis(1250), '1.25 s');
-	t.is(formatWaiting(400), '0.4 s');
-	t.is(formatWaiting(-5), '0.0 s');
-});
-
-test('sanitizeText drops control characters but keeps newlines', t => {
-	t.is(sanitizeText('a\u{1B}[31mred\u{0}\tb\r\nc'), 'a[31mred  b\nc');
+test('cleanError strips escapes from the message', t => {
+	t.deepEqual(cleanError({kind: 'network', message: `down${HOSTILE}`}), {
+		kind: 'network',
+		message: 'down',
+	});
 });
 
 test('wrapRows hard-wraps, keeps empty lines and caps rows', t => {

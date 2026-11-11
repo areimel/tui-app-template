@@ -5,12 +5,12 @@ import {
 	breadcrumb,
 	entryGlyph,
 	explorerLayout,
-	formatBytes,
 	formatDate,
 	formatRow,
 	nextSort,
 	parentPath,
 	previewLines,
+	previewTitle,
 	rememberCursor,
 	restoreIndex,
 	rowColumns,
@@ -60,26 +60,6 @@ for (const [path, home, width, expected] of crumbs) {
 		const result = breadcrumb(path, home, width);
 		t.is(result, expected);
 		t.true([...result].length <= Math.max(1, width));
-	});
-}
-
-const KIB = 1024;
-const MIB = KIB * KIB;
-const GIB = MIB * KIB;
-const sizes: Array<[number | undefined, string]> = [
-	[undefined, '-'],
-	[0, '0 B'],
-	[1023, '1023 B'],
-	[1024, '1.0 KB'],
-	[1536, '1.5 KB'],
-	[KIB * 10, '10 KB'],
-	[5 * MIB, '5.0 MB'],
-	[3 * GIB, '3.0 GB'],
-];
-
-for (const [bytes, expected] of sizes) {
-	test(`formatBytes ${String(bytes)}`, t => {
-		t.is(formatBytes(bytes), expected);
 	});
 }
 
@@ -168,4 +148,19 @@ test('previewLines expands tabs and caps the count', t => {
 	const capped = previewLines(['1', '2', '3', '4'], 3);
 	t.deepEqual(capped.lines, ['1', '2', '3']);
 	t.true(capped.isCapped);
+});
+
+const HOSTILE = '\u{1B}[2J\u{1B}]0;pwned\u{7}';
+
+test('drawn names, paths and preview lines carry no escapes', t => {
+	const columns = rowColumns(60);
+	t.true(
+		formatRow(entry({name: `bad${HOSTILE}.txt`}), columns).name.startsWith(
+			'bad.txt',
+		),
+	);
+	t.is(breadcrumb(`/x/bad${HOSTILE}dir`, '/home/me', 40), '/x/baddir');
+	t.deepEqual(previewLines([`one${HOSTILE}two`]).lines, ['onetwo']);
+	t.is(previewTitle(`a${HOSTILE}b`, 20), 'ab');
+	t.is(previewTitle('abcdefgh', 4), '…fgh');
 });

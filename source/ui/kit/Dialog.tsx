@@ -1,6 +1,6 @@
 import {Box, Text} from 'ink';
 import {useTheme} from '../../theme/context.js';
-import {InputScope} from '../input/index.js';
+import {InputScope, useKeys, type KeyBinding} from '../input/index.js';
 import {BorderRule} from './BorderRule.js';
 import {blankRows, MAX_DIALOG_ROWS} from './dialog-layout.js';
 import {FOCUS_MARKER} from './glyphs.js';
@@ -10,13 +10,31 @@ import {PANEL_BORDER_STYLE} from './Panel.js';
 import {T, toneProps} from './T.js';
 import type {DialogProps} from './types.js';
 
+const CANCEL_BINDINGS: ReadonlyArray<KeyBinding<'cancel'>> = [
+	{action: 'cancel', keys: ['esc'], label: 'cancel', group: 'Dialog'},
+];
+
+/**
+Registers Esc inside the dialog's modal scope (it must render inside `InputScope`).
+*/
+function CancelKey({onCancel}: {readonly onCancel: () => void}) {
+	useKeys(CANCEL_BINDINGS, {cancel: onCancel});
+	return undefined;
+}
+
 /**
 Centred, opaque modal box (see `DialogProps`).
+
+KEYS: everything inside is a `modal` `InputScope`, so the screen and the globals get NO keys while it
+is open, and a `useKeys` call in the component that RENDERS the dialog registers in the screen's scope
+and never fires either. Register a dialog's keys in a component rendered as a CHILD of `Dialog` (e.g.
+`<Dialog ...><MyDialogKeys/>...</Dialog>`), or pass `onCancel` for Esc. Kit content (`Form`, lists
+with `useListNav`, `TextInput`) placed inside already registers in the right scope.
 
 The parent must be a box with an explicit width and height (the screen body); the dialog is an
 absolute box filling it and centres itself, so render it last (later siblings paint on top). Opacity:
 a clipped layer of space-filled `Text` rows is painted under the content, plus `backgroundColor` when
-the theme has `bg`. Everything inside is a `modal` `InputScope`: the screen and globals do not get keys.
+the theme has `bg`.
 */
 export function Dialog({
 	title,
@@ -24,6 +42,7 @@ export function Dialog({
 	height,
 	hints,
 	id = 'dialog',
+	onCancel,
 	children,
 }: DialogProps) {
 	const theme = useTheme();
@@ -34,6 +53,7 @@ export function Dialog({
 
 	return (
 		<InputScope id={id} kind="modal">
+			{onCancel === undefined ? undefined : <CancelKey onCancel={onCancel} />}
 			<Box
 				position="absolute"
 				width="100%"

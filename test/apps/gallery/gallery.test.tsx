@@ -3,6 +3,7 @@ import {Screen} from '../../../source/apps/gallery/Screen.js';
 import {resolveByName} from '../../../source/theme/resolve.js';
 import {PLAIN_THEME} from '../../../source/theme/context.js';
 import {THEME_NAMES, type ResolvedTheme} from '../../../source/theme/tokens.js';
+import {assertFits} from '../../helpers/assert-frame.js';
 import {KEYS, renderScreen} from '../../helpers/render-screen.js';
 
 /**
@@ -163,11 +164,7 @@ test('every tab fits the body at four sizes', async t => {
 				() => view.plainFrame().includes('['),
 				`tab ${index} at ${columns}x${rows}`,
 			);
-			const lines = view.lines();
-			t.true(lines.length <= rows, `${columns}x${rows} tab ${index}: rows`);
-			for (const line of lines) {
-				t.true(line.length <= columns, `${columns}x${rows}: "${line}"`);
-			}
+			assertFits(t, view, {columns, rows}, `${columns}x${rows} tab ${index}`);
 
 			// eslint-disable-next-line no-await-in-loop -- Tabs are visited in order.
 			await view.press('l');

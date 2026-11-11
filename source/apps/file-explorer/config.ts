@@ -5,7 +5,7 @@ import {bool, defineSection, oneOf} from '../../config/section.js';
 import type {EntrySort} from '../../platform/fs/entries.js';
 import {SORTS} from './explorer-model.js';
 
-export const EXPLORER_ID = 'file-explorer';
+export const APP_ID = 'file-explorer';
 
 export type ExplorerConfig = {
 	readonly showHidden: boolean;
@@ -13,7 +13,7 @@ export type ExplorerConfig = {
 };
 
 export const EXPLORER_CONFIG = defineSection<ExplorerConfig>(
-	`apps.${EXPLORER_ID}`,
+	`apps.${APP_ID}`,
 	{showHidden: false, sort: 'name'},
 	{showHidden: bool(), sort: oneOf<EntrySort>(SORTS)},
 );

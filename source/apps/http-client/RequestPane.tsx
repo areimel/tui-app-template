@@ -1,7 +1,6 @@
 /**
 The Request pane: the generic `Form` over the request fields.
 */
-import {useMemo} from 'react';
 import {Box} from 'ink';
 import {fail, ok} from '../../core/result.js';
 import {HTTP_METHODS} from '../../platform/types.js';
@@ -16,81 +15,66 @@ import {
 } from './request-model.js';
 
 const LABEL_WIDTH = 6;
-/**
-Marker column, label column gap and the `[ ` / ` ]` of the value box.
-*/
-const ROW_OVERHEAD = 2 + 1 + 4;
-
-function clip(text: string, max: number): string {
-	const characters = [...text];
-	return characters.length <= max
-		? text
-		: `${characters.slice(0, Math.max(1, max - 1)).join('')}…`;
-}
 
 type Field = FormField<RequestForm, undefined>;
 
+const base = {
+	isVisible: () => true,
+	disabledReason: () => undefined,
+};
+
 /**
-The form fields; displayed values are clipped to `maxValue` cells so every row stays one line.
+The form fields (`Form` clips long values to the pane, so every row stays one line).
 */
-export function requestFields(maxValue: number): readonly Field[] {
-	const base = {
-		isVisible: () => true,
-		disabledReason: () => undefined,
-	};
-	return [
-		{
-			...base,
-			id: 'method',
-			label: 'Method',
-			kind: 'choice',
-			display: value => value.method,
-			cycle(value, direction) {
-				const index = HTTP_METHODS.indexOf(value.method) + direction;
-				const next =
-					HTTP_METHODS[(index + HTTP_METHODS.length) % HTTP_METHODS.length];
-				return next === undefined ? {} : {method: next};
-			},
+export const REQUEST_FIELDS: readonly Field[] = [
+	{
+		...base,
+		id: 'method',
+		label: 'Method',
+		kind: 'choice',
+		display: value => value.method,
+		cycle(value, direction) {
+			const index = HTTP_METHODS.indexOf(value.method) + direction;
+			const next =
+				HTTP_METHODS[(index + HTTP_METHODS.length) % HTTP_METHODS.length];
+			return next === undefined ? {} : {method: next};
 		},
-		{
-			...base,
-			id: 'url',
-			label: 'URL',
-			kind: 'text',
-			display: value =>
-				clip(value.url === '' ? '(enter a URL)' : value.url, maxValue),
-			editText: value => value.url,
-			parse(text) {
-				const url = parseUrl(text);
-				return url.isOk ? ok({url: url.value}) : fail(url.error);
-			},
+	},
+	{
+		...base,
+		id: 'url',
+		label: 'URL',
+		kind: 'text',
+		display: value => (value.url === '' ? '(enter a URL)' : value.url),
+		editText: value => value.url,
+		parse(text) {
+			const url = parseUrl(text);
+			return url.isOk ? ok({url: url.value}) : fail(url.error);
 		},
-		{
-			...base,
-			id: 'header',
-			label: 'Header',
-			kind: 'text',
-			display: value =>
-				clip(value.header === '' ? '(none)' : value.header, maxValue),
-			editText: value => value.header,
-			parse(text) {
-				const header = parseHeader(text);
-				return header.isOk ? ok({header: text.trim()}) : fail(header.error);
-			},
+	},
+	{
+		...base,
+		id: 'header',
+		label: 'Header',
+		kind: 'text',
+		display: value => (value.header === '' ? '(none)' : value.header),
+		editText: value => value.header,
+		parse(text) {
+			const header = parseHeader(text);
+			return header.isOk ? ok({header: text.trim()}) : fail(header.error);
 		},
-		{
-			...base,
-			id: 'body',
-			label: 'Body',
-			kind: 'text',
-			isVisible: value => hasBodyMethod(value.method),
-			display: value =>
-				clip(value.body === '' ? '(empty)' : value.body, maxValue),
-			editText: value => value.body,
-			parse: text => ok({body: text}),
-		},
-	];
-}
+	},
+	{
+		...base,
+		id: 'body',
+		label: 'Body',
+		kind: 'text',
+		isVisible: value => hasBodyMethod(value.method),
+		display: value => (value.body === '' ? '(empty)' : value.body),
+		editText: value => value.body,
+		parse: text => ok({body: text}),
+	},
+];
 
 export type RequestPaneProps = {
 	readonly form: RequestForm;
@@ -106,8 +90,6 @@ export function RequestPane({
 	onChange,
 }: RequestPaneProps) {
 	const inner = innerSize(size);
-	const maxValue = Math.max(4, inner.width - LABEL_WIDTH - ROW_OVERHEAD);
-	const fields = useMemo(() => requestFields(maxValue), [maxValue]);
 	const fieldCount = hasBodyMethod(form.method) ? 4 : 3;
 	return (
 		<Panel
@@ -117,11 +99,12 @@ export function RequestPane({
 			height={size.height}
 		>
 			<Form
-				fields={fields}
+				fields={REQUEST_FIELDS}
 				value={form}
 				context={undefined}
 				isActive={isFocused}
 				labelWidth={LABEL_WIDTH}
+				width={inner.width}
 				onChange={onChange}
 			/>
 			{inner.height > fieldCount + 1 && inner.width >= 36 ? (

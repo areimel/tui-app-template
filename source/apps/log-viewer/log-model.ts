@@ -2,6 +2,7 @@
 Pure log model: line splitting, level detection, the capped buffer, filtering, search matches and the
 cursor helpers. No I/O, no timers; the screen and `use-log-source.ts` feed it.
 */
+import {sanitizeLine} from '../../core/sanitize.js';
 
 export const LEVELS = ['error', 'warn', 'info', 'debug'] as const;
 
@@ -34,10 +35,6 @@ export const MAX_PENDING_CHARS = 16_384;
 
 export const EMPTY_BUFFER: LogBuffer = {lines: [], pending: '', nextId: 0};
 
-/* eslint-disable no-control-regex, regexp/no-control-character, regexp/no-obscure-range -- Stripping terminal escapes and control characters is the point. */
-const ANSI = /\u{1B}\[[\d;?]*[ \-\/]*[@-~]/gv;
-const CONTROL = /[\u{0}-\u{8}\u{B}-\u{1F}\u{7F}]/gv;
-/* eslint-enable no-control-regex, regexp/no-control-character, regexp/no-obscure-range */
 const LEVEL_PATTERN =
 	/\b(?<name>fatal|crit(?:ical)?|error|err|warn(?:ing)?|notice|info|debug|trace)\b/iv;
 const LEVEL_SEARCH_CHARS = 48;
@@ -55,16 +52,6 @@ const LEVEL_OF: Readonly<Record<string, Level>> = {
 	debug: 'debug',
 	trace: 'debug',
 };
-
-/**
-Strip colour codes and control characters; tabs become spaces.
-*/
-export function sanitize(text: string): string {
-	return text
-		.replaceAll(ANSI, '')
-		.replaceAll('\t', ' '.repeat(4))
-		.replaceAll(CONTROL, '');
-}
 
 /**
 The level named in the first characters of a line (`ERROR`, `[warn]`, `level=debug`); `info` when none.
@@ -105,7 +92,7 @@ export function appendLines(
 	}
 
 	const added = texts.map((raw, offset): LogLine => {
-		const text = sanitize(raw);
+		const text = sanitizeLine(raw);
 		return {id: buffer.nextId + offset, text, level: detectLevel(text)};
 	});
 	const lines = [...buffer.lines, ...added];
@@ -212,18 +199,6 @@ export function indexOfId(lines: readonly LogLine[], id: number): number {
 	}
 
 	return Math.min(low, lines.length - 1);
-}
-
-/**
-Cut to `width` characters, ending in `…` when something was cut.
-*/
-export function truncateText(text: string, width: number): string {
-	const chars = [...text];
-	if (chars.length <= width) {
-		return text;
-	}
-
-	return width <= 0 ? '' : `${chars.slice(0, width - 1).join('')}…`;
 }
 
 export type TextPiece = {readonly text: string; readonly isMatch: boolean};

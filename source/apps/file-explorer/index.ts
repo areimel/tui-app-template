@@ -4,10 +4,10 @@ The File Explorer example: a read-only file browser: a list and a preview pane, 
 import {LIST_NAV_BINDINGS} from '../../ui/hooks/use-list-nav.js';
 import {defineApp} from '../types.js';
 import {EXPLORER_BINDINGS} from './bindings.js';
-import {EXPLORER_CONFIG, EXPLORER_ID} from './config.js';
+import {APP_ID, EXPLORER_CONFIG} from './config.js';
 import {Screen} from './Screen.js';
 
-export const APP_ID = EXPLORER_ID;
+export {APP_ID} from './config.js';
 
 export default defineApp({
 	id: APP_ID,

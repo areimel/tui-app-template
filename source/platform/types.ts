@@ -114,6 +114,32 @@ export type FilePreview =
 	| {readonly kind: 'binary'; readonly sizeBytes: number}
 	| {readonly kind: 'dir'; readonly entryCount: number};
 
+/**
+The end of a file as whole lines (`readTail`).
+*/
+export type FileTail = {
+	/**
+	The last bytes of the file, starting on a whole line (a partial first line is dropped).
+	*/
+	readonly text: string;
+	/**
+	File size when it was read: pass it to `follow` as `fromBytes` so nothing is missed or repeated.
+	*/
+	readonly endBytes: number;
+	/**
+	Earlier content was skipped.
+	*/
+	readonly isTruncated: boolean;
+};
+
+export type FollowOptions = {
+	/**
+	Byte offset to start from (e.g. `FileTail.endBytes`): text appended after it, even before `follow`
+	was called, is delivered. Default: the file's current end.
+	*/
+	readonly fromBytes?: number;
+};
+
 export type FsService = {
 	home(): string;
 	cwd(): string;
@@ -131,14 +157,20 @@ export type FsService = {
 	*/
 	readText(path: string, maxBytes: number): Promise<Result<string>>;
 	/**
-	Watches a file for appended text, starting at its current end. `onChunk` gets each appended
-	piece (not split into lines); `onError` gets a message if the file disappears or cannot be read.
-	Returns stop. Truncation restarts from the new end.
+	Last `maxBytes` of a file as UTF-8 text starting on a whole line, plus the size read (to continue
+	with `follow`). A large log opens at its latest lines this way.
+	*/
+	readTail(path: string, maxBytes: number): Promise<Result<FileTail>>;
+	/**
+	Watches a file for appended text, starting at its current end (or `options.fromBytes`). `onChunk`
+	gets each appended piece (not split into lines); `onError` gets a message if the file disappears
+	or cannot be read. Returns stop. Truncation restarts from the beginning.
 	*/
 	follow(
 		path: string,
 		onChunk: (text: string) => void,
 		onError?: (message: string) => void,
+		options?: FollowOptions,
 	): () => void;
 };
 

@@ -1,4 +1,5 @@
 import {Box} from 'ink';
+import {truncate} from '../../core/format.js';
 import {FOCUS_MARKER} from './glyphs.js';
 import {useListWindow} from './VirtualList.js';
 import {T} from './T.js';
@@ -47,11 +48,7 @@ export function fitCell(
 	cells: number,
 	align: 'left' | 'right' = 'left',
 ): string {
-	const chars = [...text.replaceAll(/\s+/gv, ' ')];
-	const cut =
-		chars.length > cells
-			? `${chars.slice(0, Math.max(0, cells - 1)).join('')}${cells > 0 ? '…' : ''}`
-			: text.replaceAll(/\s+/gv, ' ');
+	const cut = truncate(text.replaceAll(/\s+/gv, ' '), cells);
 	return align === 'right' ? cut.padStart(cells) : cut.padEnd(cells);
 }
 

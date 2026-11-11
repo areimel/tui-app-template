@@ -19,7 +19,8 @@ export type FieldRowProps = {
 	*/
 	readonly hint?: string;
 	/**
-	Label column width in cells; omit for natural width.
+	Label column width in cells; omit for natural width. A longer label is cut with `…`; a one-cell
+	gap always follows the column.
 	*/
 	readonly labelWidth?: number;
 	/**
@@ -46,15 +47,13 @@ export function FieldRow({
 					{isFocused ? FOCUS_MARKER : ' '}
 				</T>
 			</Box>
-			<Box
-				marginRight={1}
-				flexShrink={0}
-				{...optionalProp('width', labelWidth)}
-			>
-				<T bold={isFocused} dim={isDisabled}>
+			<Box flexShrink={0} {...optionalProp('width', labelWidth)}>
+				<T bold={isFocused} dim={isDisabled} wrap="truncate-end">
 					{label}
 				</T>
 			</Box>
+			{/* A real cell, not a margin: the gap survives a label that fills `labelWidth`. */}
+			<Box width={1} flexShrink={0} />
 			{children}
 			{hint === undefined ? null : (
 				<Box marginLeft={1}>

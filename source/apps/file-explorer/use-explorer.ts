@@ -5,6 +5,7 @@ so a permission error leaves the previous folder usable.
 */
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {fail, ok} from '../../core/result.js';
+import {sanitizeLine} from '../../core/sanitize.js';
 import {arrangeEntries, isDirectoryLike} from '../../platform/fs/entries.js';
 import type {DirEntry} from '../../platform/types.js';
 import {
@@ -18,7 +19,7 @@ import {useAsync} from '../../ui/hooks/use-async.js';
 import {useListNav} from '../../ui/hooks/use-list-nav.js';
 import {useKeys} from '../../ui/input/index.js';
 import {EXPLORER_BINDINGS} from './bindings.js';
-import {EXPLORER_CONFIG, EXPLORER_ID} from './config.js';
+import {APP_ID, EXPLORER_CONFIG} from './config.js';
 import {
 	baseName,
 	explorerLayout,
@@ -45,7 +46,7 @@ export function useExplorer() {
 	const router = useRouter();
 	const toast = useToast();
 	const size = useScreenSize();
-	const [config, updateConfig] = useAppConfig(EXPLORER_ID, EXPLORER_CONFIG);
+	const [config, updateConfig] = useAppConfig(APP_ID, EXPLORER_CONFIG);
 	const [pane, setPane] = useState<Pane>('list');
 	const [isFiltering, setIsFiltering] = useState(false);
 	const [filter, setFilter] = useState({path: '', text: ''});
@@ -55,14 +56,16 @@ export function useExplorer() {
 
 	const load = useAsync<Loaded, string, [string]>(async (_signal, path) => {
 		const result = await services.fs.list(path);
-		return result.isOk ? ok({path, entries: result.value}) : fail(result.error);
+		return result.isOk
+			? ok({path, entries: result.value})
+			: fail(sanitizeLine(result.error));
 	});
 	const previewLoad = useAsync<PreviewResult, string, [string]>(
 		async (_signal, path) => {
 			const result = await services.fs.preview(path, PREVIEW_MAX_BYTES);
 			return result.isOk
 				? ok({path, preview: result.value})
-				: fail(result.error);
+				: fail(sanitizeLine(result.error));
 		},
 	);
 

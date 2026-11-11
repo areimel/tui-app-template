@@ -1,7 +1,7 @@
 export {useAsync} from './use-async.js';
 export {useExternalStore} from './use-external-store.js';
 export {LIST_NAV_BINDINGS, useListNav} from './use-list-nav.js';
-export {usePoll} from './use-poll.js';
+export {usePoll, usePollWithRefresh} from './use-poll.js';
 export {useScroll} from './use-scroll.js';
 export type {
 	AsyncControl,

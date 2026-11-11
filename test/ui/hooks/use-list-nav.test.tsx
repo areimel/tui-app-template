@@ -1,6 +1,9 @@
 import test, {type ExecutionContext} from 'ava';
 import {Text} from 'ink';
-import {useListNav} from '../../../source/ui/hooks/use-list-nav.js';
+import {
+	LIST_NAV_BINDINGS,
+	useListNav,
+} from '../../../source/ui/hooks/use-list-nav.js';
 import type {ListNavOptions} from '../../../source/ui/hooks/types.js';
 import {createReadySignal} from '../../helpers/input-ready.js';
 import {KEYS, pressKeys, waitFor} from '../../helpers/keys.js';
@@ -165,4 +168,14 @@ test('isActive false registers no keys', async t => {
 	await pressKeys(view.stdin, KEYS.down);
 	await expectAt(t, view, 1);
 	view.unmount();
+});
+
+test('LIST_NAV_BINDINGS hint up and down as "↑↓ move"', t => {
+	const up = LIST_NAV_BINDINGS.find(binding => binding.action === 'up');
+	t.is(up?.caption, '↑↓');
+	t.is(up?.label, 'move');
+	t.is(
+		LIST_NAV_BINDINGS.find(binding => binding.action === 'down')?.label,
+		'move',
+	);
 });

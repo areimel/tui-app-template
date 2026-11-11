@@ -10,8 +10,14 @@ import {join, resolve} from 'node:path';
 import process from 'node:process';
 import {StringDecoder} from 'node:string_decoder';
 import {fail, ok, type Result} from '../../core/result.js';
-import type {DirEntry, DirEntryKind, FsService} from '../types.js';
-import {previewFromBytes} from './entries.js';
+import type {
+	DirEntry,
+	DirEntryKind,
+	FileTail,
+	FollowOptions,
+	FsService,
+} from '../types.js';
+import {previewFromBytes, tailFromBytes} from './entries.js';
 
 const FOLLOW_POLL_MS = 100;
 const FOLLOW_READ_CAP = 1024 * 1024;
@@ -107,6 +113,28 @@ async function readHead(
 	}
 }
 
+/**
+The last `maxBytes` (plus the byte before them, see `tailFromBytes`).
+*/
+async function readTail(path: string, maxBytes: number): Promise<FileTail> {
+	const handle = await open(path, 'r');
+	try {
+		const {size} = await handle.stat();
+		const start = Math.max(0, size - Math.max(0, maxBytes));
+		const isTruncated = start > 0;
+		const from = isTruncated ? start - 1 : 0;
+		const buffer = Buffer.alloc(size - from);
+		const {bytesRead} = await handle.read(buffer, 0, buffer.length, from);
+		return {
+			text: tailFromBytes(buffer.subarray(0, bytesRead), isTruncated),
+			endBytes: from + bytesRead,
+			isTruncated,
+		};
+	} finally {
+		await handle.close();
+	}
+}
+
 async function guard<T>(
 	path: string,
 	action: () => Promise<T>,
@@ -122,6 +150,7 @@ function follow(
 	path: string,
 	onChunk: (text: string) => void,
 	onError?: (message: string) => void,
+	options: FollowOptions = {},
 ): () => void {
 	let isStopped = false;
 	let isBusy = false;
@@ -132,7 +161,7 @@ function follow(
 
 	try {
 		const initial = statSync(path);
-		position = initial.size;
+		position = Math.min(options.fromBytes ?? initial.size, initial.size);
 		inode = initial.ino;
 	} catch (error) {
 		isMissing = true;
@@ -232,7 +261,11 @@ export function createFsService(): FsService {
 				return new TextDecoder('utf-8').decode(bytes, {stream: true});
 			});
 		},
-		follow: (rawPath, onChunk, onError) =>
-			follow(resolve(rawPath), onChunk, onError),
+		async readTail(rawPath, maxBytes) {
+			const path = resolve(rawPath);
+			return guard(path, async () => readTail(path, maxBytes));
+		},
+		follow: (rawPath, onChunk, onError, options) =>
+			follow(resolve(rawPath), onChunk, onError, options),
 	};
 }

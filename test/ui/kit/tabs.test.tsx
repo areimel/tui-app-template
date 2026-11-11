@@ -23,3 +23,27 @@ test('Tabs marks the first tab when selected and focused', t => {
 	a.unmount();
 	b.unmount();
 });
+
+const many = ['Alpha', 'Bravo', 'Charlie', 'Delta', 'Echo'].map(label => ({
+	value: label.toLowerCase(),
+	label,
+}));
+
+test('Tabs windows a strip wider than width, with ‹ and › markers', t => {
+	const r = renderThemed(<Tabs tabs={many} value="bravo" width={30} />);
+	const frame = r.plainFrame();
+	t.true([...frame.trimEnd()].length <= 30, frame);
+	t.regex(frame, /^‹/v);
+	t.regex(frame.trimEnd(), /›$/v);
+	t.regex(frame, /\[ Bravo \]\s+Charlie/v);
+	t.false(frame.includes('Alpha'));
+	t.false(frame.includes('Delta'));
+	r.unmount();
+});
+
+test('Tabs shows no markers when everything fits', t => {
+	const r = renderThemed(<Tabs tabs={many} value="alpha" width={100} />);
+	t.notRegex(r.plainFrame(), /[‹›]/v);
+	t.regex(r.plainFrame(), /Echo/v);
+	r.unmount();
+});

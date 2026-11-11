@@ -13,6 +13,7 @@ import {
 } from 'react';
 import type {AppConfigSpec, AppConfigStore} from '../config/schema.js';
 import type {Services} from '../platform/types.js';
+import {AnimationProvider} from '../ui/animation.js';
 import type {
 	AppService,
 	Router,
@@ -54,7 +55,8 @@ export type ShellProvidersProps = ShellValues & {
 };
 
 /**
-Supplies every shell value. Does not add a `ThemeProvider` or `InputRoot`; the caller does.
+Supplies every shell value, and the animation setting to the kit (`AnimationProvider`). Does not add a
+`ThemeProvider` or `InputRoot`; the caller does.
 */
 export function ShellProviders({
 	router,
@@ -72,7 +74,9 @@ export function ShellProviders({
 					<ToastContext value={toast}>
 						<RouterContext value={router}>
 							<ScreenSizeContext value={screenSize}>
-								{children}
+								<AnimationProvider isAnimated={settings.isAnimated}>
+									{children}
+								</AnimationProvider>
 							</ScreenSizeContext>
 						</RouterContext>
 					</ToastContext>

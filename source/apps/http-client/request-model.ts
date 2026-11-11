@@ -5,7 +5,7 @@ status badge. No I/O and no React.
 import {fail, ok, type Result} from '../../core/result.js';
 import type {HttpMethod, HttpRequest} from '../../platform/types.js';
 import type {BadgeState} from '../../ui/kit/Badge.js';
-import {hasControlCharacters} from './text-util.js';
+import {hasControlCharacters} from '../../core/sanitize.js';
 
 /**
 What the Request pane edits. `header` is one optional `Name: value` line; `body` is only sent by
@@ -35,13 +35,6 @@ export const DEFAULT_FORM: RequestForm = {
 
 export const TIMEOUT_MS = 15_000;
 export const HISTORY_LIMIT = 10;
-
-/**
-Limits on what is saved in the config file.
-*/
-export const SAVED_URL_LIMIT = 2000;
-export const SAVED_HEADER_LIMIT = 500;
-export const SAVED_BODY_LIMIT = 2000;
 
 const BODY_METHODS: ReadonlySet<HttpMethod> = new Set(['POST', 'PUT', 'PATCH']);
 
@@ -179,46 +172,6 @@ export function formFromEntry(entry: RequestForm): RequestForm {
 		url: entry.url,
 		header: entry.header,
 		body: entry.body,
-	};
-}
-
-// ---- Saving ----------------------------------------------------------------------------------------
-
-const SENSITIVE_NAMES = new Set([
-	'authorization',
-	'cookie',
-	'proxy-authorization',
-]);
-const SENSITIVE_PARTS = ['token', 'key', 'secret'];
-
-/**
-A header that probably carries a credential: `Authorization`, `Cookie`, `Proxy-Authorization`, or a
-name containing `token`, `key` or `secret`.
-*/
-export function isSensitiveHeader(text: string): boolean {
-	const colon = text.indexOf(':');
-	const name = (colon === -1 ? text : text.slice(0, colon))
-		.trim()
-		.toLowerCase();
-	return (
-		SENSITIVE_NAMES.has(name) ||
-		SENSITIVE_PARTS.some(part => name.includes(part))
-	);
-}
-
-/**
-The form as it may be saved to the config file: a credential-like header is dropped (it stays in
-memory for the session, never on disk) and long text is cut to the saved limits. Bodies ARE saved
-(capped); do not put secrets in them.
-*/
-export function scrubForSave(form: RequestForm): RequestForm {
-	return {
-		method: form.method,
-		url: form.url.slice(0, SAVED_URL_LIMIT),
-		header: isSensitiveHeader(form.header)
-			? ''
-			: form.header.slice(0, SAVED_HEADER_LIMIT),
-		body: form.body.slice(0, SAVED_BODY_LIMIT),
 	};
 }
 

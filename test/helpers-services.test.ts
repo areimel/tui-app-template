@@ -197,3 +197,60 @@ test('overrides replace whole services', async t => {
 	t.is(await services.battery.read(), undefined);
 	t.is(services.platform, 'darwin');
 });
+
+test('data lastSaved is undefined until a save, then the latest value', t => {
+	const {services, control} = createFakeServices({
+		dataFiles: {'todo.json': {items: ['seed']}},
+	});
+	const store = services.data.file('todo.json', TODO_SPEC);
+	t.deepEqual(control.data.get('todo.json'), {items: ['seed']});
+	t.is(control.data.lastSaved('todo.json'), undefined);
+	store.save({items: ['a']});
+	store.save({items: ['b']});
+	t.deepEqual(control.data.lastSaved('todo.json'), {items: ['b']});
+});
+
+test('fs readTail returns whole lines from the end', async t => {
+	const {services} = createFakeServices({
+		files: {'/l.log': 'one\ntwo\nthree\n'},
+	});
+	t.deepEqual(await services.fs.readTail('/l.log', 8), {
+		isOk: true,
+		value: {text: 'three\n', endBytes: 14, isTruncated: true},
+	});
+	const missing = await services.fs.readTail('/missing', 8);
+	t.false(missing.isOk);
+});
+
+test('fs follow from an offset first delivers what it missed', async t => {
+	const {services, control} = createFakeServices({files: {'/l.log': 'a\nb\n'}});
+	const received: string[] = [];
+	const stop = services.fs.follow(
+		'/l.log',
+		text => {
+			received.push(text);
+		},
+		undefined,
+		{fromBytes: 2},
+	);
+	await Promise.resolve();
+	control.fs.appendFile('/l.log', 'c\n');
+	t.deepEqual(received, ['b\n', 'c\n']);
+	stop();
+});
+
+test('fs errors and per-entry modified times are injectable', async t => {
+	const {services} = createFakeServices({
+		files: {'/d/locked/x': 'x', '/d/a.txt': 'a'},
+		modified: {'/d/a.txt': 42},
+		errors: {'/d/locked': 'Permission denied: /d/locked'},
+	});
+	const listed = await services.fs.list('/d');
+	const entries = listed.isOk ? listed.value : [];
+	t.is(entries.find(entry => entry.name === 'a.txt')?.modifiedMs, 42);
+	t.is(entries.find(entry => entry.name === 'locked')?.modifiedMs, 0);
+	t.deepEqual(await services.fs.list('/d/locked'), {
+		isOk: false,
+		error: 'Permission denied: /d/locked',
+	});
+});
