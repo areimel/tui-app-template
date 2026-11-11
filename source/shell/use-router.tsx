@@ -1,13 +1,16 @@
 /**
-Stub: owned by S1 (router, input scopes, keys). React state around `router.ts`.
-Replace the body; keep the export and signature.
+React state around the pure route stack (`router.ts`), producing the `Router` value that `Shell`
+passes to `ShellProviders`.
 */
-import {useReducer} from 'react';
+import {useMemo, useReducer} from 'react';
 import {createRouterState, currentRoute, routerReducer} from './router.js';
 import type {Route, Router} from './types.js';
 
 /**
-A `Router` (for `ShellProviders`) starting at the menu, or at `initial` on top of the menu.
+A `Router` (for `ShellProviders`) starting at the menu, or at `initial` on top of the menu (a deep
+link, so Back returns to the menu). `initial` is read on the first render only. `push`, `replace`,
+`pop` and `reset` are stable for the component's life; the `Router` object itself changes only when
+the stack does.
 */
 export function useRouterState(initial?: Route): Router {
 	const [state, dispatch] = useReducer(
@@ -15,20 +18,29 @@ export function useRouterState(initial?: Route): Router {
 		initial,
 		createRouterState,
 	);
-	return {
-		current: currentRoute(state),
-		depth: state.stack.length,
-		push(route) {
-			dispatch({type: 'push', route});
-		},
-		replace(route) {
-			dispatch({type: 'replace', route});
-		},
-		pop() {
-			dispatch({type: 'pop'});
-		},
-		reset() {
-			dispatch({type: 'reset'});
-		},
-	};
+	const actions = useMemo(
+		() => ({
+			push(route: Route) {
+				dispatch({type: 'push', route});
+			},
+			replace(route: Route) {
+				dispatch({type: 'replace', route});
+			},
+			pop() {
+				dispatch({type: 'pop'});
+			},
+			reset() {
+				dispatch({type: 'reset'});
+			},
+		}),
+		[],
+	);
+	return useMemo(
+		() => ({
+			current: currentRoute(state),
+			depth: state.stack.length,
+			...actions,
+		}),
+		[state, actions],
+	);
 }

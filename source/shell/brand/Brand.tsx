@@ -1,7 +1,6 @@
 /**
-Stub: owned by S2 (app shell, menu, overlays, brand). The menu heading: `HEADING_LINES` (ANSI Shadow
-art of `APP.headingText`) when `width` allows, else `APP.displayName`; the tagline under it.
-Replace the body; keep the export and props.
+The menu heading: `HEADING_LINES` (ANSI Shadow art of `APP.headingText`) when `width` allows, else
+`APP.displayName` on one line; the tagline under it.
 */
 import {Box} from 'ink';
 import {APP} from '../../app.config.js';
@@ -13,24 +12,31 @@ export type BrandProps = {
 	Columns available.
 	*/
 	readonly width: number;
+	/**
+	Allow the art (the menu turns it off when the body is too short). Default true.
+	*/
+	readonly hasArt?: boolean;
 };
 
-export function Brand({width}: BrandProps) {
-	const isArt = width >= HEADING_WIDTH;
+export function Brand({width, hasArt = true}: BrandProps) {
+	const isArt = hasArt && width >= HEADING_WIDTH;
 	return (
-		<Box flexDirection="column">
+		<Box flexDirection="column" width={width}>
 			{isArt ? (
-				HEADING_LINES.map(line => (
-					<T key={line} tone="accent">
+				HEADING_LINES.map((line, index) => (
+					// eslint-disable-next-line @eslint-react/no-array-index-key -- Static art.
+					<T key={index} tone="accent" wrap="truncate-end">
 						{line}
 					</T>
 				))
 			) : (
-				<T bold tone="accent">
+				<T bold tone="accent" wrap="truncate-end">
 					{APP.displayName}
 				</T>
 			)}
-			<T tone="muted">{APP.tagline}</T>
+			<T tone="muted" wrap="truncate-end">
+				{APP.tagline}
+			</T>
 		</Box>
 	);
 }

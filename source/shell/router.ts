@@ -1,9 +1,16 @@
 /**
-Stub: owned by S1 (router, input scopes, keys). Pure route stack. Write it test-first; keep the exports
-and signatures.
+Pure route stack: the menu is always at the bottom, apps are pushed on top of it.
 
-Rules: the menu is always at the bottom of the stack; `pop` at the menu does nothing; `replace` at the
-menu pushes instead; `reset` leaves the menu alone; pushing the route already on top does nothing.
+Rules:
+- `push` adds a route on top; pushing the route already on top (same id and params) does nothing.
+- `replace` swaps the top route; at the menu it pushes instead (the menu cannot be replaced).
+- `pop` drops the top route; at the menu it does nothing.
+- `reset` goes back to the menu alone.
+- Pushing or replacing with the menu route (`id: 'menu'`) resets, so the menu never sits mid-stack.
+
+A no-op returns the same state object, so React skips the re-render. Route ids are not checked here:
+an id that names no app is the caller's problem (the shell renders a "not found" page or never pushes
+one, e.g. `cli.tsx` validates a deep-link id before building `initialRoute`).
 */
 import {MENU_ROUTE, type Route} from './types.js';
 
@@ -32,11 +39,59 @@ export function createRouterState(initial?: Route): RouterState {
 	};
 }
 
+/**
+Same id and same params; absent params equal empty params.
+*/
+export function isSameRoute(left: Route, right: Route): boolean {
+	if (left.id !== right.id) {
+		return false;
+	}
+
+	const ours = left.params ?? {};
+	const theirs = right.params ?? {};
+	const keys = Object.keys(ours);
+	return (
+		keys.length === Object.keys(theirs).length &&
+		keys.every(key => ours[key] === theirs[key])
+	);
+}
+
+function reset(state: RouterState): RouterState {
+	const [menu = MENU_ROUTE] = state.stack;
+	return state.stack.length === 1 ? state : {stack: [menu]};
+}
+
 export function routerReducer(
 	state: RouterState,
-	_action: RouterAction,
+	action: RouterAction,
 ): RouterState {
-	return state;
+	const top = currentRoute(state);
+	switch (action.type) {
+		case 'push':
+		case 'replace': {
+			if (action.route.id === MENU_ROUTE.id) {
+				return reset(state);
+			}
+
+			if (isSameRoute(top, action.route)) {
+				return state;
+			}
+
+			const base =
+				action.type === 'replace' && state.stack.length > 1
+					? state.stack.slice(0, -1)
+					: state.stack;
+			return {stack: [...base, action.route]};
+		}
+
+		case 'pop': {
+			return state.stack.length > 1 ? {stack: state.stack.slice(0, -1)} : state;
+		}
+
+		case 'reset': {
+			return reset(state);
+		}
+	}
 }
 
 export function currentRoute(state: RouterState): Route {
