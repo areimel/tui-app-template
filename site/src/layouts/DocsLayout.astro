@@ -1,0 +1,85 @@
+---
+import SiteLayout from "./SiteLayout.astro";
+import { href } from "../lib/urls";
+import "../styles/docs.css";
+
+interface Props {
+  frontmatter: { title: string; description?: string };
+  headings: { depth: number; slug: string; text: string }[];
+}
+const { frontmatter, headings: pageHeadings } = Astro.props;
+const navigation = [
+  ["01", "Getting started", "/docs/"],
+  ["02", "Usage", "/docs/usage/"],
+  ["03", "Reference", "/docs/reference/"],
+  ["04", "Configuration", "/docs/configuration/"],
+  ["05", "Platforms & troubleshooting", "/docs/platforms/"],
+];
+const headings = pageHeadings.filter((heading) => heading.depth === 2);
+const currentPath = Astro.url.pathname.replace(/\/$/, "");
+---
+
+<SiteLayout
+  title={`${frontmatter.title} — Docs`}
+  description={frontmatter.description}
+>
+  <div class="docs-shell">
+    <aside class="docs-sidebar">
+      <p class="docs-label">MANUAL / coffee-term</p>
+      <nav aria-label="Documentation">
+        {
+          navigation.map(([number, label, path]) => (
+            <a
+              href={href(path)}
+              aria-current={
+                currentPath === href(path).replace(/\/$/, "")
+                  ? "page"
+                  : undefined
+              }
+            >
+              <span aria-hidden="true">{number}</span>
+              {label}
+            </a>
+          ))
+        }
+      </nav>
+      <a class="docs-source" href="https://github.com/areimel/coffee-cli"
+        >View source ↗</a
+      >
+    </aside>
+    <article class="docs-article">
+      <header class="docs-header">
+        <p class="docs-label">USER DOCUMENTATION / v1</p>
+        <h1>{frontmatter.title}</h1>
+        {
+          frontmatter.description && (
+            <p class="docs-description">{frontmatter.description}</p>
+          )
+        }
+      </header>
+      {
+        headings.length > 0 && (
+          <nav class="docs-contents" aria-label="On this page">
+            <span class="docs-label">ON THIS PAGE</span>
+            <ul>
+              {headings.map(({ slug, text }) => (
+                <li>
+                  <a href={`#${slug}`}>{text}</a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )
+      }
+      <div class="docs-prose"><slot /></div>
+      <footer class="docs-footer">
+        Source of truth: the CLI's <a
+          href="https://github.com/areimel/coffee-cli/blob/main/readme.md"
+          >README and source</a
+        >. Found an issue? <a
+          href="https://github.com/areimel/coffee-cli/issues">Open an issue ↗</a
+        >
+      </footer>
+    </article>
+  </div>
+</SiteLayout>

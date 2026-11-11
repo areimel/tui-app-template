@@ -1,0 +1,271 @@
+/* Landing composition adapted from Kojima's editorial instrument layout. */
+.coffee-home {
+  padding-bottom: 5rem;
+}
+.home-intro {
+  padding: 2rem 0 2.7rem;
+}
+.home-statusline,
+.home-section-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--muted-foreground);
+}
+.home-statusline > span:first-child,
+.home-system-strip > span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+.home-statusline i,
+.home-system-strip i {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: var(--primary);
+  flex-shrink: 0;
+}
+.home-heading-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 3rem;
+  padding-top: 2.7rem;
+}
+.home-heading-row h1 {
+  font-size: clamp(3.5rem, 7vw, 6.5rem);
+  line-height: 0.98;
+  letter-spacing: -0.065em;
+  margin: 0;
+  font-weight: 600;
+}
+.home-heading-row h1 > span:first-of-type {
+  color: var(--muted-foreground);
+}
+.home-heading-row .heading-cursor {
+  color: var(--primary);
+  margin-left: 0.04em;
+}
+.home-intro-copy {
+  width: 330px;
+  flex-shrink: 0;
+}
+.home-intro-copy > p:first-child {
+  color: var(--muted-foreground);
+  font-size: 1rem;
+  line-height: 1.75;
+  margin: 0 0 1.5rem;
+}
+.home-intro-copy .button {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+}
+.home-intro-copy .home-requirement {
+  font: 0.65rem var(--font-mono);
+  color: var(--muted-foreground);
+  margin: 0.9rem 0 0.2rem;
+}
+.home-system-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 1.5rem;
+  padding: 1.3rem 0;
+  border-bottom: 1px solid var(--border);
+  font: 0.65rem var(--font-mono);
+  color: var(--muted-foreground);
+}
+.home-system-strip > span:first-child {
+  color: var(--foreground);
+}
+.home-system-strip a,
+.capabilities-grid a,
+.install-copy > a,
+.platform-list > a,
+.home-final-reference {
+  color: var(--foreground);
+  text-underline-offset: 0.3em;
+}
+.home-system-strip a:hover,
+.capabilities-grid a:hover,
+.install-copy > a:hover,
+.platform-list > a:hover,
+.home-final-reference:hover {
+  color: var(--kojima-accent-ink);
+}
+.home-capabilities {
+  padding-top: 5.5rem;
+}
+.home-section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 3rem;
+  margin: 2rem 0;
+}
+.home-section-heading h2,
+.home-install h2,
+.home-platforms h2,
+.home-final h2 {
+  font-size: clamp(2rem, 3.8vw, 3.5rem);
+  line-height: 1.05;
+  letter-spacing: -0.05em;
+  font-weight: 500;
+  margin: 0;
+}
+.home-section-heading p {
+  max-width: 340px;
+  font-size: 0.9rem;
+  line-height: 1.8;
+  color: var(--muted-foreground);
+  margin: 0;
+}
+.capabilities-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid var(--border);
+}
+.capabilities-grid article {
+  padding: 1.6rem;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.capabilities-grid article + article {
+  border-left: 1px solid var(--border);
+}
+.capability-index {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font: 0.65rem var(--font-mono);
+  color: var(--muted-foreground);
+  margin-bottom: 2.5rem;
+  letter-spacing: 0.06em;
+}
+.capability-index > span:last-child {
+  color: var(--kojima-accent-ink);
+  font-size: 1.1rem;
+}
+.capabilities-grid h3 {
+  font-size: 1.45rem;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  margin: 0;
+}
+.capabilities-grid p {
+  color: var(--muted-foreground);
+  font-size: 0.85rem;
+  line-height: 1.8;
+  margin: 0.8rem 0 1.7rem;
+}
+.capabilities-grid code,
+.capabilities-grid a {
+  font: 0.65rem var(--font-mono);
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+  margin-top: auto;
+}
+.capabilities-grid code {
+  color: var(--kojima-accent-ink);
+}
+.home-install {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 4rem;
+  align-items: center;
+  margin: 5rem 0;
+  padding: 3rem 0;
+  border-block: 1px solid var(--border);
+}
+.home-install h2 {
+  margin: 1.5rem 0;
+}
+.install-copy > p {
+  color: var(--muted-foreground);
+  max-width: 320px;
+  font-size: 0.9rem;
+  line-height: 1.8;
+}
+.install-copy > a {
+  display: inline-block;
+  margin-top: 0.8rem;
+  font: 0.7rem var(--font-mono);
+}
+.install-command {
+  min-width: 0;
+}
+.install-command > p {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  line-height: 1.8;
+  margin: 1rem 0 0;
+}
+.install-command > p code {
+  font-size: 0.7rem;
+}
+.home-platforms {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 4rem;
+}
+.home-platforms h2 {
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  margin-top: 1.5rem;
+}
+.platform-list > div {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  gap: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 0;
+}
+.platform-list > div:first-child {
+  padding-top: 0;
+}
+.platform-list h3 {
+  font: 0.8rem var(--font-mono);
+  margin: 0.1rem 0 0;
+}
+.platform-list p {
+  color: var(--muted-foreground);
+  font-size: 0.85rem;
+  line-height: 1.8;
+  margin: 0;
+}
+.platform-list > a {
+  display: inline-block;
+  font: 0.7rem var(--font-mono);
+  margin-top: 1.3rem;
+}
+.platform-list .platform-footnote {
+  font: 0.65rem var(--font-mono);
+  margin-top: 1rem;
+}
+.home-final {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-top: 5rem;
+  padding-top: 3rem;
+  border-top: 1px solid var(--border);
+}
+.home-final h2 {
+  margin-top: 1.5rem;
+}
+.home-final > div:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.home-final .button {
+  display: flex;
+  justify-content: space-between;
+}
+.home-final-reference {
+  font: 0.65rem var(--font-mono);
+}

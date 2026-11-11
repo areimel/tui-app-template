@@ -1,0 +1,93 @@
+/* Opt in with <html data-theme="kojima">; the shell owns the .dark toggle.
+   Unlayered skin rules intentionally override shadcn's utility defaults. */
+html[data-theme="kojima"] {
+  color-scheme: light;
+  --background: #efebe0;
+  --foreground: #141310;
+  --card: #f8f5ed;
+  --card-foreground: var(--foreground);
+  --popover: #f8f5ed;
+  --popover-foreground: var(--foreground);
+  --primary: #ff4d00;
+  --primary-foreground: #141310;
+  --secondary: #e1dccf;
+  --secondary-foreground: var(--foreground);
+  --muted: #e1dccf;
+  --muted-foreground: #625e53;
+  --accent: #dad4c5;
+  --accent-foreground: var(--foreground);
+  --destructive: #ad2921;
+  --destructive-foreground: #ffffff;
+  --border: #c4beaf;
+  --input: #817b6c;
+  --ring: #b83200;
+  --chart-1: #b83200;
+  --chart-2: #52664b;
+  --chart-3: #3e6674;
+  --chart-4: #806222;
+  --chart-5: #775870;
+  --sidebar: var(--card);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+  --kojima-orange: #ff4d00;
+  --kojima-accent-ink: #b83200;
+  --radius: 0px;
+  --shadow-2xs: 0 0 #0000;
+  --shadow-xs: 0 0 #0000;
+  --shadow-sm: 0 0 #0000;
+  --shadow: 0 0 #0000;
+  --shadow-md: 0 0 #0000;
+  --shadow-lg: 0 0 #0000;
+  --shadow-xl: 0 0 #0000;
+  --shadow-2xl: 0 0 #0000;
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --display-family: var(--font-sans);
+  --text-family: var(--font-sans);
+  --display-weight: 700;
+  --text-weight: 400;
+}
+
+html[data-theme="kojima"].dark {
+  color-scheme: dark;
+  --background: #141310;
+  --foreground: #efebe0;
+  --card: #1c1b17;
+  --popover: #1c1b17;
+  --secondary: #292720;
+  --muted: #292720;
+  --muted-foreground: #aaa596;
+  --accent: #363229;
+  --destructive: #b52d24;
+  --border: #3f3b31;
+  --input: #827b6b;
+  --ring: #ff4d00;
+  --chart-1: #ff4d00;
+  --chart-2: #a4b58a;
+  --chart-3: #8eafb9;
+  --chart-4: #d8b971;
+  --chart-5: #c3a0b7;
+  --kojima-accent-ink: #ff4d00;
+}
+
+html[data-theme="kojima"] body {
+  font-family: var(--text-family);
+  line-height: 1.6;
+}
+
+html[data-theme="kojima"] ::selection {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+html[data-theme="kojima"]
+  :where(h1, h2, h3, h4, [data-slot="card-title"], .section-heading) {
+  font-family: var(--display-family);
+  font-weight: var(--display-weight);
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}

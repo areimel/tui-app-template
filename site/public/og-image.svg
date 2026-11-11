@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#141310"/>
+  <path d="M48 90H1152M48 540H1152M780 150V480" stroke="#3f3b31"/>
+  <g font-family="DejaVu Sans Mono,monospace">
+    <text x="52" y="62" font-size="22" fill="#aaa596">COFFEE-CLI / TERMINAL UTILITY</text>
+    <text x="52" y="243" font-size="72" font-weight="bold" fill="#efebe0">Stay awake.</text>
+    <text x="52" y="333" font-size="72" font-weight="bold" fill="#ff4d00">Stay in flow.</text>
+    <text x="52" y="420" font-size="24" fill="#aaa596">A cosy dashboard for Linux and macOS.</text>
+    <text x="52" y="493" font-size="24" fill="#efebe0">$ coffee-cli -d 1h30m</text>
+    <text x="830" y="230" font-size="44" fill="#ffbd69">  ) (</text>
+    <text x="830" y="285" font-size="44" fill="#ffbd69"> (   )</text>
+    <text x="830" y="340" font-size="44" fill="#ffbd69">┌──────┐</text>
+    <text x="830" y="395" font-size="44" fill="#ffbd69">│      ├┐</text>
+    <text x="830" y="450" font-size="44" fill="#ffbd69">└──────┴┘</text>
+    <text x="52" y="586" font-size="20" fill="#aaa596">OPEN SOURCE / MIT LICENSE</text>
+  </g>
+</svg>

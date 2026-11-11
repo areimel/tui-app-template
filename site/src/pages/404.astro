@@ -1,0 +1,31 @@
+---
+import SiteLayout from "../layouts/SiteLayout.astro";
+import { href } from "../lib/urls";
+---
+
+<SiteLayout title="Page not found">
+  <section class="container not-found">
+    <p class="eyebrow">ERROR / 404</p>
+    <h1>Command not found.</h1>
+    <p>This page isn't in the directory. Let's get you back to a fresh cup.</p>
+    <a class="button button-primary" href={href("")}>Return home →</a>
+    <a class="button" href={href("docs/")}>Read the docs</a>
+  </section>
+</SiteLayout>
+<style>
+  .not-found {
+    padding-block: 100px;
+    min-height: 60vh;
+  }
+  h1 {
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    line-height: 1.1;
+  }
+  p {
+    max-width: 42rem;
+  }
+  .button {
+    margin-top: 16px;
+    margin-right: 12px;
+  }
+</style>

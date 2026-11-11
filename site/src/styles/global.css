@@ -1,0 +1,227 @@
+@import "./kojima.css";
+
+@font-face {
+  font-family: "DM Sans";
+  src: url("../../public/fonts/dm-sans/DMSans-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "DM Sans";
+  src: url("../../public/fonts/dm-sans/DMSans-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}
+:root {
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 2rem;
+}
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+}
+a {
+  color: inherit;
+  text-underline-offset: 0.2em;
+}
+button {
+  font: inherit;
+  cursor: pointer;
+}
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+button:disabled {
+  cursor: default;
+}
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 5px;
+}
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+img,
+svg {
+  max-width: 100%;
+}
+.container {
+  width: min(1280px, calc(100% - 96px));
+  margin-inline: auto;
+}
+.eyebrow {
+  font: 500 0.7rem/1.6 var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.button {
+  display: inline-flex;
+  gap: 0.8rem;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.8rem 1.2rem;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--foreground);
+  text-decoration: none;
+  font: 500 0.75rem/1.5 var(--font-mono);
+}
+.button:hover {
+  border-color: var(--foreground);
+}
+.button-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+}
+.site-header {
+  border-bottom: 1px solid var(--border);
+}
+.header-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 90px;
+  gap: 24px;
+}
+.wordmark {
+  text-decoration: none;
+  font: 700 1.1rem var(--font-mono);
+  letter-spacing: -0.06em;
+  white-space: nowrap;
+}
+.wordmark span {
+  color: var(--kojima-accent-ink);
+  margin-right: 0.5rem;
+}
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  font: 0.75rem var(--font-mono);
+}
+.site-nav a {
+  text-decoration: none;
+}
+.site-nav a:hover,
+.site-nav a[aria-current] {
+  color: var(--kojima-accent-ink);
+}
+.theme-toggle {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--foreground);
+  min-height: 40px;
+  padding: 0.4rem 0.7rem;
+  font: 0.7rem var(--font-mono);
+}
+.site-footer {
+  margin-top: 64px;
+  border-top: 1px solid var(--border);
+}
+.footer-inner {
+  min-height: 100px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: center;
+  justify-content: space-between;
+  font: 0.7rem/1.8 var(--font-mono);
+  color: var(--muted-foreground);
+}
+.footer-links {
+  display: flex;
+  gap: 24px;
+}
+.skip-link {
+  position: fixed;
+  left: 16px;
+  top: -100px;
+  padding: 12px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  z-index: 10;
+}
+.skip-link:focus {
+  top: 16px;
+}
+.code-block {
+  position: relative;
+  margin-block: 1.5rem;
+  border: 1px solid var(--border);
+  background: var(--card);
+  min-width: 0;
+}
+.code-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--border);
+  font: 0.7rem var(--font-mono);
+  color: var(--muted-foreground);
+}
+.copy-command {
+  color: var(--foreground);
+  background: transparent;
+  border: 1px solid var(--border);
+  padding: 0.5rem;
+  font: 0.7rem var(--font-mono);
+}
+.code-block pre {
+  padding: 1rem;
+  margin: 0;
+  overflow-x: auto;
+  font: 0.8rem/1.8 var(--font-mono);
+}
+[hidden] {
+  display: none !important;
+}
+@media (max-width: 760px) {
+  .container {
+    width: calc(100% - 40px);
+  }
+  .header-inner {
+    min-height: 78px;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-block: 18px;
+  }
+  .site-nav {
+    gap: 18px;
+  }
+  .footer-inner {
+    padding-block: 24px;
+  }
+}
+@media (max-width: 400px) {
+  .site-nav {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

@@ -1,0 +1,36 @@
+---
+interface Props {
+  code: string;
+  label?: string;
+}
+const { code, label = "terminal" } = Astro.props;
+---
+
+<div class="code-block">
+  <div class="code-bar">
+    <span>{label}</span><button
+      class="copy-command"
+      aria-label="Copy command"
+      hidden>Copy</button
+    ><span class="copy-status" role="status"></span>
+  </div>
+  <pre tabindex="0"><code>{code}</code></pre>
+</div>
+<script>
+  document.querySelectorAll<HTMLElement>(".code-block").forEach((block) => {
+    const button = block.querySelector<HTMLButtonElement>(".copy-command");
+    const status = block.querySelector<HTMLElement>(".copy-status");
+    if (!button || !status || !navigator.clipboard) return;
+    button.hidden = false;
+    button.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(
+          block.querySelector("code")?.textContent ?? "",
+        );
+        status.textContent = "Copied";
+      } catch {
+        status.textContent = "Select and copy the command below.";
+      }
+    });
+  });
+</script>

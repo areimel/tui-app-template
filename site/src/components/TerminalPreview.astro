@@ -1,0 +1,166 @@
+---
+import "../styles/terminal.css";
+import "../styles/terminal-responsive.css";
+const heading = ` ██████╗ ██████╗ ███████╗███████╗███████╗███████╗
+██╔════╝██╔═══██╗██╔════╝██╔════╝██╔════╝██╔════╝
+██║     ██║   ██║█████╗  █████╗  █████╗  █████╗
+██║     ██║   ██║██╔══╝  ██╔══╝  ██╔══╝  ██╔══╝
+╚██████╗╚██████╔╝██║     ██║     ███████╗███████╗
+ ╚═════╝ ╚═════╝ ╚═╝     ╚═╝     ╚══════╝╚══════╝`;
+const cup = `       '     .
+        ) (     )
+        ) (    (
+       )   )   (
+       (   )   (
+  ╭──────────────╮
+  │▒▒▒▒▒▒▒▒▒▒▒▒▒▒│
+  │              │──╮
+  │              │  │
+  ╰╮            ╭╯──╯
+   ╰────────────╯
+ ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀`;
+---
+
+<div class="terminal-workspace">
+  <div class="preview-toolbar">
+    <span class="eyebrow">01 / In the terminal</span>
+    <div class="preview-themes" role="group" aria-label="Preview colour theme">
+      <span>Phosphor</span>
+      <button
+        type="button"
+        data-preview-theme="amber"
+        aria-label="Amber"
+        aria-pressed="true">Amber</button
+      >
+      <button
+        type="button"
+        data-preview-theme="green"
+        aria-label="Green"
+        aria-pressed="false">Green</button
+      >
+      <button
+        type="button"
+        data-preview-theme="severance"
+        aria-label="Severance"
+        aria-pressed="false">Severance</button
+      >
+    </div>
+  </div>
+  <figure
+    class="terminal-preview"
+    data-terminal-preview
+    data-palette="amber"
+    aria-label="Illustrative coffee-term dashboard"
+  >
+    <div class="terminal-titlebar">
+      <span>~/projects <b>❯ coffee-term -d 1h30m</b></span><span
+        >TTY / 120 × 32</span
+      >
+    </div>
+    <div class="terminal-screen">
+      <div class="terminal-heading">
+        <span class="terminal-rule"></span><pre
+          aria-hidden="true">{heading}</pre><span class="terminal-rule"></span>
+      </div>
+      <div class="terminal-dashboard">
+        <div class="terminal-panel cup-panel">
+          <span class="panel-title">brewing</span>
+          <pre
+            class="terminal-cup"
+            aria-label="A warm cup of coffee">{cup}</pre>
+          <div class="cup-caption">
+            A little company.<br />A little less sleep.
+          </div>
+        </div>
+        <div class="terminal-data">
+          <div class="terminal-top-panels">
+            <div class="terminal-panel session-panel">
+              <span class="panel-title">Session</span>
+              <p class="awake-status">● AWAKE</p>
+              <dl>
+                <div><dt>Elapsed</dt><dd>00:24:18</dd></div><div>
+                  <dt>Remaining</dt><dd>01:05:42</dd>
+                </div>
+              </dl>
+              <div class="lock-status">
+                <span>● System <small>systemd-inhibit</small></span><span
+                  >● Display <small>gnome-session-inhibit</small></span
+                >
+              </div>
+            </div>
+            <div class="terminal-panel stats-panel">
+              <span class="panel-title">Stats</span>
+              <dl>
+                <div><dt>Uptime</dt><dd>3h 02m</dd></div><div>
+                  <dt>Battery</dt><dd>████████░░ 80%</dd>
+                </div><div><dt>Power</dt><dd>on AC</dd></div><div>
+                  <dt>Load</dt><dd>0.42 0.38 0.35</dd>
+                </div><div><dt>Host</dt><dd>your-machine</dd></div>
+              </dl>
+            </div>
+          </div>
+          <div class="terminal-panel options-panel">
+            <span class="panel-title">❯ Options</span>
+            <dl>
+              <div class="option-selected">
+                <dt>❯ Mode</dt><dd>[ ‹ duration › ]</dd>
+              </div><div><dt>Duration</dt><dd>[ 1h30m ]</dd></div><div>
+                <dt>Display</dt><dd>[ ● on ]</dd>
+              </div><div><dt>AC only</dt><dd>[ ○ off ]</dd></div><div>
+                <dt>Min battery</dt><dd>[ off ]</dd>
+              </div><div><dt>Wait PID</dt><dd>[ none ]</dd></div>
+            </dl>
+          </div>
+        </div>
+      </div>
+      <div class="terminal-keys">
+        <span>↑↓ move</span><span>←→ change</span><span>enter edit</span><span
+          >space pause</span
+        ><span>t theme</span><span>? help</span><span>q quit</span>
+      </div>
+    </div>
+    <figcaption>
+      <span>ILLUSTRATIVE PREVIEW / SAMPLE SESSION DATA</span><span
+        >Linux · GNOME · Amber phosphor</span
+      >
+    </figcaption>
+  </figure>
+</div>
+
+<script>
+  const preview = document.querySelector<HTMLElement>(
+    "[data-terminal-preview]",
+  );
+  const buttons = document.querySelectorAll<HTMLButtonElement>(
+    "[data-preview-theme]",
+  );
+  function selectTheme(theme: string) {
+    if (!preview || !["amber", "green", "severance"].includes(theme)) return;
+    preview.dataset.palette = theme;
+    buttons.forEach((button) =>
+      button.setAttribute(
+        "aria-pressed",
+        String(button.dataset.previewTheme === theme),
+      ),
+    );
+    const caption = preview.querySelector("figcaption span:last-child");
+    if (caption)
+      caption.textContent = `Linux · GNOME · ${theme[0]?.toUpperCase()}${theme.slice(1)} phosphor`;
+  }
+  try {
+    selectTheme(localStorage.getItem("coffee-preview-theme") || "amber");
+  } catch {
+    /* Storage is optional. */
+  }
+  buttons.forEach((button) =>
+    button.addEventListener("click", () => {
+      const theme = button.dataset.previewTheme || "amber";
+      selectTheme(theme);
+      try {
+        localStorage.setItem("coffee-preview-theme", theme);
+      } catch {
+        /* Storage is optional. */
+      }
+    }),
+  );
+</script>

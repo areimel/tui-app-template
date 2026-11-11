@@ -1,0 +1,105 @@
+---
+import "../styles/global.css";
+import { href } from "../lib/urls";
+interface Props {
+  title: string;
+  description?: string;
+}
+const {
+  title,
+  description = "Keep your machine awake from a cosy terminal dashboard. A visible, controllable caffeinate for Linux and macOS.",
+} = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const docsActive = Astro.url.pathname.startsWith(href("docs/"));
+---
+
+<html lang="en" data-theme="kojima" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#141310" />
+    <title>{title === "coffee-term" ? title : `${title} | coffee-term`}</title>
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href={href("favicon.svg")} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="coffee-term" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta
+      property="og:image"
+      content={new URL(href("og-image.png"), Astro.site)}
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script is:inline>
+      try {
+        document.documentElement.classList.toggle(
+          "dark",
+          localStorage.getItem("coffee-site-theme") !== "light",
+        );
+      } catch {
+        /* Default to the server-rendered dark palette. */
+      }
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="wordmark" href={href("")} aria-label="coffee-term home"
+          ><span aria-hidden="true">&gt;_</span>coffee-term</a
+        >
+        <nav class="site-nav" aria-label="Main navigation">
+          <a href={href("docs/")} aria-current={docsActive ? "true" : undefined}
+            >Docs</a
+          >
+          <a href="https://github.com/areimel/coffee-cli"
+            >GitHub <span aria-hidden="true">↗</span></a
+          >
+          <button class="theme-toggle" hidden aria-label="Switch to light mode"
+            >Light mode</button
+          >
+        </nav>
+      </div>
+    </header>
+    <main id="main-content" tabindex="-1"><slot /></main>
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <span
+          >coffee-term / made by <a href="https://github.com/areimel"
+            >Alec Reimel</a
+          ></span
+        >
+        <div class="footer-links">
+          <a href={href("docs/")}>Documentation</a><a
+            href="https://github.com/areimel/coffee-cli">Source ↗</a
+          ><span>MIT license</span>
+        </div>
+      </div>
+    </footer>
+    <script>
+      const button = document.querySelector<HTMLButtonElement>(".theme-toggle");
+      if (button) {
+        const update = () => {
+          const next = document.documentElement.classList.contains("dark")
+            ? "light"
+            : "dark";
+          button.textContent = `${next === "light" ? "Light" : "Dark"} mode`;
+          button.setAttribute("aria-label", `Switch to ${next} mode`);
+        };
+        button.hidden = false;
+        update();
+        button.addEventListener("click", () => {
+          const dark = document.documentElement.classList.toggle("dark");
+          try {
+            localStorage.setItem("coffee-site-theme", dark ? "dark" : "light");
+          } catch {
+            /* Storage is optional. */
+          }
+          update();
+        });
+      }
+    </script>
+  </body>
+</html>

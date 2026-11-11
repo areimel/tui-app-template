@@ -1,0 +1,146 @@
+---
+import SiteLayout from "../layouts/SiteLayout.astro";
+import TerminalPreview from "../components/TerminalPreview.astro";
+import CodeBlock from "../components/CodeBlock.astro";
+import { href } from "../lib/urls";
+import "../styles/home.css";
+import "../styles/home-responsive.css";
+const installation = `npm install -g coffee-term
+coffee-term`;
+const tryIt = `npx coffee-term`;
+---
+
+<SiteLayout
+  title="coffee-term — Keep your machine awake"
+  description="A cosy terminal dashboard for keeping your Linux or macOS machine awake. Set a timer, watch a process, and see exactly what's running."
+>
+  <div class="container coffee-home">
+    <section class="home-intro" aria-labelledby="home-heading">
+      <div class="home-statusline eyebrow">
+        <span><i aria-hidden="true"></i> A small utility for long sessions</span
+        ><span>OPEN SOURCE / MIT</span>
+      </div>
+      <div class="home-heading-row">
+        <h1 id="home-heading">
+          Your machine.<br /><span>Wide awake.</span><span
+            class="heading-cursor"
+            aria-hidden="true">_</span
+          >
+        </h1>
+        <div class="home-intro-copy">
+          <p>
+            Keep the session going. A cosy terminal dashboard that keeps your
+            machine awake, with a timer, live stats, and a coffee on the side.
+          </p><a class="button button-primary" href={href("docs/")}
+            >Brew your first session <span aria-hidden="true">↗</span></a
+          ><p class="home-requirement">Linux + macOS / Node.js 22.22.2+</p>
+        </div>
+      </div>
+    </section>
+    <TerminalPreview />
+    <div class="home-system-strip">
+      <span><i aria-hidden="true"></i> In the foreground. In your control.</span
+      ><span>No account. No service. Just your terminal.</span><a
+        href="https://github.com/areimel/coffee-cli"
+        >View source <span aria-hidden="true">↗</span></a
+      >
+    </div>
+    <section class="home-capabilities" aria-labelledby="capabilities-heading">
+      <div class="home-section-label eyebrow">
+        <span>02 / The essentials</span><span>SMALL TOOL. CLEAR PURPOSE.</span>
+      </div>
+      <div class="home-section-heading">
+        <h2 id="capabilities-heading">
+          Stay for a while.<br />Leave on your terms.
+        </h2><p>
+          For long builds, remote sessions, and whatever needs a little more
+          time. Set the conditions once, or change them as you go.
+        </p>
+      </div>
+      <div class="capabilities-grid">
+        <article>
+          <div class="capability-index">
+            <span>01 — SESSION</span><span aria-hidden="true">◷</span>
+          </div><h3>A timer, or no timer.</h3><p>
+            Stay awake for a duration, until a clock time, or until a process
+            exits. Leave it indefinite when you need the breathing room.
+          </p><code>coffee-term -d 1h30m</code>
+        </article>
+        <article>
+          <div class="capability-index">
+            <span>02 — CONTROL</span><span aria-hidden="true">⌘</span>
+          </div><h3>Change it live.</h3><p>
+            Adjust your options without restarting. Pause with a keystroke,
+            switch phosphor themes, or let the display sleep while the system
+            stays awake.
+          </p><code>space pause / t theme / q quit</code>
+        </article>
+        <article>
+          <div class="capability-index">
+            <span>03 — VISIBILITY</span><span aria-hidden="true">▥</span>
+          </div><h3>Know what's held.</h3><p>
+            See system and display locks separately, alongside elapsed time,
+            battery, power, and load. A missing lock is reported clearly.
+          </p><a href={href("docs/platforms/")}
+            >How awake works <span aria-hidden="true">↗</span></a
+          >
+        </article>
+      </div>
+    </section>
+    <section class="home-install" aria-labelledby="install-heading">
+      <div class="install-copy">
+        <span class="eyebrow">03 / First brew</span><h2 id="install-heading">
+          Install. Run.<br />Keep going.
+        </h2><p>
+          coffee-term is on npm. Install it once and the <code>coffee-term</code
+          > command is on your PATH. All you need is a recent Node.js.
+        </p><a href={href("docs/")}
+          >Read the installation guide <span aria-hidden="true">↗</span></a
+        >
+      </div>
+      <div class="install-command">
+        <CodeBlock code={installation} label="Install with npm" /><p>
+          Just want a taste? Run it once without installing:
+        </p><CodeBlock code={tryIt} label="Run with npx" />
+      </div>
+    </section>
+    <section class="home-platforms" aria-labelledby="platform-heading">
+      <div>
+        <span class="eyebrow">04 / Platform notes</span><h2
+          id="platform-heading"
+        >
+          Built for your terminal.<br />Honest about support.
+        </h2>
+      </div>
+      <div class="platform-list">
+        <div>
+          <h3>Linux</h3><p>
+            Verified on Ubuntu with GNOME on Wayland. X11 display locking is
+            unit-tested; other Wayland desktops support the system lock only.
+          </p>
+        </div><div>
+          <h3>macOS</h3><p>
+            Uses the built-in <code>caffeinate</code>. Implemented and
+            unit-tested; hardware verification is still pending.
+          </p>
+        </div><a href={href("docs/platforms/")}
+          >Platform details & troubleshooting <span aria-hidden="true">↗</span
+          ></a
+        ><p class="platform-footnote">Windows and WSL are not supported.</p>
+      </div>
+    </section>
+    <section class="home-final" aria-labelledby="final-heading">
+      <div>
+        <span class="eyebrow">Ready when you are</span><h2 id="final-heading">
+          One more cup.<br />One less interruption.
+        </h2>
+      </div><div>
+        <a class="button button-primary" href={href("docs/")}
+          >Get started <span aria-hidden="true">↗</span></a
+        ><a class="home-final-reference" href={href("docs/reference/")}
+          >Explore the command reference <span aria-hidden="true">↗</span></a
+        >
+      </div>
+    </section>
+  </div>
+</SiteLayout>

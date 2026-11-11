@@ -1,0 +1,92 @@
+{
+	"name": "coffee-term",
+	"version": "0.1.0",
+	"description": "Keep your machine awake from a terminal dashboard: a caffeinate you can see and steer",
+	"keywords": [
+		"caffeinate",
+		"keep-awake",
+		"sleep",
+		"inhibit",
+		"idle",
+		"terminal",
+		"cli",
+		"tui",
+		"ink"
+	],
+	"homepage": "https://areimel.github.io/coffee-cli/",
+	"bugs": {
+		"url": "https://github.com/areimel/coffee-cli/issues"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/areimel/coffee-cli.git"
+	},
+	"author": "Alec Reimel (https://github.com/areimel)",
+	"license": "MIT",
+	"bin": {
+		"coffee-term": "dist/cli.js"
+	},
+	"type": "module",
+	"engines": {
+		"node": ">=22.22.2"
+	},
+	"os": [
+		"linux",
+		"darwin"
+	],
+	"scripts": {
+		"build": "tsc",
+		"build:watch": "tsc --watch",
+		"dev": "tsx source/cli.tsx",
+		"start": "node dist/cli.js",
+		"test": "prettier --check . && xo && tsc -p tsconfig.test.json && TSX_TSCONFIG_PATH=tsconfig.test.json ava",
+		"ava": "TSX_TSCONFIG_PATH=tsconfig.test.json ava",
+		"prepublishOnly": "rm -rf dist && npm run build"
+	},
+	"files": [
+		"dist",
+		"!dist/**/*.d.ts"
+	],
+	"dependencies": {
+		"ink": "^8.0.0",
+		"meow": "^14.1.0",
+		"react": "^19.3.1"
+	},
+	"devDependencies": {
+		"@sindresorhus/tsconfig": "^9.0.0",
+		"@sinonjs/fake-timers": "^15.4.0",
+		"@types/node": "^24.19.2",
+		"@types/react": "^19.3.0",
+		"@types/sinonjs__fake-timers": "^15.0.1",
+		"@vdemedes/prettier-config": "^2.0.1",
+		"ava": "^8.4.0",
+		"chalk": "^6.0.1",
+		"eslint-config-xo-react": "^0.32.0",
+		"figlet": "^1.12.0",
+		"ink-testing-library": "^4.0.0",
+		"prettier": "^3.9.10",
+		"tsx": "^4.23.15",
+		"typescript": "^6.0.3",
+		"xo": "^5.0.1"
+	},
+	"ava": {
+		"files": [
+			"test/**/*.test.ts",
+			"test/**/*.test.tsx"
+		],
+		"extensions": [
+			"ts",
+			"tsx"
+		],
+		"nodeArguments": [
+			"--import=tsx"
+		],
+		"timeout": "30s"
+	},
+	"prettier": "@vdemedes/prettier-config",
+	"overrides": {
+		"minimatch": "^11.0.5",
+		"glob": "^14.0.4",
+		"katex": "^0.19.1"
+	}
+}

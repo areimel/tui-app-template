@@ -1,0 +1,107 @@
+@media (max-width: 1000px) {
+  .terminal-screen {
+    padding: 1.4rem 1rem 1rem;
+  }
+  .terminal-dashboard {
+    grid-template-columns: 190px minmax(0, 1fr);
+  }
+  .terminal-cup {
+    font-size: 0.7rem;
+  }
+  .terminal-preview dl {
+    font-size: 0.65rem;
+  }
+  .terminal-panel {
+    padding-inline: 0.8rem;
+  }
+  .terminal-preview dt {
+    min-width: 60px;
+  }
+  .stats-panel dt {
+    min-width: 45px;
+  }
+  .lock-status {
+    font-size: 0.55rem;
+  }
+}
+@media (max-width: 760px) {
+  .terminal-dashboard {
+    grid-template-columns: 160px minmax(0, 1fr);
+  }
+  .terminal-top-panels {
+    grid-template-columns: 1fr;
+  }
+  .stats-panel {
+    display: none;
+  }
+  .terminal-cup {
+    font-size: 0.6rem;
+  }
+  .terminal-heading pre {
+    font-size: 0.6rem;
+  }
+  .terminal-screen {
+    padding-inline: 0.8rem;
+  }
+  .terminal-dashboard,
+  .terminal-data {
+    gap: 0.8rem;
+  }
+  .preview-themes > span {
+    display: none;
+  }
+  .options-panel dl > div {
+    grid-template-columns: 90px 1fr;
+  }
+}
+@media (max-width: 500px) {
+  .preview-toolbar {
+    align-items: start;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .preview-themes button {
+    min-height: 36px;
+  }
+  .terminal-titlebar {
+    font-size: 0.55rem;
+    padding: 0.7rem;
+  }
+  .terminal-titlebar > span:last-child {
+    display: none;
+  }
+  .terminal-heading {
+    gap: 0;
+    justify-content: center;
+    padding-bottom: 1.2rem;
+  }
+  .terminal-heading pre {
+    font-size: clamp(0.34rem, 1.45vw, 0.5rem);
+  }
+  .terminal-rule {
+    display: none;
+  }
+  .terminal-dashboard {
+    grid-template-columns: 1fr;
+  }
+  .cup-panel {
+    display: none;
+  }
+  .terminal-preview dl {
+    font-size: 0.7rem;
+  }
+  .terminal-panel {
+    padding: 1rem;
+  }
+  .terminal-preview figcaption {
+    padding-inline: 0.7rem;
+    font-size: 0.5rem;
+  }
+  .terminal-keys {
+    font-size: 0.55rem;
+    gap: 0.5rem 0.8rem;
+  }
+  .cup-caption {
+    display: none;
+  }
+}
