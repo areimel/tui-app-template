@@ -1,8 +1,8 @@
 /**
 Process-level cleanup: `exit`, termination signals and crashes all release the locks. The process object is injected so tests can drive it.
 */
-import type {SessionController} from './core/session/types.js';
-import type {DebouncedSaver} from './config/store.js';
+import type {SessionController} from './apps/keep-awake/session/types.js';
+import type {DebouncedSaver} from './apps/keep-awake/config-v1/store.js';
 
 /**
 Handled termination signals and their numbers (exit code is 128 + number).

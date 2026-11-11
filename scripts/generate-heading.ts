@@ -1,5 +1,5 @@
 /**
-Generate `source/features/heading/heading-art.ts`: the `COFFEE` banner rendered with figlet's "ANSI Shadow" font.
+Generate `source/apps/keep-awake/features/heading/heading-art.ts`: the `COFFEE` banner rendered with figlet's "ANSI Shadow" font.
 
 Run with `npx tsx scripts/generate-heading.ts`. Importing this module has no side effects; the file is only written when the script is the entry point.
 */
@@ -15,7 +15,10 @@ export const HEADING_TEXT = 'COFFEE';
 const FONT_NAME = 'ANSI Shadow';
 
 const OUTPUT_PATH = fileURLToPath(
-	new URL('../source/features/heading/heading-art.ts', import.meta.url),
+	new URL(
+		'../source/apps/keep-awake/features/heading/heading-art.ts',
+		import.meta.url,
+	),
 );
 
 /**

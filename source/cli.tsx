@@ -2,19 +2,23 @@
 import process from 'node:process';
 import {render} from 'ink';
 import meow from 'meow';
-import App from './app.js';
-import {bootstrap, type Ready} from './bootstrap.js';
+import App from './apps/keep-awake/app.js';
+import {bootstrap, type Ready} from './apps/keep-awake/bootstrap.js';
 import {
 	HELP_TEXT,
 	MEOW_FLAGS,
 	parseFlags,
 	shouldRunDashboard,
-} from './flags.js';
+} from './apps/keep-awake/flags.js';
 import {installLifecycle} from './lifecycle.js';
-import {runPlain} from './plain-mode.js';
+import {runPlain} from './apps/keep-awake/plain-mode.js';
 import {isPidAlive} from './platform/process-alive.js';
 import {readSystemStats} from './platform/system-stats.js';
-import {PREFIX, summarize, type ExitOutcome} from './summary.js';
+import {
+	PREFIX,
+	summarize,
+	type ExitOutcome,
+} from './apps/keep-awake/summary.js';
 import {detectColorLevel} from './theme/color-level.js';
 
 const LEAVE_ALTERNATE_SCREEN = '\u{1B}[?1049l\u{1B}[?25h';

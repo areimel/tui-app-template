@@ -6,7 +6,7 @@ import {createClock, type Clock, type TimerId} from '@sinonjs/fake-timers';
 import type {
 	SupervisorDeps,
 	TimerHandle,
-} from '../../source/core/session/types.js';
+} from '../../source/apps/keep-awake/session/types.js';
 
 type ClockDeps = Pick<
 	SupervisorDeps,

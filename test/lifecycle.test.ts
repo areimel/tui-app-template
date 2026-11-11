@@ -1,7 +1,7 @@
 /* eslint-disable unicorn/prefer-event-target, @typescript-eslint/no-empty-function -- Fake process; never-settling stops. */
 import {EventEmitter} from 'node:events';
 import test from 'ava';
-import type {StopReason} from '../source/core/session/types.js';
+import type {StopReason} from '../source/apps/keep-awake/session/types.js';
 import {installLifecycle, type LifecycleProcess} from '../source/lifecycle.js';
 
 class FakeProcess extends EventEmitter implements LifecycleProcess {
