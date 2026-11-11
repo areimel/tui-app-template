@@ -8,8 +8,8 @@ import {DEFAULTS, type Config} from '../../source/config/schema.js';
 import {
 	createDebouncedSaver,
 	loadConfig,
-	saveConfig,
-	saveConfigSync,
+	writeJsonAtomic,
+	writeJsonAtomicSync,
 } from '../../source/config/store.js';
 
 const dirs: string[] = [];
@@ -74,30 +74,30 @@ test('unreadable path (a directory) warns and uses defaults', async t => {
 test('save then load round-trips and keeps unknown app sections', async t => {
 	const dir = await temporary();
 	const file = path.join(dir, 'deep', 'er', 'config.json');
-	t.deepEqual(await saveConfig(file, custom), {isOk: true});
+	t.deepEqual(await writeJsonAtomic(file, custom), {isOk: true});
 	const loaded = await loadConfig(file);
 	t.deepEqual(loaded.config, custom);
 	t.deepEqual(loaded.warnings, []);
 	t.deepEqual(await fs.readdir(path.dirname(file)), ['config.json']);
 });
 
-test('saveConfigSync round-trips', async t => {
+test('writeJsonAtomicSync round-trips', async t => {
 	const dir = await temporary();
 	const file = path.join(dir, 'x', 'config.json');
-	t.deepEqual(saveConfigSync(file, custom), {isOk: true});
+	t.deepEqual(writeJsonAtomicSync(file, custom), {isOk: true});
 	t.deepEqual((await loadConfig(file)).config, custom);
 });
 
 test('failed save leaves the old file and no temp file', async t => {
 	const dir = await temporary();
 	const file = path.join(dir, 'config.json');
-	await saveConfig(file, custom);
+	await writeJsonAtomic(file, custom);
 	// A directory at the temp path makes the write fail.
 	await fs.mkdir(`${file}.tmp`);
-	const result = await saveConfig(file, DEFAULTS);
+	const result = await writeJsonAtomic(file, DEFAULTS);
 	t.false(result.isOk);
 	t.deepEqual((await loadConfig(file)).config, custom);
-	const sync = saveConfigSync(file, DEFAULTS);
+	const sync = writeJsonAtomicSync(file, DEFAULTS);
 	t.false(sync.isOk);
 	t.deepEqual((await loadConfig(file)).config, custom);
 });
@@ -106,7 +106,10 @@ test('failed save when the parent is a file reports a warning', async t => {
 	const dir = await temporary();
 	const blocker = path.join(dir, 'blocker');
 	await fs.writeFile(blocker, 'x');
-	const result = await saveConfig(path.join(blocker, 'config.json'), custom);
+	const result = await writeJsonAtomic(
+		path.join(blocker, 'config.json'),
+		custom,
+	);
 	t.false(result.isOk);
 	t.true(!result.isOk && result.warning.includes('config.json'));
 });

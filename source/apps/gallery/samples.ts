@@ -45,12 +45,7 @@ Kit exports that are deliberately not shown, with the reason.
 export const EXCLUDED: ReadonlyArray<{
 	readonly name: string;
 	readonly reason: string;
-}> = [
-	{
-		name: 'TextField',
-		reason: 'legacy field kept for keep-awake (TextInput replaces it)',
-	},
-];
+}> = [];
 
 export const BADGES: ReadonlyArray<{
 	readonly state: BadgeState;
@@ -79,8 +74,6 @@ export const HINTS: readonly KeyHint[] = [
 export const SPARK_VALUES: readonly number[] = [
 	1, 3, 2, 5, 8, 6, 4, 7, 9, 5, 3, 2, 4, 6, 8, 10, 7, 5, 3, 1,
 ];
-
-export const THEMES_NOTE = 'Press [ or ] to cycle the theme live.';
 
 export const SELECT_ITEMS = [
 	{value: 'small', label: 'Small', hint: '10 MB'},

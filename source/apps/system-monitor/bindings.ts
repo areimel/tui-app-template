@@ -1,7 +1,7 @@
 /**
 The System Monitor's key table (listed in help through `AppDefinition.bindings`).
 */
-import {LIST_NAV_BINDINGS} from '../../ui/hooks/index.js';
+import {LIST_MOVE_BINDINGS} from '../../ui/hooks/index.js';
 import type {KeyBinding} from '../../ui/input/types.js';
 
 export type MonitorAction =
@@ -84,5 +84,5 @@ Everything the screen registers, for the definition: navigation without Enter (n
 export const ALL_MONITOR_BINDINGS: readonly KeyBinding[] = [
 	...MONITOR_BINDINGS,
 	...CLEAR_FILTER_BINDINGS,
-	...LIST_NAV_BINDINGS.filter(b => b.action !== 'select'),
+	...LIST_MOVE_BINDINGS,
 ];

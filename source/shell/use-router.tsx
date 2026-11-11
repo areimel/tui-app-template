@@ -6,13 +6,18 @@ import {useMemo, useReducer} from 'react';
 import {createRouterState, currentRoute, routerReducer} from './router.js';
 import type {Route, Router} from './types.js';
 
+const canOpenAny = () => true;
+
 /**
 A `Router` (for `ShellProviders`) starting at the menu, or at `initial` on top of the menu (a deep
-link, so Back returns to the menu). `initial` is read on the first render only. `push`, `replace`,
-`pop` and `reset` are stable for the component's life; the `Router` object itself changes only when
-the stack does.
+link, so Back returns to the menu). `initial` is read on the first render only. `canOpen` answers
+`Router.canOpen` (default: any id). `push`, `replace`, `pop` and `reset` are stable for the component's
+life; the `Router` object itself changes only when the stack or `canOpen` does.
 */
-export function useRouterState(initial?: Route): Router {
+export function useRouterState(
+	initial?: Route,
+	canOpen: (id: string) => boolean = canOpenAny,
+): Router {
 	const [state, dispatch] = useReducer(
 		routerReducer,
 		initial,
@@ -40,7 +45,8 @@ export function useRouterState(initial?: Route): Router {
 			current: currentRoute(state),
 			depth: state.stack.length,
 			...actions,
+			canOpen,
 		}),
-		[state, actions],
+		[state, actions, canOpen],
 	);
 }

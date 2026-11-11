@@ -18,7 +18,7 @@ import {
 import {useAsync} from '../../ui/hooks/use-async.js';
 import {useListNav} from '../../ui/hooks/use-list-nav.js';
 import {useKeys} from '../../ui/input/index.js';
-import {EXPLORER_BINDINGS} from './bindings.js';
+import {explorerBindings, LOG_VIEWER_ID} from './bindings.js';
 import {APP_ID, EXPLORER_CONFIG} from './config.js';
 import {
 	baseName,
@@ -171,7 +171,7 @@ export function useExplorer() {
 			: undefined;
 
 	useKeys(
-		EXPLORER_BINDINGS,
+		explorerBindings(router.canOpen(LOG_VIEWER_ID)),
 		{
 			open() {
 				if (pane === 'list') {
@@ -217,7 +217,7 @@ export function useExplorer() {
 					return;
 				}
 
-				router.push({id: 'log-viewer', params: {path: selected.path}});
+				router.push({id: LOG_VIEWER_ID, params: {path: selected.path}});
 			},
 		},
 		{isActive: !isFiltering},

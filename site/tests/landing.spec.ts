@@ -19,7 +19,7 @@ test("hero names the app and links to the docs", async ({ page }) => {
   );
   for (const id of [
     "features-heading",
-    "examples-heading",
+    ...(EXAMPLE_IDS.length > 0 ? ["examples-heading"] : []),
     "steps-heading",
     "platform-heading",
     "final-heading",
@@ -57,7 +57,7 @@ test("every example card links to a page that loads", async ({
   const hrefs = await page
     .locator("#examples a[href]")
     .evaluateAll((a) => a.map((x) => x.getAttribute("href") ?? ""));
-  expect(hrefs.length).toBeGreaterThan(0);
+  expect(hrefs.length > 0).toBe(EXAMPLE_IDS.length > 0);
   for (const href of hrefs)
     expect((await request.get(href)).ok(), href).toBeTruthy();
 });
@@ -67,9 +67,10 @@ test("terminal preview menu and frame render", async ({ page }) => {
   await expect(page.locator("ul.terminal-menu li")).toHaveCount(
     EXAMPLE_IDS.length,
   );
-  await expect(page.locator("ul.terminal-menu li").first()).toHaveClass(
-    /is-selected/,
-  );
+  if (EXAMPLE_IDS.length > 0)
+    await expect(page.locator("ul.terminal-menu li").first()).toHaveClass(
+      /is-selected/,
+    );
   await expect(page.locator(".frame-top")).toBeVisible();
   await expect(page.locator(".frame-bottom")).toBeVisible();
 });

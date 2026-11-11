@@ -1,3 +1,5 @@
+import {padToWidth, sliceToWidth, textWidth} from './text-width.js';
+
 /**
 Zero-pad a non-negative integer to at least two digits.
 
@@ -119,14 +121,25 @@ export function formatSeconds(ms: number): string {
 }
 
 /**
-`text` cut to `width` characters, ending in `…` when something was cut (`''` for no width). Counts code
-points, not terminal cells.
+`text` cut to `width` terminal cells, ending in `…` (one cell) when something was cut (`''` for no
+width). Measured with `textWidth`, so a wide character that would straddle the limit is dropped and
+the result is never wider than `width`.
 */
 export function truncate(text: string, width: number): string {
-	const characters = [...text];
-	if (characters.length <= width) {
+	if (textWidth(text) <= width) {
 		return text;
 	}
 
-	return width <= 0 ? '' : `${characters.slice(0, width - 1).join('')}…`;
+	return width <= 0 ? '' : `${sliceToWidth(text, width - 1)}…`;
+}
+
+/**
+`text` cut with `truncate`, then padded with spaces to exactly `width` cells (`right`: aligned right).
+*/
+export function fitToWidth(
+	text: string,
+	width: number,
+	align: 'left' | 'right' = 'left',
+): string {
+	return padToWidth(truncate(text, width), width, align);
 }

@@ -49,6 +49,12 @@ export type Router = {
 	Back to the menu alone.
 	*/
 	reset(): void;
+	/**
+	An app with this id is registered and available on this platform, so `push({id})` opens it. Apps
+	that link to another app (File Explorer to Log Viewer) check it first, so deleting the target app
+	only hides the link.
+	*/
+	canOpen(id: string): boolean;
 };
 
 // ---- Values provided to screens ---------------------------------------------------------------------
@@ -97,6 +103,16 @@ export type Settings = {
 export type {AppConfigStore} from '../config/schema.js';
 
 // ---- Apps ------------------------------------------------------------------------------------------
+
+/**
+The app runs on `platform` (a `process.platform` value): it lists no `platforms`, or lists this one.
+*/
+export function isAppSupported(
+	app: Pick<AppDefinition, 'platforms'>,
+	platform: string,
+): boolean {
+	return app.platforms === undefined || app.platforms.includes(platform);
+}
 
 /**
 Long-lived work an app keeps running while the user browses other pages (Keep Awake's locks). Created

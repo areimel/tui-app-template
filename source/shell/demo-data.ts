@@ -1,11 +1,12 @@
 /**
 Canned content for the demo services: the file tree, process list and battery reading.
 */
+import {APP} from '../app.config.js';
 import type {BatteryInfo, ProcessInfo} from '../platform/types.js';
 import type {DemoFile} from './demo-fs.js';
 
 export const DEMO_HOME = '/home/demo';
-export const DEMO_CWD = `${DEMO_HOME}/projects/tui-app`;
+export const DEMO_CWD = `${DEMO_HOME}/projects/${APP.command}`;
 
 const GIB = 1024 ** 3;
 const MIB = 1024 ** 2;
@@ -39,12 +40,11 @@ export const DEMO_FILES: Readonly<Record<string, DemoFile>> = {
 		'Ideas\n- add a theme\n- write the guide\n- ship the template\n',
 	[`${DEMO_HOME}/.bashrc`]: "export PS1='$ '\nalias ll='ls -l'\n",
 	[`${DEMO_HOME}/documents/todo.md`]: '# Todo\n\n- [x] menu\n- [ ] docs\n',
-	[`${DEMO_HOME}/documents/budget.csv`]: 'item,cost\ncoffee,12\ntea,8\n',
+	[`${DEMO_HOME}/documents/budget.csv`]: 'item,cost\nlunch,12\ntea,8\n',
 	[`${DEMO_HOME}/pictures/photo.png`]: {binaryBytes: 482_113},
 	[`${DEMO_HOME}/logs/app.log`]: demoLog(),
-	[`${DEMO_CWD}/package.json`]:
-		'{\n\t"name": "tui-app",\n\t"version": "1.0.0",\n\t"type": "module"\n}\n',
-	[`${DEMO_CWD}/readme.md`]: '# TUI App\n\nA terminal app built with Ink.\n',
+	[`${DEMO_CWD}/package.json`]: `{\n\t"name": "${APP.name}",\n\t"version": "1.0.0",\n\t"type": "module"\n}\n`,
+	[`${DEMO_CWD}/readme.md`]: `# ${APP.displayName}\n\n${APP.tagline}.\n`,
 	[`${DEMO_CWD}/source/cli.tsx`]: 'import {render} from "ink";\n',
 	[`${DEMO_CWD}/source/app.tsx`]: 'export function App() {}\n',
 };

@@ -3,7 +3,7 @@ The input registry behind `InputRoot`: scopes, binding tables and raw handlers, 
 the bindings snapshot. Plain data and closures (no React, no Ink runtime), so dispatch is unit-testable.
 The dispatch rule is documented in `types.ts`.
 */
-import {isKeyMatch, matchKey} from './keys.js';
+import {isKeyMatch, matchKey, withoutShadowed} from './keys.js';
 import type {
 	BindingsSnapshot,
 	InputHandler,
@@ -122,7 +122,9 @@ export function createInputRegistry(): InputRegistry {
 		const topBindings = scopeBindings(top);
 		let reachable = EMPTY;
 		if (!isCapturing) {
-			reachable = isModalOpen ? topBindings : [...topBindings, ...global];
+			reachable = isModalOpen
+				? topBindings
+				: [...topBindings, ...withoutShadowed(global, topBindings)];
 		}
 
 		return {

@@ -11,7 +11,12 @@ import type {ReactNode} from 'react';
 import {Box, useWindowSize} from 'ink';
 import {APP} from '../app.config.js';
 import {useTheme} from '../theme/context.js';
-import {fitKeyHints, InputScope, useActiveBindings} from '../ui/input/index.js';
+import {
+	EDITING_HINTS,
+	fitKeyHints,
+	InputScope,
+	useActiveBindings,
+} from '../ui/input/index.js';
 import {
 	Frame,
 	KeyHints,
@@ -21,6 +26,7 @@ import {
 	type ToastTone,
 } from '../ui/kit/index.js';
 import {truncate} from '../core/format.js';
+import {textWidth} from '../core/text-width.js';
 import {chromeTitle} from './chrome-text.js';
 import {AppServiceProvider, ScreenSizeProvider} from './context.js';
 import {shellLayout, type ShellLayout} from './screen-size.js';
@@ -53,7 +59,7 @@ type FooterProps = {
 The key hints a key can reach right now, or the toast.
 */
 function Footer({width, toast}: FooterProps) {
-	const {reachable} = useActiveBindings();
+	const {reachable, isCapturing} = useActiveBindings();
 	if (width <= 0) {
 		return null;
 	}
@@ -67,7 +73,8 @@ function Footer({width, toast}: FooterProps) {
 		);
 	}
 
-	return <KeyHints hints={fitKeyHints(reachable, width)} maxWidth={width} />;
+	const hints = isCapturing ? EDITING_HINTS : fitKeyHints(reachable, width);
+	return <KeyHints hints={hints} maxWidth={width} />;
 }
 
 type ChromeProps = {
@@ -78,40 +85,55 @@ type ChromeProps = {
 	readonly children: ReactNode;
 };
 
-function FramedChrome({layout, title, terminal, toast, children}: ChromeProps) {
+/**
+The title line of minimal mode: the title, then the key hints or toast in what is left of the row.
+*/
+function MinimalTitle({
+	layout,
+	title,
+	toast,
+}: Omit<ChromeProps, 'terminal' | 'children'>) {
+	const hintsWidth = Math.max(0, layout.footerWidth - textWidth(title) - 2);
+	return (
+		<Box flexShrink={0} width={layout.footerWidth}>
+			<T bold tone="accent" wrap="truncate-end">
+				{title}
+			</T>
+			{hintsWidth > 0 && (
+				<Box marginLeft={2} width={hintsWidth}>
+					<Footer width={hintsWidth} toast={toast} />
+				</Box>
+			)}
+		</Box>
+	);
+}
+
+/**
+Framed: the heavy frame with the title in its top edge and the hints in its bottom edge. Minimal: the
+same `Frame` drawn plain, under a title line. One component for both, so a resize across the framed
+threshold keeps the screen mounted (and its state).
+*/
+function Chrome({layout, title, terminal, toast, children}: ChromeProps) {
+	const isPlain = layout.mode !== 'framed';
 	return (
 		<Frame
+			isPlain={isPlain}
 			width={terminal.columns}
 			height={terminal.rows}
 			top={
-				<T bold tone="accent">
-					{title}
-				</T>
+				isPlain ? (
+					<MinimalTitle layout={layout} title={title} toast={toast} />
+				) : (
+					<T bold tone="accent">
+						{title}
+					</T>
+				)
 			}
-			topWidth={[...title].length}
+			topWidth={textWidth(title)}
 			bottom={<Footer width={layout.footerWidth} toast={toast} />}
 		>
 			{children}
 		</Frame>
-	);
-}
-
-function MinimalChrome({layout, title, toast, children}: ChromeProps) {
-	const hintsWidth = Math.max(0, layout.footerWidth - [...title].length - 2);
-	return (
-		<>
-			<Box flexShrink={0} width={layout.footerWidth}>
-				<T bold tone="accent" wrap="truncate-end">
-					{title}
-				</T>
-				{hintsWidth > 0 && (
-					<Box marginLeft={2} width={hintsWidth}>
-						<Footer width={hintsWidth} toast={toast} />
-					</Box>
-				)}
-			</Box>
-			{children}
-		</>
 	);
 }
 
@@ -170,7 +192,6 @@ export function AppShell({app, service, toast, overlay}: AppShellProps) {
 		app.id === MENU_ROUTE.id ? undefined : app.title,
 		layout.titleWidth,
 	);
-	const Chrome = layout.mode === 'framed' ? FramedChrome : MinimalChrome;
 	return (
 		<Box {...root} {...bg}>
 			<Chrome layout={layout} title={title} terminal={terminal} toast={toast}>

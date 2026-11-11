@@ -26,7 +26,7 @@ const TIMER: AppDefinition = {
 			loud: {type: 'boolean', description: 'Beep at the end'},
 			repeat: {type: 'number', description: 'Times to repeat'},
 		},
-		helpLines: ['$ tui-app timer -d 5m'],
+		helpLines: [`$ ${APP.command} timer -d 5m`],
 		async runPlain() {
 			return 0;
 		},
@@ -155,7 +155,7 @@ test('help lists the apps, global flags and app flags from the registry', t => {
 
 	t.regex(text, /--duration, -d <value>\s+How long/v);
 	t.regex(text, /--repeat <n>\s+Times to repeat/v);
-	t.true(text.includes('$ tui-app timer -d 5m'));
+	t.true(text.includes(`$ ${APP.command} timer -d 5m`));
 	t.false(text.includes('Notes ('));
 });
 

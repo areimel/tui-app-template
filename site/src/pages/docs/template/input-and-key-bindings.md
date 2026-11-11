@@ -10,7 +10,7 @@ order: 5
 
 **Nothing but `InputRoot` calls Ink's `useInput`.** Ink sends every key to every active `useInput` with no way to stop propagation, and it applies `isActive` only after an effect, so a `useInput` per component leaks keys in bursts (a dialog's `Enter` also triggering the list behind it, for example). Instead, `InputRoot` holds the single `useInput` call and routes each key through a stack of scopes. Components register interest through `source/ui/input/`.
 
-The one remaining exception is the legacy kit `TextField`, which the kit documents as superseded by `TextInput`.
+There are no exceptions: no file outside `source/ui/input/` imports `useInput`, and `test/architecture.test.ts` fails if one does. Text entry uses the kit's `TextInput`, which registers a capturing scope.
 
 ## Bindings are data
 
@@ -45,14 +45,17 @@ useKeys(
 
 The same table drives dispatch, the footer hints and the help overlay, so they cannot drift. A binding with no handler is still listed and still consumes its key.
 
-| Field     | Meaning                                                                                                     |
-| --------- | ----------------------------------------------------------------------------------------------------------- |
-| `action`  | The action name (a string-literal union keeps handlers type-checked).                                       |
-| `keys`    | Key specs that trigger it (below).                                                                          |
-| `label`   | What it does, for help and hints.                                                                           |
-| `caption` | Footer text for the key. Defaults to the first key formatted (`esc`, `^C`, `↑`).                            |
-| `hint`    | Footer priority: lower is kept longer when the footer is narrow. Leave it out to show the key in help only. |
-| `group`   | Help overlay section, such as `Navigation`.                                                                 |
+| Field       | Meaning                                                                                                                               |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `action`    | The action name (a string-literal union keeps handlers type-checked).                                                                 |
+| `keys`      | Key specs that trigger it (below).                                                                                                    |
+| `label`     | What it does, for help and hints.                                                                                                     |
+| `caption`   | Footer text for the key. Defaults to the first key formatted (`esc`, `^C`, `↑`).                                                      |
+| `hintLabel` | Footer label when it differs from `label`: for a `caption` that stands for several bindings (`1-4` with `hintLabel: 'level filter'`). |
+| `hint`      | Footer priority: lower is kept longer when the footer is narrow. Leave it out to show the key in help only.                           |
+| `group`     | Help overlay section, such as `Navigation`.                                                                                           |
+
+The footer and help list only keys that can run. When a screen binds a key the shell also binds (a filter's `esc clear filter` over the global `esc back`), the global row is dropped or keeps only its free keys (`backspace back`). While a text input captures every key, the footer shows `enter done  esc cancel` (`EDITING_HINTS`).
 
 Put the table in a `bindings.ts` file, use it in the screen, and also give it to `defineApp({bindings})` so help lists the keys even when the screen is not mounted.
 

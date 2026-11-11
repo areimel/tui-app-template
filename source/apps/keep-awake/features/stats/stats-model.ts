@@ -7,7 +7,7 @@ import {
 } from '../../../../core/format.js';
 import {sessionElapsedMs} from '../../session/selectors.js';
 import type {SessionState} from '../../session/types.js';
-import type {SystemStats} from '../../../../platform/system-stats.js';
+import type {SystemStats} from '../../hooks/use-stats.js';
 import type {BatteryInfo, BatteryStatus} from '../../platform/types.js';
 import type {TokenName} from '../../../../theme/tokens.js';
 

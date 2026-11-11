@@ -83,6 +83,7 @@ export const LOG_BINDINGS: ReadonlyArray<KeyBinding<LogAction>> = [
 		keys: ['1'],
 		label: 'filter errors',
 		caption: '1-4',
+		hintLabel: 'level filter',
 		hint: 4,
 		group: 'Levels',
 	},

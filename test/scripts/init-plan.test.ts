@@ -82,8 +82,8 @@ const derivations: Array<[string, string, string]> = [
 	['heading short name', deriveHeadingText('Night Owl', 'owl'), 'NIGHT OWL'],
 	[
 		'heading falls back to command',
-		deriveHeadingText('TUI App Template', 'tui-app'),
-		'TUI APP',
+		deriveHeadingText('Night Owl Toolkit', 'night-owl'),
+		'NIGHT OWL',
 	],
 	['heading strips symbols', deriveHeadingText('Café!', 'cafe'), 'CAF'],
 	[

@@ -29,7 +29,6 @@ import {
 import {createReadySignal} from '../helpers/input-ready.js';
 import {pressKeys, waitFor} from '../helpers/keys.js';
 import {renderSized} from '../helpers/render-sized.js';
-import {splitFrame} from '../helpers/frame-lines.js';
 
 export type TestApp = AppDefinition & {readonly marks: () => number};
 
@@ -227,34 +226,3 @@ export function mountShell({
 }
 
 export type Mounted = ReturnType<typeof mountShell>;
-
-/**
-Asserts the frame fits the terminal: no line wider than `columns` cells, and (framed) a frame exactly
-`rows` tall.
-*/
-export function frameProblems(
-	lines: readonly string[],
-	columns: number,
-	rows: number,
-	isFramed: boolean,
-): string[] {
-	const problems: string[] = [];
-	for (const [index, line] of lines.entries()) {
-		if ([...line].length > columns) {
-			problems.push(`line ${index} is ${[...line].length} wide: ${line}`);
-		}
-	}
-
-	if (lines.length > rows) {
-		problems.push(`${lines.length} lines for ${rows} rows`);
-	}
-
-	if (isFramed) {
-		const {frame} = splitFrame(lines);
-		if (frame.length !== rows) {
-			problems.push(`frame is ${frame.length} rows, wanted ${rows}`);
-		}
-	}
-
-	return problems;
-}

@@ -106,6 +106,15 @@ Tests that do not use `renderScreen` and write to `stdin` themselves must first 
 
 Terminal size is an injectable value, so layout and breakpoint logic is testable. Pass `columns` and `rows` to `renderScreen`, or use `renderSized(node, columns, rows)`, and assert on `plainFrame()` at the smallest size you support and at a roomy one. Pure layout planners (like the System Monitor's `monitor-layout.ts`) are easier still: they take numbers and return numbers.
 
+`test/shell/size-matrix.test.tsx` renders the real `Shell` with the real registry and demo services: the menu and every registered app without a `createService`, at 9 terminal sizes from 200 by 60 down to 20 by 6. At each size no line may be wider than the terminal and the frame may not have more lines than it has rows. A new app is covered as soon as it is in the registry. Apps with a service are left out, because a service may hold real OS resources; each has its own size test with fakes. Keep Awake's is `test/apps/keep-awake/size-matrix.test.tsx`, which runs its service over the fake lock adapter.
+
+## Repository checks
+
+Two tests guard the repository as a whole rather than one module:
+
+- `test/architecture.test.ts` reads the import statements in `source/` and fails when a layer imports one above it (`core`, `theme`, `platform`, `config` <- `ui` <- `shell` <- `apps`), when one app imports another, when a pure file imports a Node I/O module or reads the clock, or when a file outside `source/ui/input/` imports Ink's `useInput`.
+- `test/site-consistency.test.ts` checks the site against the registry: one example page in `site/src/pages/docs/examples/` per registered app and no other, frontmatter `title`, `glyph` and `appDescription` equal to the app's `title`, `glyph` and `description`, `order` following the menu order, and no docs page linking to a missing example page. Add or remove the page when you add or remove an app.
+
 ## Conventions
 
 - Component tests assert on colour-stripped frames (`plainFrame()`, or `stripVTControlCharacters(lastFrame() ?? '')` from `node:util`). Only theme tests assert on colour.

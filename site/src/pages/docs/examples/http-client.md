@@ -3,6 +3,8 @@ layout: ../../../layouts/DocsLayout.astro
 title: HTTP Client
 description: Build a request, send it with cancel, and inspect the response as a JSON tree, headers or raw text.
 section: Examples
+glyph: "⇄"
+appDescription: Send requests and inspect the response as a JSON tree
 order: 5
 ---
 
@@ -22,24 +24,30 @@ A status badge colours 2xx green, 4xx as a warning, 5xx as an error. Any HTTP st
 
 ## Keys
 
-| Key                  | Action                                                                      |
-| -------------------- | --------------------------------------------------------------------------- |
-| `s`, `Ctrl+S`        | Send the request                                                            |
-| `Tab`                | Switch between the Request and Response panes                               |
-| `h`                  | Open the history dialog (`Enter` loads an entry into the form)              |
-| `x`, `Esc`           | Cancel a request in flight                                                  |
-| `Left` `Right`       | Response: collapse or expand a tree node, or change tab                     |
-| `e`, `E`             | Response: expand all, collapse all                                          |
-| `Up` `Down`, `j` `k` | Move in the form, tree or history                                           |
-| `Enter`              | Edit a form field; in the Response pane, send when there is no response yet |
+| Key                                        | Action                                                                                                                                                  |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `s`, `Ctrl+S`                              | Send the request                                                                                                                                        |
+| `Tab`                                      | Switch between the Request and Response panes                                                                                                           |
+| `h`                                        | Open the history dialog (`Enter` loads an entry into the form, `Esc` closes)                                                                            |
+| `x`, `Esc`                                 | Cancel a request in flight                                                                                                                              |
+| `Up` `Down`, `j` `k`                       | Request: move between fields. Response: move in the tree or scroll the text                                                                             |
+| `Left` `Right`                             | Request: change the method. Response: collapse or expand a tree node, or change tab                                                                     |
+| `Enter`                                    | Request: edit the URL, header or body (`Enter` accepts, `Esc` cancels). Response: expand or collapse a tree node, or send when there is no response yet |
+| `e`, `E`                                   | Response: expand all, collapse all                                                                                                                      |
+| `PageUp` `PageDown`, `Home` `End`, `g` `G` | Response: move a page, first or last row                                                                                                                |
 
 `Esc` only cancels while a request is loading; otherwise it is the shell's Back.
 
 ## What it saves
 
-The `apps.http-client` section of the config file: the last request (`last`) and the 10 most recent sent requests (`history`), each with the status it got. Saved values are capped: URLs at 2000 characters, the header line at 500 and the body at 2000.
+The `apps.http-client` section of the config file: the last request (`last`) and the 10 most recent sent requests (`history`), each with the status it got. The full request is always sent; only the saved copy is scrubbed (`save-scrub.ts`):
 
-**Credentials are partly protected.** Before saving, the header line is dropped when its name is `Authorization`, `Cookie` or `Proxy-Authorization`, or contains `token`, `key` or `secret`. Nothing else is scrubbed: a secret typed into a URL (a query-string token) or into a request body **is saved** to the config file in plain text. Keep secrets out of those fields.
+- **Method:** saved as is.
+- **URL:** any `user:pass@` part is removed, and so is every query parameter whose name contains `auth`, `bearer`, `code`, `cookie`, `credential`, `jwt`, `key`, `pass`, `pwd`, `secret`, `session`, `sig` or `token` (case-insensitive, so `api_key`, `access_token` and `password` all go). A URL that does not parse, or is not `http://` or `https://`, is not saved at all. The saved URL is capped at 2000 characters.
+- **Header line:** saved only when its name is on an allowlist: `Accept`, `Accept-Encoding`, `Accept-Language`, `Cache-Control`, `Content-Length`, `Content-Type`, `If-Modified-Since`, `If-None-Match` and `User-Agent`. Any other header (`Authorization`, `Cookie`, `X-Api-Key`, custom headers) is sent but saved as empty. The saved line is capped at 500 characters.
+- **Body:** never saved.
+
+The same scrub runs when the file is loaded, so a file written by an older version is cleaned on its next save.
 
 Under `--demo` requests are answered by scripted responses and nothing is saved.
 

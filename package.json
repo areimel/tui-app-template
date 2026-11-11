@@ -1,7 +1,7 @@
 {
 	"name": "tui-app-template",
 	"version": "0.1.0",
-	"description": "A starting point for Ink 8 / React 19 terminal apps: a menu, seven example apps, a themed component kit, input scopes, config and a matching website.",
+	"description": "A starting point for Ink 8 / React 19 terminal apps: a menu, example apps, a themed component kit, input scopes, config and a matching website.",
 	"keywords": [
 		"terminal",
 		"cli",

@@ -15,6 +15,12 @@ export type ExplorerAction =
 	| 'openLog'
 	| 'switchPane';
 
+/**
+The app `openLog` hands a file to. Only its id is known here: apps never import each other, and the key
+is dropped when no app with this id is registered (`Router.canOpen`).
+*/
+export const LOG_VIEWER_ID = 'log-viewer';
+
 export const EXPLORER_BINDINGS: ReadonlyArray<KeyBinding<ExplorerAction>> = [
 	{
 		action: 'open',
@@ -27,6 +33,7 @@ export const EXPLORER_BINDINGS: ReadonlyArray<KeyBinding<ExplorerAction>> = [
 		keys: ['left', 'h'],
 		label: 'parent folder (from the preview: back to the list)',
 		caption: '←',
+		hintLabel: 'parent folder',
 		hint: 3,
 		group: 'Explorer',
 	},
@@ -72,3 +79,17 @@ export const EXPLORER_BINDINGS: ReadonlyArray<KeyBinding<ExplorerAction>> = [
 		group: 'Explorer',
 	},
 ];
+
+const WITHOUT_OPEN_LOG = EXPLORER_BINDINGS.filter(
+	binding => binding.action !== 'openLog',
+);
+
+/**
+The key table for this run: without `openLog` (`o`) when the Log Viewer is not registered, so the key,
+its footer hint and its help row disappear together.
+*/
+export function explorerBindings(
+	canOpenLog: boolean,
+): ReadonlyArray<KeyBinding<ExplorerAction>> {
+	return canOpenLog ? EXPLORER_BINDINGS : WITHOUT_OPEN_LOG;
+}

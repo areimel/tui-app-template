@@ -3,6 +3,8 @@ layout: ../../../layouts/DocsLayout.astro
 title: Tasks
 description: A small task list with a dialog form, confirm-before-delete, undo and a saved data file.
 section: Examples
+glyph: "✓"
+appDescription: A small task list saved to a data file
 order: 4
 ---
 
@@ -29,7 +31,7 @@ Add and edit use a dialog containing the data-driven `Form`: fields for title, p
 | `p`                   | Cycle priority: low, normal, high |
 | `Tab`                 | Cycle the filter: all, open, done |
 
-Inside the add and edit dialog: `Up` `Down` move between fields, `Enter` edits a text field (then `Enter` accepts, `Esc` cancels), `Left` `Right` change a choice or toggle, `Ctrl+S` saves, `Esc` cancels. In the delete dialog, `Enter` or `y` confirms and `Esc` or `n` cancels.
+Inside the add and edit dialog: `Up` `Down` move between fields, `Enter` edits a text field (then `Enter` accepts, `Esc` cancels), `Left` `Right` change a choice or toggle, `Ctrl+S` saves, `Esc` cancels. In the delete dialog, `y` confirms and `Esc` or `n` cancels; `Left` `Right` or `Tab` move between the two buttons and `Enter` chooses the focused one (Cancel is focused first).
 
 ## What it saves
 

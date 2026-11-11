@@ -3,6 +3,8 @@ layout: ../../../layouts/DocsLayout.astro
 title: Log Viewer
 description: Follow a log file or a demo stream, search it and filter by level.
 section: Examples
+glyph: "≡"
+appDescription: Follow a log file, search it and filter by level
 order: 3
 ---
 

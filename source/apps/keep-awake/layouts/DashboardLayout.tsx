@@ -37,10 +37,6 @@ export type DashboardLayoutProps = {
 	*/
 	readonly hints: ReactNode;
 	/**
-	Warning lines, on the last rows inside the frame (above the hints in minimal mode).
-	*/
-	readonly warnings: ReactNode;
-	/**
 	Theme background painted over the whole screen.
 	*/
 	readonly backgroundColor?: string;
@@ -79,7 +75,7 @@ function Panels({
 }
 
 /**
-Arranges the regions; decides nothing itself. Everything but `minimal` sits in the heavy outer frame, centred and hugging the content (width and height): the first art row (or the compact title) in its top edge, the rest of the art then 2 blank rows (1 with the title) inside, the key hints in its bottom edge and warnings on its last rows. `full`: the framed cup column left of the panel column (Session and Stats side by side or stacked, then the options slot); both columns stretch to end on the same row. `stacked`: one column, cup (if shown) above the panels. `minimal`: status line, warnings and hints, unframed. The root is exactly the terminal size so the alternate screen never scrolls.
+Arranges the regions; decides nothing itself. Everything but `minimal` sits in the heavy outer frame, centred and hugging the content (width and height): the first art row (or the compact title) in its top edge, the rest of the art then 2 blank rows (1 with the title) inside, the key hints in its bottom edge. `full`: the framed cup column left of the panel column (Session and Stats side by side or stacked, then the options slot); both columns stretch to end on the same row. `stacked`: one column, cup (if shown) above the panels. `minimal`: status line and hints, unframed. The root is exactly the terminal size so the alternate screen never scrolls.
 */
 export function DashboardLayout({
 	layout,
@@ -90,7 +86,6 @@ export function DashboardLayout({
 	stats,
 	options,
 	hints,
-	warnings,
 	backgroundColor,
 }: DashboardLayoutProps) {
 	const panels = (
@@ -145,7 +140,6 @@ export function DashboardLayout({
 					<Box width={layout.columns}>{statusLine}</Box>
 				</Box>
 				<Box flexDirection="column" flexShrink={0}>
-					{warnings}
 					{hints}
 				</Box>
 			</Box>
@@ -177,7 +171,6 @@ export function DashboardLayout({
 					<Box height={plan.showHeadingArt ? 2 : 1} flexShrink={0} />
 					{body}
 				</Box>
-				{warnings}
 			</Frame>
 		</Box>
 	);

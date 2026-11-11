@@ -65,7 +65,6 @@ function draw(
 				</Panel>
 			}
 			hints={<Text>hints</Text>}
-			warnings={null}
 		/>,
 		columns,
 		rows,

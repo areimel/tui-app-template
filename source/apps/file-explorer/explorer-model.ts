@@ -7,7 +7,8 @@ returns text to draw passes it through `sanitizeLine` (the entries themselves ke
 they can still be opened).
 */
 import {posix} from 'node:path';
-import {formatBytes, truncate} from '../../core/format.js';
+import {fitToWidth, formatBytes} from '../../core/format.js';
+import {textWidth} from '../../core/text-width.js';
 import {sanitizeLine} from '../../core/sanitize.js';
 import type {EntrySort} from '../../platform/fs/entries.js';
 import type {DirEntry} from '../../platform/types.js';
@@ -53,8 +54,7 @@ export const baseName = (path: string): string =>
 
 const ELLIPSIS = '…';
 
-const fit = (text: string, width: number): string =>
-	truncate(text, width).padEnd(width);
+const fit = (text: string, width: number): string => fitToWidth(text, width);
 
 /**
 The path with `home` shown as `~`, safe to draw.
@@ -87,14 +87,14 @@ export function previewTitle(name: string, width: number): string {
 export function breadcrumb(path: string, home: string, width: number): string {
 	const shown = displayPath(path, home);
 	const limit = Math.max(1, width);
-	if ([...shown].length <= limit) {
+	if (textWidth(shown) <= limit) {
 		return shown;
 	}
 
 	const parts = shown.split('/').filter(part => part !== '');
 	for (let keep = parts.length - 1; keep >= 1; keep--) {
 		const candidate = `${ELLIPSIS}/${parts.slice(-keep).join('/')}`;
-		if ([...candidate].length <= limit) {
+		if (textWidth(candidate) <= limit) {
 			return candidate;
 		}
 	}

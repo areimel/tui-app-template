@@ -1,6 +1,7 @@
 /**
 Pure model of the help overlay: key bindings grouped into sections, then flattened to rows.
 */
+import {textWidth} from '../../core/text-width.js';
 import {formatKey} from '../../ui/input/keys.js';
 import type {KeyBinding} from '../../ui/input/types.js';
 
@@ -95,7 +96,7 @@ export function helpLines(sections: readonly HelpSection[]): HelpLine[] {
 	const keyWidth = Math.max(
 		0,
 		...sections.flatMap(section =>
-			section.rows.map(row => [...row.keys].length),
+			section.rows.map(row => textWidth(row.keys)),
 		),
 	);
 	const lines: HelpLine[] = [];

@@ -13,6 +13,33 @@ import {
 } from "../config/site.config";
 import { PREVIEW_APPS } from "./preview";
 
+const NUMBER_WORDS = [
+  "no",
+  "one",
+  "two",
+  "three",
+  "four",
+  "five",
+  "six",
+  "seven",
+  "eight",
+  "nine",
+  "ten",
+];
+
+/** `count` in words up to ten (`seven`), digits above. */
+function countWord(count: number): string {
+  return NUMBER_WORDS[count] ?? String(count);
+}
+
+function capitalise(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+/** How many examples there are, from the example guide pages (see `preview.ts`). */
+const EXAMPLE_COUNT = PREVIEW_APPS.length;
+const EXAMPLE_APPS = `${countWord(EXAMPLE_COUNT)} example app${EXAMPLE_COUNT === 1 ? "" : "s"}`;
+
 export interface Link {
   label: string;
   /** Site-relative path (passed through `href()`), or an absolute URL when `external`. */
@@ -25,8 +52,7 @@ export const HERO = {
   license: "OPEN SOURCE / MIT",
   titleLines: [SITE_NAME],
   tagline: SITE_TAGLINE,
-  intro:
-    "A menu, seven working example apps, a themed component kit, key bindings as data, a config store and this website. Copy it, run the init script and delete what you do not need.",
+  intro: `A menu, ${EXAMPLE_APPS}, a themed component kit, key bindings as data, a config store and this website. Copy it, run the init script and delete what you do not need.`,
   install: {
     label: "Get the template",
     code: `git clone ${REPO_URL} my-app\ncd my-app && pnpm install`,
@@ -56,15 +82,26 @@ export const FEATURES = {
       glyph: "▦",
       title: "A themed UI kit",
       text: "Panels, tables, trees, tabs, dialogs, text inputs, scroll views, sparklines, gauges and toasts. Colours come from theme tokens only.",
-      path: "docs/examples/gallery/",
-      linkLabel: "See the gallery",
+      ...(PREVIEW_APPS.some((app) => app.id === "gallery")
+        ? { path: "docs/examples/gallery/", linkLabel: "See the gallery" }
+        : {
+            path: "docs/template/ui-kit/",
+            linkLabel: "Read the kit reference",
+          }),
     },
     {
       glyph: "◉",
-      title: "Seven example apps",
-      text: "A menu opens each one. They cover a live monitor, a file browser, a log follower, forms with saving, an HTTP client and the original keep-awake tool.",
-      path: "#examples",
-      linkLabel: "Jump to examples",
+      title: capitalise(EXAMPLE_APPS),
+      text:
+        EXAMPLE_COUNT === 0
+          ? "The menu is ready for your first app."
+          : `A menu opens each one: ${PREVIEW_APPS.map((app) => app.title).join(", ")}.`,
+      ...(EXAMPLE_COUNT === 0
+        ? {
+            path: "docs/template/add-or-remove-an-example/",
+            linkLabel: "Add an app",
+          }
+        : { path: "#examples", linkLabel: "Jump to examples" }),
     },
     {
       glyph: "◐",
@@ -99,7 +136,7 @@ export const FEATURES = {
 
 export const EXAMPLES = {
   eyebrow: "03 / Example apps",
-  heading: "Seven examples, each deletable.",
+  heading: `${capitalise(countWord(EXAMPLE_COUNT))} example${EXAMPLE_COUNT === 1 ? "" : "s"}, each deletable.`,
   intro:
     "Each one is a folder under source/apps with a definition, a screen and pure model code. Remove the ones you do not need.",
   items: PREVIEW_APPS.map((app) => ({
@@ -166,7 +203,7 @@ export const PLATFORM_SECTION = {
     },
     {
       name: "OS",
-      text: `${PLATFORMS.join(" and ")}. Windows is not a target; the Keep Awake example is the most platform-specific part.`,
+      text: `${PLATFORMS.join(" and ")}. Windows is not a target, and an app can limit itself to the platforms it supports.`,
     },
   ],
   link: { label: "Platform details", path: "docs/platforms/" } satisfies Link,

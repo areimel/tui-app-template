@@ -2,6 +2,8 @@
 Pure: which tabs of a strip fit a width. `Tabs` draws each as `[ label ]` or with two spaces each side,
 so a tab costs its label plus `TAB_CHROME` columns; a cut strip spends 2 more on the `‹` / `›` markers.
 */
+import {textWidth} from '../../core/text-width.js';
+
 export const TAB_CHROME = 4;
 const MARKER_COLUMNS = 2;
 
@@ -26,8 +28,7 @@ export function tabsWindow(
 	selected: number,
 	width: number | undefined,
 ): TabsWindow {
-	const cost = (index: number) =>
-		[...(labels[index] ?? '')].length + TAB_CHROME;
+	const cost = (index: number) => textWidth(labels[index] ?? '') + TAB_CHROME;
 	const total = labels.reduce((sum, _, index) => sum + cost(index), 0);
 	if (width === undefined || total <= width || labels.length === 0) {
 		return {start: 0, end: labels.length, hasMarkers: false};

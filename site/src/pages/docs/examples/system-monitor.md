@@ -3,6 +3,8 @@ layout: ../../../layouts/DocsLayout.astro
 title: System Monitor
 description: An htop-style view with per-core gauges, memory, load and a sortable, filterable process table.
 section: Examples
+glyph: "◉"
+appDescription: Per-core CPU, memory and load, with a sortable process table
 order: 1
 ---
 

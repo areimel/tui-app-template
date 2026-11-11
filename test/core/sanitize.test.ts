@@ -37,6 +37,23 @@ const textCases: Array<[string, string, string]> = [
 	['backspace', 'ab\u{8}c', 'abc'],
 	['tab becomes spaces', 'a\tb', 'a  b'],
 	['newline kept', 'one\ntwo', 'one\ntwo'],
+	['bidi override RLO and PDF', 'a\u{202E}evil\u{202C}b', 'aevilb'],
+	[
+		'bidi embeddings and overrides U+202A to U+202E',
+		'\u{202A}\u{202B}x\u{202C}\u{202D}\u{202E}',
+		'x',
+	],
+	['bidi isolates U+2066 to U+2069', '\u{2066}\u{2067}\u{2068}y\u{2069}', 'y'],
+	['LRM, RLM and ALM', 'a\u{200E}b\u{200F}c\u{61C}d', 'abcd'],
+	['zero-width space', 'pay\u{200B}pal', 'paypal'],
+	['byte order mark', '\u{FEFF}start', 'start'],
+	[
+		'ZWJ kept inside an emoji sequence',
+		'👨\u{200D}👩\u{200D}👧',
+		'👨\u{200D}👩\u{200D}👧',
+	],
+	['ZWNJ kept', 'می\u{200C}خواهم', 'می\u{200C}خواهم'],
+	['Hebrew and Arabic text untouched', 'שלום مرحبا', 'שלום مرحبا'],
 	[
 		'CJK, emoji and box drawing untouched',
 		'日本語 🎉 ┏━┓ é',
@@ -68,4 +85,12 @@ test('hasControlCharacters finds C0, DEL, C1 and newlines', t => {
 	t.true(hasControlCharacters('a\u{1B}b'));
 	t.true(hasControlCharacters('a\u{7F}'));
 	t.true(hasControlCharacters('\u{9B}'));
+});
+
+test('sanitizeLine strips a Trojan Source style line', t => {
+	const spoofed =
+		'access = "user\u{202E} \u{2066}// Check if admin\u{2069} \u{2066}"';
+	const clean = sanitizeLine(spoofed);
+	t.notRegex(clean, /[\u{202A}-\u{202E}\u{2066}-\u{2069}]/v);
+	t.is(clean, 'access = "user // Check if admin "');
 });

@@ -5,6 +5,7 @@ overlays. Must sit inside `InputRoot` and `ShellProviders`.
 */
 import {useLayoutEffect, useMemo, useState, type ReactNode} from 'react';
 import {useExternalStore} from '../ui/hooks/use-external-store.js';
+import {optionalProp} from '../ui/kit/optional-prop.js';
 import {T} from '../ui/kit/T.js';
 import type {AppServiceRegistry} from './app-services.js';
 import {AppShell} from './AppShell.js';
@@ -130,7 +131,7 @@ export function ShellPages({
 			key={routeKey(current)}
 			app={page}
 			service={service}
-			{...(toast === undefined ? {} : {toast})}
+			{...optionalProp('toast', toast)}
 			overlay={layer}
 		/>
 	);

@@ -185,7 +185,8 @@ test('snapshot lists reachable, screen and global bindings', t => {
 	bind(screen, [SELECT], 'screen');
 	const first = registry.getSnapshot();
 	t.is(registry.getSnapshot(), first, 'cached until a change');
-	t.deepEqual(first.reachable, [SELECT, QUIT]);
+	// SELECT claims `q`, so the global QUIT can never run here and is not reachable.
+	t.deepEqual(first.reachable, [SELECT]);
 	t.deepEqual(first.screen, [SELECT]);
 	t.deepEqual(first.global, [QUIT]);
 	t.false(first.isModalOpen);
@@ -203,7 +204,7 @@ test('snapshot lists reachable, screen and global bindings', t => {
 	t.true(registry.getSnapshot().isCapturing);
 	stop();
 	close();
-	t.deepEqual(registry.getSnapshot().reachable, [SELECT, QUIT]);
+	t.deepEqual(registry.getSnapshot().reachable, [SELECT]);
 });
 
 test('subscribers hear every registration change', t => {

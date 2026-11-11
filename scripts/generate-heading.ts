@@ -1,7 +1,7 @@
 /**
 Generate a heading art module (ANSI Shadow font via figlet).
 
-Run with `npx tsx scripts/generate-heading.ts [--text <TEXT>] [--out <file>]`. Defaults: text `APP.headingText`, out `source/shell/brand/heading-art.ts`. Importing this module has no side effects; the file is only written when the script is the entry point.
+Run with `npx tsx scripts/generate-heading.ts [--text <TEXT>] [--out <file>]`. Defaults: text `APP.headingText`, out `source/shell/brand/heading-art.ts` (the menu heading; the init script regenerates it). Keep Awake's own art was made with `--text COFFEE --out source/apps/keep-awake/features/heading/heading-art.ts`. Importing this module has no side effects; the file is only written when the script is the entry point.
 */
 import {mkdirSync, writeFileSync} from 'node:fs';
 import {dirname, resolve} from 'node:path';
@@ -10,8 +10,6 @@ import {fileURLToPath, pathToFileURL} from 'node:url';
 import figlet from 'figlet';
 import ansiShadow from 'figlet/importable-fonts/ANSI Shadow.js';
 import {APP} from '../source/app.config.js';
-
-export const HEADING_TEXT = 'COFFEE';
 
 const FONT_NAME = 'ANSI Shadow';
 
@@ -24,7 +22,7 @@ Render `text` with the ANSI Shadow font as an array of equal-width rows.
 
 Trailing all-blank rows are dropped. Rows are padded to the widest row but their inner spacing is left untouched.
 */
-export function renderHeading(text: string = HEADING_TEXT): string[] {
+export function renderHeading(text: string = APP.headingText): string[] {
 	figlet.parseFont(FONT_NAME, ansiShadow);
 	const rows = figlet
 		.textSync(text, {font: FONT_NAME})
@@ -44,7 +42,7 @@ Produce the TypeScript source of the generated module for the given rows.
 */
 export function emitHeadingModule(
 	lines: readonly string[],
-	text: string = HEADING_TEXT,
+	text: string = APP.headingText,
 ): string {
 	for (const line of lines) {
 		if (/['\\]/v.test(line)) {

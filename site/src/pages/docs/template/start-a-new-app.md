@@ -89,13 +89,15 @@ It does **not** delete example apps and does not touch anything else. Files that
 
 The script cannot do these, so go through the list:
 
-1. **Review the diff** (`git diff`), run `pnpm install` and `pnpm test`.
+1. **Review the diff** (`git diff`), run `pnpm install` and `pnpm test`. The app, its `--help`, the config folder and env var, the menu heading, the demo data and the site (name, URLs, base path, heading art in the terminal preview) all follow the new identity already.
 2. **Delete the examples you do not need.** See [Add or remove an example](../add-or-remove-an-example/).
-3. **Write your readme.** Keep the identity markers if you want the script to keep that block current.
-4. **Site preview art.** `site/src/data/preview.ts` holds a copy of the menu heading (`HEADING_LINES`). Paste the new lines from `source/shell/brand/heading-art.ts` into it.
-5. **Site assets.** Replace `site/public/og-image.svg` and `og-image.png` (the social card) and `site/public/favicon.svg`. The favicon uses the site's dark background and accent colour; change them to match your brand. The browser theme colour is `THEME_COLOR` in `site/src/config/site.config.ts`.
-6. **Site copy.** The landing page text is in `site/src/data/home.ts`, and `site/src/data/preview.ts` also lists the example apps shown in the terminal preview.
-7. **Rewrite the docs.** The pages under `site/src/pages/docs/` are plain Markdown content, and they write the template's current values (`tui-app-template`, `tui-app`) literally. Replace them with documentation for your own app; the template's example and template pages are a starting point, not something to keep unchanged.
+3. **Write your readme.** Only the block between the identity markers is rewritten; the rest still describes the template. Keep the markers if you want the script to keep that block current.
+4. **Site assets.** Replace `site/public/og-image.svg` and `og-image.png` (the social card, which still says the template's name) and `site/public/favicon.svg`. The favicon uses the site's dark background and accent colour; change them to match your brand. The browser theme colour is `THEME_COLOR` in `site/src/config/site.config.ts`.
+5. **Site copy.** The landing page text is in `site/src/data/home.ts`. Its examples list, counts and the terminal preview's menu come from the example guide pages, so they need no edits. `site/README.md` describes the template's site; rewrite it.
+6. **Rewrite the docs.** The pages under `site/src/pages/docs/` are plain Markdown content, and they write the template's values (`tui-app-template`, `tui-app`, the author's repository URL) literally. Replace them with documentation for your own app; the template's example and template pages are a starting point, not something to keep unchanged.
+7. **Keep Awake's credits.** If you keep Keep Awake, the credits under its cup name the original author (`source/apps/keep-awake/features/cup/credits.ts` and its tests). Change them or leave them as attribution.
 8. **Provenance.** `site/TEMPLATE.md` and `site/LICENSE` describe where the site's design came from. Keep the licence; edit the notes to suit.
+
+After the script runs, a search such as `grep -ri "tui-app\|tui app template" --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=dist .` finds only the items above: the readme outside its identity block, `CLAUDE.md`, the docs pages, `site/README.md`, `site/TEMPLATE.md`, the social card, the Keep Awake credits and the design notes under `docs/`.
 
 See [Website](../website/) for how the site picks up the new identity, and [Publishing to npm](../publishing/) for releasing.

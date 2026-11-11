@@ -1,11 +1,8 @@
 import test from 'ava';
+import {APP} from '../../source/app.config.js';
+import {sizeProblems} from '../helpers/frame-lines.js';
 import {KEYS} from '../helpers/keys.js';
-import {
-	createTestApp,
-	frameProblems,
-	mountShell,
-	type Mounted,
-} from './shell-harness.js';
+import {createTestApp, mountShell, type Mounted} from './shell-harness.js';
 
 const SIZES = [
 	[120, 40],
@@ -38,21 +35,21 @@ for (const [columns, rows] of SIZES) {
 			const isFramedSize = isFramed(columns, rows);
 			await shell.waitForText('Alpha');
 			t.deepEqual(
-				frameProblems(shell.lines(), columns, rows, isFramedSize),
+				sizeProblems(shell.lines(), {columns, rows}, isFramedSize),
 				[],
 			);
 
 			await shell.press('1');
 			await shell.waitForText('Alpha screen');
 			t.deepEqual(
-				frameProblems(shell.lines(), columns, rows, isFramedSize),
+				sizeProblems(shell.lines(), {columns, rows}, isFramedSize),
 				[],
 			);
 
 			await shell.press('?');
 			await shell.waitForText('Help');
 			t.deepEqual(
-				frameProblems(shell.lines(), columns, rows, isFramedSize),
+				sizeProblems(shell.lines(), {columns, rows}, isFramedSize),
 				[],
 			);
 
@@ -61,7 +58,7 @@ for (const [columns, rows] of SIZES) {
 			await shell.press('t');
 			await shell.waitForText('Theme');
 			t.deepEqual(
-				frameProblems(shell.lines(), columns, rows, isFramedSize),
+				sizeProblems(shell.lines(), {columns, rows}, isFramedSize),
 				[],
 			);
 		});
@@ -72,7 +69,7 @@ test('the screen gets exactly the body size inside the frame', async t => {
 	await withShell(80, 24, async shell => {
 		await shell.press('1');
 		await shell.waitForText('Alpha screen marks=0 size=76x22');
-		t.is(frameProblems(shell.lines(), 80, 24, true).length, 0);
+		t.is(sizeProblems(shell.lines(), {columns: 80, rows: 24}, true).length, 0);
 	});
 });
 
@@ -87,8 +84,11 @@ test('minimal mode is unframed and its screen has one row less than the terminal
 
 test('the top edge shows the app name on the menu and Menu › App on a page', async t => {
 	await withShell(80, 24, async shell => {
-		await shell.waitForText('TUI App Template');
-		t.regex(shell.lines()[0] ?? '', /┏━+ TUI App Template ━+┓/v);
+		await shell.waitForText(APP.displayName);
+		t.true(
+			(shell.lines()[0] ?? '').includes(`━ ${APP.displayName} ━`),
+			shell.lines()[0],
+		);
 		await shell.press('2');
 		await shell.waitForText('Menu › Beta');
 		t.regex(shell.lines()[0] ?? '', /┏━+ Menu › Beta ━+┓/v);
@@ -145,7 +145,10 @@ test('a toast replaces the hints in the bottom edge', async t => {
 			const bottom = shell.lines().at(-1) ?? '';
 			t.regex(bottom, /! Away is not available on linux/v);
 			t.false(bottom.includes('q quit'));
-			t.deepEqual(frameProblems(shell.lines(), 80, 24, true), []);
+			t.deepEqual(
+				sizeProblems(shell.lines(), {columns: 80, rows: 24}, true),
+				[],
+			);
 		},
 		{apps},
 	);
@@ -168,7 +171,10 @@ test('a bare app still hosts overlays and its own keys', async t => {
 		await shell.waitForText('marks=1');
 		await shell.press('?');
 		await shell.waitForText('Help: Bare One');
-		t.deepEqual(frameProblems(shell.lines(), 80, 24, false), []);
+		t.deepEqual(
+			sizeProblems(shell.lines(), {columns: 80, rows: 24}, false),
+			[],
+		);
 	});
 });
 
@@ -203,5 +209,20 @@ test('a terminal below the minimum shows a notice', async t => {
 	await withShell(15, 3, async shell => {
 		await shell.waitForText('Terminal too');
 		t.true(shell.lines().every(line => [...line].length <= 15));
+	});
+});
+
+test('a resize across the framed threshold keeps the screen and its state', async t => {
+	await withShell(80, 24, async shell => {
+		await shell.press('1');
+		await shell.waitForText('Alpha screen marks=0');
+		await shell.press('x', 'x');
+		await shell.waitForText('marks=2');
+		shell.view.resize(30, 10);
+		await shell.waitForGone('┏');
+		t.true(shell.view.plainFrame().includes('marks=2'));
+		shell.view.resize(80, 24);
+		await shell.waitForText('┏');
+		t.true(shell.view.plainFrame().includes('marks=2'));
 	});
 });

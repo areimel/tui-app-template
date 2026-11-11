@@ -1,11 +1,13 @@
 export {
 	assertValidBindings,
 	bindingCaption,
+	EDITING_HINTS,
 	fitKeyHints,
 	formatKey,
 	isKeyMatch,
 	matchKey,
 	parseKeySpec,
+	withoutShadowed,
 	type ParsedKeySpec,
 } from './keys.js';
 export {InputRoot, InputScope} from './scope.js';

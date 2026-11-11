@@ -14,7 +14,7 @@ import {helpText} from './help-text.js';
 import {planRun, type PlainRunner} from './run-plan.js';
 import {installLifecycle} from './lifecycle.js';
 import {Shell} from './shell/Shell.js';
-import type {AppDefinition} from './shell/types.js';
+import {isAppSupported, type AppDefinition} from './shell/types.js';
 import {detectColorLevel} from './theme/color-level.js';
 
 const LEAVE_ALTERNATE_SCREEN = '\u{1B}[?1049l\u{1B}[?25h';
@@ -184,7 +184,7 @@ if (parsed.kind !== 'run') {
 }
 
 const {app} = parsed;
-if (app?.platforms !== undefined && !app.platforms.includes(process.platform)) {
+if (app !== undefined && !isAppSupported(app, process.platform)) {
 	fail(1, [`${app.title} is not available on ${process.platform}.`]);
 }
 

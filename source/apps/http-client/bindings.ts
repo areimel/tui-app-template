@@ -1,7 +1,7 @@
 /**
 The HTTP Client's key tables. Screens register them with `useKeys`; the definition lists them for help.
 */
-import {LIST_NAV_BINDINGS} from '../../ui/hooks/index.js';
+import {listNavBindings} from '../../ui/hooks/index.js';
 import type {KeyBinding} from '../../ui/input/types.js';
 
 export type MainAction = 'switchPane' | 'send' | 'history';
@@ -65,6 +65,7 @@ export const RESPONSE_BINDINGS: ReadonlyArray<KeyBinding<ResponseAction>> = [
 		keys: ['left'],
 		label: 'collapse node / previous tab',
 		caption: '←→',
+		hintLabel: 'tab / node',
 		hint: 4,
 		group: 'Response',
 	},
@@ -88,9 +89,14 @@ export const RESPONSE_BINDINGS: ReadonlyArray<KeyBinding<ResponseAction>> = [
 	},
 ];
 
+/**
+What Enter does on a JSON tree row.
+*/
+export const TREE_SELECT_LABEL = 'expand or collapse';
+
 export const HTTP_BINDINGS: readonly KeyBinding[] = [
 	...MAIN_BINDINGS,
 	...CANCEL_BINDINGS,
 	...RESPONSE_BINDINGS,
-	...LIST_NAV_BINDINGS,
+	...listNavBindings(TREE_SELECT_LABEL),
 ];

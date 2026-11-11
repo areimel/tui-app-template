@@ -16,9 +16,7 @@ Columns taken by the left and right frame borders.
 export const FRAME_BORDER_COLUMNS = 2;
 
 /**
-Columns the outer `Frame` takes from the terminal: border (2) plus horizontal padding (2). Same value as
-Keep Awake's own `FRAME_CHROME_COLUMNS` (`apps/keep-awake/layouts/dashboard-plan.ts`), which can move
-here when that app is next edited.
+Columns the outer `Frame` takes from the terminal: border (2) plus horizontal padding (2).
 */
 export const FRAME_CHROME_COLUMNS = 4;
 

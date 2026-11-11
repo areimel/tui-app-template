@@ -1,6 +1,6 @@
 import {Box} from 'ink';
 import type {SessionState} from '../../session/types.js';
-import {Badge, StatRow, T} from '../../../../ui/kit/index.js';
+import {Badge, optionalProp, StatRow, T} from '../../../../ui/kit/index.js';
 import {buildStatus, type BadgeData} from './status-model.js';
 
 export type SessionStatusProps = {
@@ -18,7 +18,7 @@ function ModelBadge({data}: {readonly data: BadgeData}) {
 		<Badge
 			state={data.state}
 			label={data.label}
-			{...(data.detail === undefined ? {} : {detail: data.detail})}
+			{...optionalProp('detail', data.detail)}
 		/>
 	);
 }

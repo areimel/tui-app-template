@@ -1,39 +1,40 @@
 /* eslint-disable @typescript-eslint/naming-convention -- Environment variable names. */
 import test from 'ava';
-import {configPath, dataFilePath} from '../../source/config/paths.js';
+import {APP} from '../../source/app.config.js';
+import {configPath, dataDir} from '../../source/config/paths.js';
 
 const home = '/home/u';
 const table: Array<[string, Parameters<typeof configPath>[0], string]> = [
 	[
 		'linux default',
 		{platform: 'linux', env: {}, homedir: home},
-		'/home/u/.config/tui-app/config.json',
+		`/home/u/.config/${APP.configDir}/config.json`,
 	],
 	[
 		'linux XDG',
 		{platform: 'linux', env: {XDG_CONFIG_HOME: '/x'}, homedir: home},
-		'/x/tui-app/config.json',
+		`/x/${APP.configDir}/config.json`,
 	],
 	[
 		'empty XDG ignored',
 		{platform: 'linux', env: {XDG_CONFIG_HOME: ''}, homedir: home},
-		'/home/u/.config/tui-app/config.json',
+		`/home/u/.config/${APP.configDir}/config.json`,
 	],
 	[
 		'macOS',
 		{platform: 'darwin', env: {XDG_CONFIG_HOME: '/x'}, homedir: home},
-		'/home/u/Library/Application Support/tui-app/config.json',
+		`/home/u/Library/Application Support/${APP.configDir}/config.json`,
 	],
 	[
 		'env var',
-		{platform: 'linux', env: {TUI_APP_CONFIG: '/e.json'}, homedir: home},
+		{platform: 'linux', env: {[APP.configEnvVar]: '/e.json'}, homedir: home},
 		'/e.json',
 	],
 	[
 		'override beats env',
 		{
 			platform: 'darwin',
-			env: {TUI_APP_CONFIG: '/e.json'},
+			env: {[APP.configEnvVar]: '/e.json'},
 			homedir: home,
 			override: '/o.json',
 		},
@@ -62,6 +63,6 @@ for (const [title, input, expected] of table) {
 	});
 }
 
-test('dataFilePath sits next to the config file', t => {
-	t.is(dataFilePath('/a/b/config.json', 'tasks.json'), '/a/b/tasks.json');
+test('dataDir is the config file folder', t => {
+	t.is(dataDir('/a/b/config.json'), '/a/b');
 });

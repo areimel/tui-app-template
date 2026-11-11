@@ -24,7 +24,7 @@ export {
 
 export const PORT = 4322;
 export const ORIGIN = `http://127.0.0.1:${PORT}`;
-/** Base path with a trailing slash, e.g. `/tui-app-template/`. */
+/** Base path with a trailing slash, e.g. `/my-app/`. */
 export const HOME = `${APP.siteBase}/`;
 export const DOCS_HOME = `${HOME}docs/`;
 

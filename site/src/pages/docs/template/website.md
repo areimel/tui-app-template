@@ -35,14 +35,14 @@ Because of that import, the site build needs the root dependencies installed, an
 
 ## Where content lives
 
-| What                        | Where                                                                            |
-| --------------------------- | -------------------------------------------------------------------------------- |
-| Landing page copy           | `site/src/data/home.ts`. Edit the copy there, not in `index.astro`.              |
-| The terminal preview        | `site/src/data/preview.ts`: the heading art, the example list and the mock menu. |
-| These docs                  | Markdown files under `site/src/pages/docs/`.                                     |
-| Layouts and components      | `site/src/layouts/` and `site/src/components/`.                                  |
-| Styles                      | `site/src/styles/`. `kojima.css` holds the design tokens.                        |
-| Social card, favicon, fonts | `site/public/`.                                                                  |
+| What                        | Where                                                                                                                                                                                                                                                                               |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Landing page copy           | `site/src/data/home.ts`. Edit the copy there, not in `index.astro`.                                                                                                                                                                                                                 |
+| The terminal preview        | `site/src/data/preview.ts`: the mock menu. The heading art is imported from `source/shell/brand/heading-art.ts`, and the example rows (also the landing page's examples list and counts) come from the frontmatter of the example guide pages (`glyph`, `appDescription`, `order`). |
+| These docs                  | Markdown files under `site/src/pages/docs/`.                                                                                                                                                                                                                                        |
+| Layouts and components      | `site/src/layouts/` and `site/src/components/`.                                                                                                                                                                                                                                     |
+| Styles                      | `site/src/styles/`. `kojima.css` holds the design tokens.                                                                                                                                                                                                                           |
+| Social card, favicon, fonts | `site/public/`.                                                                                                                                                                                                                                                                     |
 
 ## Writing a docs page
 

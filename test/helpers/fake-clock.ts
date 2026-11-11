@@ -1,17 +1,18 @@
 /**
- Deterministic clock for the supervisor. Wraps `@sinonjs/fake-timers`
- `createClock()`; never installs over globals.
- */
+Deterministic injected clock and timers (the shape the config saver, toasts and Keep Awake's supervisor
+take). Wraps `@sinonjs/fake-timers` `createClock()`; never installs over globals.
+*/
 import {createClock, type Clock, type TimerId} from '@sinonjs/fake-timers';
-import type {
-	SupervisorDeps,
-	TimerHandle,
-} from '../../source/apps/keep-awake/session/types.js';
 
-type ClockDeps = Pick<
-	SupervisorDeps,
-	'now' | 'setInterval' | 'clearInterval' | 'setTimeout' | 'clearTimeout'
->;
+type TimerHandle = unknown;
+
+type ClockDeps = {
+	now(): number;
+	setInterval(callback: () => void, ms: number): TimerHandle;
+	clearInterval(handle: TimerHandle): void;
+	setTimeout(callback: () => void, ms: number): TimerHandle;
+	clearTimeout(handle: TimerHandle): void;
+};
 
 export type FakeClock = ClockDeps & {
 	/**

@@ -5,7 +5,7 @@ line per state change, then prints the summary when the session stops; a stop co
 here (the TUI shows the stopped state instead).
 */
 import type {AppCli, PlainContext} from '../../shell/types.js';
-import {isPidAlive} from '../../platform/process-alive.js';
+import {isPidAlive} from './platform/process-alive.js';
 import type {KeepAwakeConfig} from './config.js';
 import {
 	KEEP_AWAKE_FLAGS,

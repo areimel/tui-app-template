@@ -4,7 +4,7 @@ import {
 	HEADING_WIDTH,
 } from '../../source/shell/brand/heading-art.js';
 import {planMenu} from '../../source/shell/menu-plan.js';
-import {shortcutBindings} from '../../source/shell/Menu.js';
+import {EMPTY_TEXT, shortcutBindings} from '../../source/shell/Menu.js';
 import {T} from '../../source/ui/kit/T.js';
 import {KEYS} from '../helpers/keys.js';
 import {createTestApp, mountShell, type Mounted} from './shell-harness.js';
@@ -79,6 +79,18 @@ test('the menu lists every app with number, glyph, title and description', async
 	});
 });
 
+test('with no apps the menu says how to add one and offers no list keys', async t => {
+	await withMenu({columns: 100, rows: 30, apps: []}, async shell => {
+		await shell.waitForText(EMPTY_TEXT);
+		const footer = shell.lines().at(-1) ?? '';
+		t.false(footer.includes('move'), `footer: ${footer}`);
+		t.false(footer.includes('open'), `footer: ${footer}`);
+		t.true(footer.includes('quit'), `footer: ${footer}`);
+		await shell.press(KEYS.enter, '1');
+		t.deepEqual(shell.router.calls, []);
+	});
+});
+
 test('down moves the cursor marker and Enter opens that app', async t => {
 	await withMenu({columns: 100, rows: 30}, async shell => {
 		await shell.waitForText('Alpha');
@@ -150,12 +162,5 @@ test('an app menu badge is drawn after its row', async t => {
 	await withMenu({columns: 100, rows: 30, apps}, async shell => {
 		await shell.waitForText('[awake]');
 		t.regex(shell.lines().join('\n'), /Badged description\s+\[awake\]/v);
-	});
-});
-
-test('an empty app list says so instead of crashing', async t => {
-	await withMenu({columns: 80, rows: 24, apps: []}, async shell => {
-		await shell.waitForText('No apps installed');
-		t.deepEqual(shell.router.calls, []);
 	});
 });

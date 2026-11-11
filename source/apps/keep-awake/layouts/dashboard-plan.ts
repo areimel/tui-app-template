@@ -21,13 +21,13 @@ import {COMPACT_TITLE_WIDTH} from '../features/heading/title.js';
 import type {Layout, LayoutMode} from '../hooks/use-layout.js';
 
 /**
-Border (2) plus horizontal padding (2) of the outer frame.
+The outer frame's chrome, shared with the shell (`ui/kit/frame-math.ts`). The heading's first art row
+rides in the top edge and the key hints in the bottom edge.
 */
-export const FRAME_CHROME_COLUMNS = 4;
-/**
-Top and bottom edge of the outer frame. The heading's first art row rides in the top edge and the key hints in the bottom edge.
-*/
-export const FRAME_CHROME_ROWS = 2;
+export {
+	FRAME_CHROME_COLUMNS,
+	FRAME_CHROME_ROWS,
+} from '../../../ui/kit/frame-math.js';
 /**
 Art rows inside the frame (all but the first, which is in the top edge) plus the 2 blank rows under them.
 */

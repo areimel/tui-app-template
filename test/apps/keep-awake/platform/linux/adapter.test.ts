@@ -238,7 +238,7 @@ const tailLines = async () =>
 (isGnomeBox ? test.serial : test.serial.skip)(
 	'real locks appear in the inhibitor listings and vanish on release',
 	async t => {
-		const reason = `coffee-term-test-${process.pid}-${Date.now()}`;
+		const reason = `keep-awake-test-${process.pid}-${Date.now()}`;
 		const adapter = createLinuxAdapter();
 		const handles: Array<{releaseSync(): void}> = [];
 		t.teardown(() => {

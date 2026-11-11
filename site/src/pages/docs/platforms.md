@@ -35,7 +35,7 @@ For the Keep Awake example, the original project's own notes are specific:
 | Linux, X11 without GNOME      | `systemd-inhibit` (sleep, idle) | `xset s off -dpms` (restored on exit) | Unit-tested only.                                              |
 | Linux, other Wayland desktops | `systemd-inhibit` (sleep, idle) | unavailable (shown as such)           | No display lock.                                               |
 | macOS                         | `caffeinate -i`                 | `caffeinate -d`                       | Unit-tested only (argv, `pmset` fixtures); never run on a Mac. |
-| Windows / WSL                 | unsupported                     | unsupported                           | Prints an unsupported message and exits with code 1.           |
+| Windows / WSL                 | unsupported                     | unsupported                           | Disabled in the menu; `tui-app keep-awake` exits with code 1.  |
 
 More detail is on the [Keep Awake page](../examples/keep-awake/).
 

@@ -25,6 +25,12 @@ export type FrameProps = {
 	Horizontal padding inside the side borders. Default 1.
 	*/
 	readonly paddingX?: number;
+	/**
+	No edges and no side borders: `top` is drawn as a plain first row and `bottom` is not drawn. The
+	children keep their place in the element tree, so switching it (a resize across a size threshold)
+	does not remount them or lose their state. Default false.
+	*/
+	readonly isPlain?: boolean;
 	readonly children?: ReactNode;
 };
 
@@ -54,6 +60,7 @@ export function Frame({
 	topWidth = 0,
 	bottom,
 	paddingX = 1,
+	isPlain = false,
 	children,
 }: FrameProps) {
 	const theme = useTheme();
@@ -67,45 +74,55 @@ export function Frame({
 			width={width}
 			{...optionalProp('height', height)}
 		>
-			<Box {...bg}>
-				<T tone="border">{glyphs.topLeft}</T>
-				{top === undefined ? (
-					<BorderRule glyph="━" tone="border" />
-				) : (
-					<>
-						<BorderRule glyph="━" tone="border" length={left} />
-						<T tone="border"> </T>
-						{top}
-						<T tone="border"> </T>
-						<BorderRule glyph="━" tone="border" length={right} />
-					</>
-				)}
-				<T tone="border">{glyphs.topRight}</T>
-			</Box>
+			{isPlain ? (
+				<Box flexShrink={0}>{top}</Box>
+			) : (
+				<Box {...bg}>
+					<T tone="border">{glyphs.topLeft}</T>
+					{top === undefined ? (
+						<BorderRule glyph="━" tone="border" />
+					) : (
+						<>
+							<BorderRule glyph="━" tone="border" length={left} />
+							<T tone="border"> </T>
+							{top}
+							<T tone="border"> </T>
+							<BorderRule glyph="━" tone="border" length={right} />
+						</>
+					)}
+					<T tone="border">{glyphs.topRight}</T>
+				</Box>
+			)}
 			<Box
 				flexDirection="column"
 				flexGrow={1}
-				borderStyle="bold"
-				borderTop={false}
-				borderBottom={false}
-				paddingX={paddingX}
-				{...optionalProp('borderColor', color)}
-				{...optionalProp('borderBackgroundColor', theme.colors.bg)}
+				{...(isPlain
+					? {}
+					: {
+							borderStyle: 'bold',
+							borderTop: false,
+							borderBottom: false,
+							paddingX,
+							...optionalProp('borderColor', color),
+							...optionalProp('borderBackgroundColor', theme.colors.bg),
+						})}
 			>
 				{children}
 			</Box>
-			<Box {...bg}>
-				<T tone="border">{glyphs.bottomLeft}</T>
-				{bottom === undefined ? undefined : (
-					<>
-						<T tone="border">{glyphs.horizontal} </T>
-						{bottom}
-						<T tone="border"> </T>
-					</>
-				)}
-				<BorderRule glyph="━" tone="border" />
-				<T tone="border">{glyphs.bottomRight}</T>
-			</Box>
+			{isPlain ? null : (
+				<Box {...bg}>
+					<T tone="border">{glyphs.bottomLeft}</T>
+					{bottom === undefined ? undefined : (
+						<>
+							<T tone="border">{glyphs.horizontal} </T>
+							{bottom}
+							<T tone="border"> </T>
+						</>
+					)}
+					<BorderRule glyph="━" tone="border" />
+					<T tone="border">{glyphs.bottomRight}</T>
+				</Box>
+			)}
 		</Box>
 	);
 }

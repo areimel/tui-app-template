@@ -1,4 +1,5 @@
 import {Box} from 'ink';
+import {padToWidth, sliceToWidth, textWidth} from '../../core/text-width.js';
 import type {TokenName} from '../../theme/tokens.js';
 import {ProgressBar} from './ProgressBar.js';
 import {T} from './T.js';
@@ -30,11 +31,14 @@ Labelled bar with a percentage (see `GaugeProps`). The row is exactly `width` ce
 percentage keep their size, the bar takes what is left, and the detail is cut to fit.
 */
 export function Gauge({label, value, width, detail, labelWidth}: GaugeProps) {
-	const labelCells = Math.min(labelWidth ?? label.length, Math.max(0, width));
-	const labelText = label.slice(0, labelCells).padEnd(labelCells);
+	const labelCells = Math.min(
+		labelWidth ?? textWidth(label),
+		Math.max(0, width),
+	);
+	const labelText = padToWidth(sliceToWidth(label, labelCells), labelCells);
 	// Cells left for the bar and detail: width minus label, its gap, the bar gap and the percentage.
 	const available = Math.max(0, width - labelCells - 2 - PERCENT_CELLS);
-	const detailNeeds = detail === undefined ? 0 : detail.length + 2;
+	const detailNeeds = detail === undefined ? 0 : textWidth(detail) + 2;
 	const barCells =
 		available >= MIN_BAR_CELLS
 			? Math.min(available, Math.max(MIN_BAR_CELLS, available - detailNeeds))
@@ -43,7 +47,7 @@ export function Gauge({label, value, width, detail, labelWidth}: GaugeProps) {
 	const detailText =
 		detail === undefined || detailCells === 0
 			? ''
-			: detail.slice(0, detailCells);
+			: sliceToWidth(detail, detailCells);
 	const percent = `${Math.round((Number.isNaN(value) ? 0 : Math.min(1, Math.max(0, value))) * 100)}%`;
 	const tone = gaugeTone(value);
 

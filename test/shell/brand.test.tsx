@@ -56,8 +56,9 @@ test('hasArt false forces the compact heading even when wide', t => {
 });
 
 test('text longer than the width is cut, never wrapped', t => {
-	const lines = frame(12, false);
+	const width = Math.min(12, [...APP.tagline].length - 1);
+	const lines = frame(width, false);
 	t.is(lines.length, 2);
-	t.true(lines.every(line => [...line].length <= 12));
+	t.true(lines.every(line => [...line].length <= width));
 	t.true(lines[1]?.endsWith('…'));
 });

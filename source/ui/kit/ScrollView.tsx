@@ -1,5 +1,6 @@
 import {Box} from 'ink';
 import {scrollbarThumb} from './list-window.js';
+import {optionalProp} from './optional-prop.js';
 import {T} from './T.js';
 import type {ScrollViewProps} from './types.js';
 
@@ -47,11 +48,7 @@ export function ScrollView({
 		contentRows === undefined ? offset : Math.max(0, contentRows - height);
 	const safeOffset = Math.max(0, Math.min(offset, maxOffset));
 	return (
-		<Box
-			flexDirection="row"
-			height={height}
-			{...(width === undefined ? {} : {width})}
-		>
+		<Box flexDirection="row" height={height} {...optionalProp('width', width)}>
 			<Box
 				flexDirection="column"
 				flexGrow={1}

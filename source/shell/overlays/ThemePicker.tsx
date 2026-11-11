@@ -47,6 +47,7 @@ function PickerBody({onClose}: ThemePickerProps) {
 	});
 	const {theme} = settings;
 	const {cursor} = useListNav({
+		selectLabel: 'choose',
 		count: THEME_NAMES.length,
 		initialCursor: Math.max(0, THEME_NAMES.indexOf(theme)),
 		onSelect(index) {

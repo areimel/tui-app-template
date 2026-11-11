@@ -3,6 +3,8 @@ layout: ../../../layouts/DocsLayout.astro
 title: Component Gallery
 description: Every UI kit component grouped by category, with live theme switching.
 section: Examples
+glyph: "◆"
+appDescription: Every kit component, by category, with live theme cycling
 order: 6
 ---
 
@@ -27,13 +29,13 @@ A test compares the gallery's list of covered components with the exports of `ui
 
 ## Keys
 
-| Key                              | Action                                     |
-| -------------------------------- | ------------------------------------------ |
-| `Left` `Right`, `h` `l`          | Previous or next tab                       |
-| `[` `]`                          | Previous or next theme                     |
-| `Enter`, `space`                 | Go inside an interactive sample ("try it") |
-| `Esc`                            | Leave the sample                           |
-| `Up` `Down`, `PageUp` `PageDown` | Scroll the tab (when not inside a sample)  |
+| Key                                                              | Action                                     |
+| ---------------------------------------------------------------- | ------------------------------------------ |
+| `Left` `Right`, `h` `l`                                          | Previous or next tab                       |
+| `[` `]`                                                          | Previous or next theme                     |
+| `Enter`, `space`                                                 | Go inside an interactive sample ("try it") |
+| `Esc`                                                            | Leave the sample                           |
+| `Up` `Down`, `j` `k`, `PageUp` `PageDown`, `Home` `End`, `g` `G` | Scroll the tab (when not inside a sample)  |
 
 Inside a sample, the keys are the component's own (a list moves its cursor, a toggle flips).
 
@@ -53,4 +55,4 @@ Nothing of its own: it has no config section. The `[` and `]` keys commit a them
 
 ## What it deliberately leaves out
 
-It is a catalogue, not documentation of props: the prop tables are in the [UI kit reference](../../template/ui-kit/). Samples use fixed data and make no service calls. The legacy `TextField` is excluded on purpose; `TextInput` replaces it.
+It is a catalogue, not documentation of props: the prop tables are in the [UI kit reference](../../template/ui-kit/). Samples use fixed data and make no service calls. Text entry is shown with `TextInput`.

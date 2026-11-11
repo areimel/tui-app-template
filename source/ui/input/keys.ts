@@ -2,6 +2,7 @@
 Key specs: parsing, matching and display. Pure (no Ink runtime import, no React).
 Grammar and semantics: see `KeyBinding.keys` in `types.ts` and `.research_docs/ink-input-focus.md` §8.
 */
+import {textWidth} from '../../core/text-width.js';
 import type {KeyHint} from '../kit/KeyHints.js';
 import type {Key, KeyBinding} from './types.js';
 
@@ -127,6 +128,41 @@ export function parseKeySpec(spec: string): ParsedKeySpec {
 	return parsed;
 }
 
+function specId(spec: string): string {
+	const {name, ctrl, meta, shift} = parseKeySpec(spec);
+	// Aliases such as `esc` and `escape` name the same key.
+	const key = namedField(name) ?? name;
+	return `${ctrl ? 'c' : ''}${meta ? 'm' : ''}${shift ? 's' : ''}+${key}`;
+}
+
+/**
+`bindings` without the keys `winners` already claim (dispatch runs the first match, so those keys
+never reach them): a binding keeps only its free keys and loses its caption when it lost a key, and a
+binding with no free key is dropped. Used for the reachable list, so the footer and help never offer
+a shadowed key (a screen's `esc` over the shell's `esc back`).
+*/
+export function withoutShadowed(
+	bindings: readonly KeyBinding[],
+	winners: readonly KeyBinding[],
+): KeyBinding[] {
+	const claimed = new Set(
+		winners.flatMap(binding => binding.keys.map(key => specId(key))),
+	);
+	return bindings.flatMap(binding => {
+		const keys = binding.keys.filter(key => !claimed.has(specId(key)));
+		if (keys.length === binding.keys.length) {
+			return [binding];
+		}
+
+		if (keys.length === 0) {
+			return [];
+		}
+
+		const {caption: _caption, ...rest} = binding;
+		return [{...rest, keys}];
+	});
+}
+
 /**
 Does one key spec match this key press? Release events (kitty only) never match. Named keys need
 the exact modifiers; character specs compare `input` exactly and ignore `shift` (Ink sets it for
@@ -219,6 +255,7 @@ export function bindingsSignature(bindings: readonly KeyBinding[]): string {
 			binding.keys,
 			binding.label,
 			binding.caption,
+			binding.hintLabel,
 			binding.hint,
 			binding.group,
 		]),
@@ -228,8 +265,17 @@ export function bindingsSignature(bindings: readonly KeyBinding[]): string {
 const HINT_GAP = 2;
 
 function hintWidth(hint: KeyHint): number {
-	return [...hint.keys].length + 1 + [...hint.label].length;
+	return textWidth(hint.keys) + 1 + textWidth(hint.label);
 }
+
+/**
+Footer hints while a text input captures every key (no binding is reachable): every kit text input
+saves on Enter and cancels on Esc.
+*/
+export const EDITING_HINTS: readonly KeyHint[] = [
+	{keys: 'enter', label: 'done'},
+	{keys: 'esc', label: 'cancel'},
+];
 
 /**
 Footer hints for bindings that have a `hint` priority, in table order, dropping the highest `hint`
@@ -244,7 +290,7 @@ export function fitKeyHints(
 		.filter(({binding}) => binding.hint !== undefined);
 	const toHint = (binding: KeyBinding): KeyHint => ({
 		keys: bindingCaption(binding),
-		label: binding.label,
+		label: binding.hintLabel ?? binding.label,
 	});
 	const kept = [...candidates];
 	const width = () =>

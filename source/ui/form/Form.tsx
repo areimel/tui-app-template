@@ -1,5 +1,6 @@
 import {Box} from 'ink';
 import {truncate} from '../../core/format.js';
+import {widestText} from '../../core/text-width.js';
 import {FieldRow} from '../kit/FieldRow.js';
 import {NumberField} from '../kit/NumberField.js';
 import {optionalProp} from '../kit/optional-prop.js';
@@ -99,8 +100,7 @@ export function Form<T, Ctx>(props: FormProps<T, Ctx>) {
 	const {value, context, isActive, labelWidth, width} = props;
 	const form = useForm(props);
 	const labelColumn =
-		labelWidth ??
-		Math.max(0, ...form.visibleFields.map(field => [...field.label].length));
+		labelWidth ?? widestText(form.visibleFields.map(field => field.label));
 	const valueWidth = valueColumn(width, labelColumn);
 
 	return (

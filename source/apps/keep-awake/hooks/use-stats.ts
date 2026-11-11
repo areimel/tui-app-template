@@ -1,5 +1,13 @@
 import {useEffect, useState} from 'react';
-import type {SystemStats} from '../../../platform/system-stats.js';
+
+/**
+The machine facts the dashboard shows, read once per tick from the shell's system service.
+*/
+export type SystemStats = {
+	uptimeSeconds: number;
+	loadAverage: readonly [number, number, number];
+	hostname: string;
+};
 
 export type UseStatsOptions = {
 	/**

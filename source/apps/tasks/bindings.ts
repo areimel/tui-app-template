@@ -1,7 +1,7 @@
 /**
 The Tasks key table (registered by the screen, listed in help through the definition).
 */
-import {LIST_NAV_BINDINGS} from '../../ui/hooks/index.js';
+import {listNavBindings} from '../../ui/hooks/index.js';
 import type {KeyBinding} from '../../ui/input/types.js';
 
 export type TaskKeyAction =
@@ -30,11 +30,14 @@ export const TASK_KEY_BINDINGS: ReadonlyArray<KeyBinding<TaskKeyAction>> = [
 ];
 
 /**
+What Enter does on a task row.
+*/
+export const SELECT_LABEL = 'edit';
+
+/**
 Everything the screen registers: list navigation (Enter edits) plus the task keys.
 */
 export const TASKS_BINDINGS: readonly KeyBinding[] = [
-	...LIST_NAV_BINDINGS.map(binding =>
-		binding.action === 'select' ? {...binding, label: 'edit'} : binding,
-	),
+	...listNavBindings(SELECT_LABEL),
 	...TASK_KEY_BINDINGS,
 ];

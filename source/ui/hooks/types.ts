@@ -20,9 +20,14 @@ export type ListNavOptions = {
 	*/
 	readonly isWrapping?: boolean;
 	/**
-	Enter on the cursor row.
+	Enter on the cursor row. Without it, Enter is not registered (no "open" hint on a list that opens
+	nothing).
 	*/
 	readonly onSelect?: (index: number) => void;
+	/**
+	What Enter does, for the footer and help (e.g. `'edit'`). Default `'open'`.
+	*/
+	readonly selectLabel?: string;
 	/**
 	Start position. Default 0.
 	*/

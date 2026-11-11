@@ -6,6 +6,7 @@ import {
 	isKeyMatch,
 	matchKey,
 	parseKeySpec,
+	withoutShadowed,
 	type Key,
 	type KeyBinding,
 } from '../../../source/ui/input/index.js';
@@ -174,4 +175,24 @@ test('fitKeyHints skips bindings without a hint', t => {
 		80,
 	);
 	t.false(hints.some(hint => hint.label === 'help'));
+});
+
+test('withoutShadowed drops keys a winner claims, and bindings left with none', t => {
+	const winners: KeyBinding[] = [
+		{action: 'clear', keys: ['esc'], label: 'clear'},
+	];
+	const globals: KeyBinding[] = [
+		{action: 'back', keys: ['esc', 'backspace'], label: 'back', caption: '⎋'},
+		{action: 'close', keys: ['escape'], label: 'close'},
+		{action: 'quit', keys: ['q'], label: 'quit'},
+	];
+	const left = withoutShadowed(globals, winners);
+	t.deepEqual(
+		left.map(binding => [binding.action, binding.keys, binding.caption]),
+		[
+			['back', ['backspace'], undefined],
+			['quit', ['q'], undefined],
+		],
+	);
+	t.is(left[1], globals[2]);
 });

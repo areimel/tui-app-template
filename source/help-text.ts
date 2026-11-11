@@ -3,6 +3,7 @@
 flags and help lines, and the exit codes (see `flags.ts`).
 */
 import {APP} from './app.config.js';
+import {widestText} from './core/text-width.js';
 import {flagName, GLOBAL_FLAGS} from './flags.js';
 import type {AppDefinition, CliFlagSpec} from './shell/types.js';
 
@@ -24,7 +25,7 @@ Usage, the app list, the global flags, each app's own flags and examples, exit c
 */
 export function helpText(apps: readonly AppDefinition[]): string {
 	const cmd = APP.command;
-	const idWidth = Math.max(0, ...apps.map(app => app.id.length)) + 3;
+	const idWidth = widestText(apps.map(app => app.id)) + 3;
 	const lines = [
 		`${APP.displayName}: ${APP.tagline}`,
 		'',

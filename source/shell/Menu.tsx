@@ -5,6 +5,7 @@ is taller than the body.
 */
 import {useMemo} from 'react';
 import {Box} from 'ink';
+import {widestText} from '../core/text-width.js';
 import {useListNav} from '../ui/hooks/index.js';
 import {useKeys, type KeyBinding} from '../ui/input/index.js';
 import {T, VirtualList} from '../ui/kit/index.js';
@@ -18,7 +19,7 @@ import {
 	useToast,
 } from './context.js';
 import {planMenu} from './menu-plan.js';
-import type {AppDefinition, AppService} from './types.js';
+import {isAppSupported, type AppDefinition, type AppService} from './types.js';
 
 export type MenuProps = {
 	readonly apps: readonly AppDefinition[];
@@ -46,10 +47,6 @@ export function shortcutBindings(apps: readonly AppDefinition[]): KeyBinding[] {
 		label: `open ${app.title}`,
 		group: 'Menu',
 	}));
-}
-
-function isSupported(app: AppDefinition, platform: string): boolean {
-	return app.platforms === undefined || app.platforms.includes(platform);
 }
 
 type MenuRowProps = {
@@ -95,6 +92,12 @@ function MenuRow({
 	);
 }
 
+/**
+Shown when the registry is empty (every example deleted, nothing added yet).
+*/
+export const EMPTY_TEXT =
+	'No apps yet. Add one in source/apps/ and list it in source/apps/registry.ts.';
+
 export function Menu({apps, serviceFor}: MenuProps) {
 	const size = useScreenSize();
 	const router = useRouter();
@@ -106,7 +109,7 @@ export function Menu({apps, serviceFor}: MenuProps) {
 	});
 
 	const open = (app: AppDefinition) => {
-		if (isSupported(app, platform)) {
+		if (isAppSupported(app, platform)) {
 			router.push({id: app.id});
 		} else {
 			toast(`${app.title} is not available on ${platform}`, 'warn');
@@ -115,6 +118,8 @@ export function Menu({apps, serviceFor}: MenuProps) {
 
 	const {cursor} = useListNav({
 		count: apps.length,
+		// With no apps there is nothing to move to or open: no keys, no hints.
+		isActive: apps.length > 0,
 		pageSize: Math.max(1, plan.listHeight - 1),
 		onSelect(index) {
 			const app = apps[index];
@@ -137,7 +142,7 @@ export function Menu({apps, serviceFor}: MenuProps) {
 		),
 	);
 
-	const titleWidth = Math.max(0, ...apps.map(app => [...app.title].length));
+	const titleWidth = widestText(apps.map(app => app.title));
 	const rowWidth = Math.max(
 		0,
 		size.columns - MARKER_COLUMNS - (plan.hasScrollbar ? SCROLLBAR_COLUMNS : 0),
@@ -160,7 +165,7 @@ export function Menu({apps, serviceFor}: MenuProps) {
 				cursor={cursor}
 				height={plan.listHeight}
 				hasScrollbar={plan.hasScrollbar}
-				emptyText="No apps installed"
+				emptyText={EMPTY_TEXT}
 				getKey={app => app.id}
 				renderItem={(app, {index}) => (
 					<MenuRow
@@ -168,7 +173,7 @@ export function Menu({apps, serviceFor}: MenuProps) {
 						index={index}
 						titleWidth={titleWidth}
 						width={rowWidth}
-						isAvailable={isSupported(app, platform)}
+						isAvailable={isAppSupported(app, platform)}
 						platform={platform}
 						service={serviceFor?.(app.id)}
 					/>

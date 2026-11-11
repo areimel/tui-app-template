@@ -65,10 +65,3 @@ Folder for app data files (`DataService`): the config file's folder.
 export function dataDir(configFile: string): string {
 	return posix.dirname(configFile);
 }
-
-/**
-A data file (`tasks.json`) next to the config file.
-*/
-export function dataFilePath(configFile: string, name: string): string {
-	return posix.join(dataDir(configFile), name);
-}

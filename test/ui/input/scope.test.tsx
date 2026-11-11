@@ -54,8 +54,8 @@ test('active bindings follow mount and unmount', async t => {
 	const {view, whenReady} = setup();
 	await whenReady();
 	await waitLong(
-		() => view.plainFrame().includes('[open,pick,quit,sentinel]'),
-		'page + globals listed',
+		() => view.plainFrame().includes('[open,pick,sentinel]'),
+		'page + globals listed (quit is shadowed by pick on q)',
 	);
 	view.stdin.write('o');
 	await waitLong(
@@ -64,7 +64,7 @@ test('active bindings follow mount and unmount', async t => {
 	);
 	view.stdin.write('o');
 	await waitLong(
-		() => view.plainFrame().includes('[open,pick,quit,sentinel]'),
+		() => view.plainFrame().includes('[open,pick,sentinel]'),
 		'back to page',
 	);
 	t.notRegex(view.plainFrame(), /modal/v);

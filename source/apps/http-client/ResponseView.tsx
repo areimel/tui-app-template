@@ -10,7 +10,7 @@ import {useListNav, useScroll} from '../../ui/hooks/index.js';
 import {useKeys} from '../../ui/input/index.js';
 import {Badge, StatusBar, T, Tabs} from '../../ui/kit/index.js';
 import {flattenTree} from '../../ui/kit/tree-model.js';
-import {RESPONSE_BINDINGS} from './bindings.js';
+import {RESPONSE_BINDINGS, TREE_SELECT_LABEL} from './bindings.js';
 import {JsonTree, TextRows} from './BodyViews.js';
 import {statusBadge} from './request-model.js';
 import {
@@ -88,6 +88,7 @@ export function ResponseView({
 		count: rows.length,
 		pageSize: bodyRows - 1,
 		isActive: isActive && isTree,
+		selectLabel: TREE_SELECT_LABEL,
 		onSelect(index) {
 			const row = rows[index];
 			if (row?.hasChildren === true) {

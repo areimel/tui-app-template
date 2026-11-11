@@ -33,6 +33,7 @@ The list inside the dialog: it must be a child of `Dialog` so its keys register 
 */
 function HistoryList({entries, width, onLoad, onClose}: HistoryDialogProps) {
 	const nav = useListNav({
+		selectLabel: 'load',
 		count: entries.length,
 		onSelect(index) {
 			const entry = entries[index];

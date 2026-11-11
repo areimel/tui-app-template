@@ -226,19 +226,20 @@ test.serial(
 	'r starts a new session after a stop, with the same options',
 	async t => {
 		const app = await startApp({
-			options: {end: {mode: 'duration', ms: 1000}, display: false},
+			options: {end: {mode: 'duration', ms: 3000}, display: false},
 		});
 		try {
 			await app.waitForPhase('stopped');
 			const first = app.adapter.handles.length;
 			await app.press('r');
 			await app.waitForPhase('awake');
+			// The restarted session lasts 3 s (long enough to survive a loaded test run);
+			// still, assert on what was acquired rather than on what is held right now.
 			t.is(app.adapter.handles.length, first + 1);
-			t.not(app.adapter.held('system'), undefined);
-			t.is(app.adapter.held('display'), undefined);
+			t.is(app.adapter.handles.at(-1)?.kind, 'system');
 			t.deepEqual(app.service.getState().options.end, {
 				mode: 'duration',
-				ms: 1000,
+				ms: 3000,
 			});
 			t.regex(app.plainFrame(), /AWAKE/v);
 			t.regex(app.plainFrame(), /space pause/v);

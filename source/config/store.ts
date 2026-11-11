@@ -134,20 +134,6 @@ export function writeJsonAtomicSync(file: string, value: unknown): SaveResult {
 	}
 }
 
-/**
-Atomic save: write `<file>.tmp`, then rename over the target.
-*/
-export async function saveConfig(
-	file: string,
-	config: Config,
-): Promise<SaveResult> {
-	return writeJsonAtomic(file, config);
-}
-
-export function saveConfigSync(file: string, config: Config): SaveResult {
-	return writeJsonAtomicSync(file, config);
-}
-
 export type DebouncedSaverOptions = {
 	readonly path: string;
 	/**

@@ -67,6 +67,8 @@ function startDemo(
 ): () => void {
 	let next = DEMO_BACKLOG;
 	let tick = 0;
+	// Stamps never go backwards, even on the fixed `--demo` clock.
+	let lastStamp = services.now();
 	const handle = setInterval(() => {
 		if (isPaused()) {
 			return;
@@ -76,7 +78,9 @@ function startDemo(
 		const count = 1 + (tick % 3);
 		tick++;
 		next += count;
-		const added = demoLines(start, count, services.now(), DEMO_SPACING_MS);
+		const spread = count * DEMO_SPACING_MS;
+		lastStamp = Math.max(services.now(), lastStamp + spread);
+		const added = demoLines(start, count, lastStamp, DEMO_SPACING_MS);
 		setBuffer(previous => appendLines(previous, added));
 	}, DEMO_INTERVAL_MS);
 	return () => {

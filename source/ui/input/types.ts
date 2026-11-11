@@ -47,6 +47,11 @@ export type KeyBinding<A extends string = string> = {
 	*/
 	readonly caption?: string;
 	/**
+	Footer label when it differs from `label`: for a `caption` that stands for a group of bindings
+	(`1-4` for four level filters: `hintLabel: 'level'`), so the footer does not name only the first.
+	*/
+	readonly hintLabel?: string;
+	/**
 	Footer priority: lower is kept longer when the footer is too narrow. Omitted means help only.
 	*/
 	readonly hint?: number;

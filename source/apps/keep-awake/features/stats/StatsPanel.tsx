@@ -1,4 +1,5 @@
 import {Box} from 'ink';
+import {widestText} from '../../../../core/text-width.js';
 import {ProgressBar, StatRow, T} from '../../../../ui/kit/index.js';
 import {optionalProp} from '../../../../ui/kit/optional-prop.js';
 import type {StatLine} from './stats-model.js';
@@ -17,7 +18,7 @@ const BAR_WIDTH = 10;
 Aligned label column; a bar is drawn left of the value when the line has one.
 */
 export function StatsPanel({lines, width}: StatsPanelProps) {
-	const labelWidth = Math.max(0, ...lines.map(({label}) => label.length));
+	const labelWidth = widestText(lines.map(({label}) => label));
 	return (
 		<Box flexDirection="column" {...optionalProp('width', width)}>
 			{lines.map(({id, label, value, tone, bar}) => (

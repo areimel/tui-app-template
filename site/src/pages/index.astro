@@ -85,31 +85,33 @@ const linkProps = (link: Link) => ({
       </div>
     </section>
 
-    <section
-      class="home-section"
-      id="examples"
-      aria-labelledby="examples-heading"
-    >
-      <SectionHeading
-        eyebrow={EXAMPLES.eyebrow}
-        heading={EXAMPLES.heading}
-        id="examples-heading"
-      />
-      <p class="home-lede">{EXAMPLES.intro}</p>
-      <div class="home-grid">
-        {
-          EXAMPLES.items.map((item) => (
-            <FeatureCard
-              title={item.title}
-              text={item.text}
-              glyph={item.glyph}
-              href={resolve(item.path ?? "")}
-              {...(item.linkLabel ? { linkLabel: item.linkLabel } : {})}
-            />
-          ))
-        }
-      </div>
-    </section>
+    {
+      EXAMPLES.items.length > 0 && (
+        <section
+          class="home-section"
+          id="examples"
+          aria-labelledby="examples-heading"
+        >
+          <SectionHeading
+            eyebrow={EXAMPLES.eyebrow}
+            heading={EXAMPLES.heading}
+            id="examples-heading"
+          />
+          <p class="home-lede">{EXAMPLES.intro}</p>
+          <div class="home-grid">
+            {EXAMPLES.items.map((item) => (
+              <FeatureCard
+                title={item.title}
+                text={item.text}
+                glyph={item.glyph}
+                href={resolve(item.path ?? "")}
+                {...(item.linkLabel ? { linkLabel: item.linkLabel } : {})}
+              />
+            ))}
+          </div>
+        </section>
+      )
+    }
 
     <section class="home-section home-steps" aria-labelledby="steps-heading">
       <div class="home-steps-copy">

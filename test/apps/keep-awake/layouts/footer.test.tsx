@@ -1,10 +1,5 @@
 import test from 'ava';
-import {
-	footerRows,
-	Hints,
-	MAX_WARNING_LINES,
-	Warnings,
-} from '../../../../source/apps/keep-awake/layouts/Footer.js';
+import {Hints} from '../../../../source/apps/keep-awake/layouts/Footer.js';
 import {
 	BOTTOM_EDGE_CHROME_COLUMNS,
 	frameWidth,
@@ -19,7 +14,6 @@ import {
 import type {SessionPhase} from '../../../../source/apps/keep-awake/session/types.js';
 import {useKeys, useScopedInput} from '../../../../source/ui/input/index.js';
 import {renderScreen} from '../../../helpers/render-screen.js';
-import {renderThemed} from '../../../helpers/render-themed.js';
 
 function Keys({phase}: {readonly phase: SessionPhase}) {
 	useKeys(sessionBindings(phase), {});
@@ -31,12 +25,6 @@ function Capturing() {
 	useScopedInput(() => undefined, {isCapturing: true});
 	return null;
 }
-
-test('footerRows counts warning lines only, capped', t => {
-	t.is(footerRows([]), 0);
-	t.is(footerRows(['a']), 1);
-	t.is(footerRows(['a', 'b', 'c', 'd']), MAX_WARNING_LINES);
-});
 
 test('Hints come from the registered tables, on one line within the width', async t => {
 	const r = renderScreen(
@@ -107,14 +95,7 @@ test('Hints show enter and esc while a text field captures keys', async t => {
 		{columns: 60, rows: 5},
 	);
 	await r.waitForText('esc cancel');
-	t.true(r.lines()[0]!.includes('enter save'));
-	r.unmount();
-});
-
-test('Warnings shows at most MAX_WARNING_LINES, one line each', t => {
-	const r = renderThemed(<Warnings warnings={['one', 'two', 'three']} />);
-	const lines = r.plainFrame().split('\n');
-	t.deepEqual(lines, ['! one', '! two']);
+	t.true(r.lines()[0]!.includes('enter done'));
 	r.unmount();
 });
 

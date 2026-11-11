@@ -3,6 +3,7 @@ Assertions on a rendered frame shared by the screen tests: it fits the terminal,
 sequence from untrusted text reached it.
 */
 import type {ExecutionContext} from 'ava';
+import {sizeProblems} from './frame-lines.js';
 
 type Frame = {
 	plainFrame(): string;
@@ -10,19 +11,16 @@ type Frame = {
 };
 
 /**
-The frame is at most `rows` lines of at most `columns` characters (code points).
+The frame is at most `rows` lines of at most `columns` terminal cells.
 */
 export function assertFits(
 	t: ExecutionContext,
 	view: Pick<Frame, 'plainFrame'>,
-	{columns, rows}: {readonly columns: number; readonly rows: number},
-	label = `${columns}x${rows}`,
+	size: {readonly columns: number; readonly rows: number},
+	label = `${size.columns}x${size.rows}`,
 ): void {
-	const lines = view.plainFrame().split('\n');
-	t.true(lines.length <= rows, `${label}: ${lines.length} rows > ${rows}`);
-	for (const line of lines) {
-		t.true([...line].length <= columns, `${label}: wide line "${line}"`);
-	}
+	const problems = sizeProblems(view.plainFrame().split('\n'), size);
+	t.deepEqual(problems, [], label);
 }
 
 /* eslint-disable no-control-regex, regexp/no-control-character -- Detecting control characters is the point. */

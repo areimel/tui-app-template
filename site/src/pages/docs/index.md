@@ -15,7 +15,7 @@ This website is part of the template. It reads the same identity file as the app
 | Part         | What it gives you                                                                                                              |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------ |
 | Shell        | A menu, a framed page with title and key hints, a router, a help overlay, a theme picker and toasts.                           |
-| Example apps | Six apps written for the template, plus the original keep-awake tool kept as a seventh example.                                |
+| Example apps | Small, real apps behind the menu, each one folder you can keep or delete (one is the original keep-awake tool).                |
 | UI kit       | Themed Ink components: panels, tables, trees, tabs, dialogs, text inputs, scroll views, gauges and more.                       |
 | Input        | One place reads the keyboard. Actions are key binding tables, and the footer hints and help overlay are built from the tables. |
 | Config       | A layered, validated config file with one section per app, plus JSON data files for app data.                                  |
@@ -26,7 +26,7 @@ This website is part of the template. It reads the same identity file as the app
 
 ## The example apps
 
-The menu lists these in this order. Each has a guide page.
+The menu lists these in this order. Each has a guide page. When you delete an example, delete its row here too.
 
 | App                                          | Command to open it directly | What it shows                                                    |
 | -------------------------------------------- | --------------------------- | ---------------------------------------------------------------- |

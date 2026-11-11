@@ -225,7 +225,8 @@ export type DialogProps = {
 };
 
 /**
-A `Dialog` with a message and two choices. Enter/`y` confirms, Esc/`n` cancels.
+A `Dialog` with a message and two buttons (focus starts on Cancel). `y` confirms, Esc or `n` cancels,
+Left/Right/Tab move between the buttons and Enter presses the focused one.
 */
 export type ConfirmDialogProps = {
 	readonly title: string;

@@ -61,6 +61,10 @@ export type RenderScreenOptions = {
 	*/
 	readonly route?: Route;
 	/**
+	App ids `router.canOpen` reports as registered. Default: every id.
+	*/
+	readonly openableApps?: readonly string[];
+	/**
 	Initial raw config sections by app id (validated by each app's spec on read).
 	*/
 	readonly config?: Readonly<Record<string, Record<string, unknown>>>;
@@ -139,7 +143,11 @@ export function renderScreen(
 	const toasts: Array<{text: string; tone: ToastTone}> = [];
 	const globals: string[] = [];
 	let interrupts = 0;
-	const recording = createRecordingRouter(route);
+	const {openableApps} = options;
+	const recording = createRecordingRouter(
+		route,
+		openableApps === undefined ? undefined : id => openableApps.includes(id),
+	);
 	const fakeSettings = createFakeSettings();
 	const appConfig = createFakeAppConfig(options.config);
 	const {ReadySignal, whenReady} = createReadySignal();

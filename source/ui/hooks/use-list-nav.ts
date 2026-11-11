@@ -37,7 +37,31 @@ export const LIST_NAV_BINDINGS: ReadonlyArray<KeyBinding<ListNavAction>> = [
 	},
 ];
 
+/**
+`LIST_NAV_BINDINGS` without `select`: what `useListNav` registers when it has no `onSelect`, so Enter
+is not offered as "open" on a list that opens nothing.
+*/
+export const LIST_MOVE_BINDINGS = LIST_NAV_BINDINGS.filter(
+	binding => binding.action !== 'select',
+);
+
 const DEFAULT_PAGE_SIZE = 10;
+
+/**
+`LIST_NAV_BINDINGS` with Enter labelled `selectLabel` (for an app's declared `bindings`, so help shows
+the same row the hook registers).
+*/
+export function listNavBindings(
+	selectLabel?: string,
+): ReadonlyArray<KeyBinding<ListNavAction>> {
+	return selectLabel === undefined
+		? LIST_NAV_BINDINGS
+		: LIST_NAV_BINDINGS.map(binding =>
+				binding.action === 'select'
+					? {...binding, label: selectLabel}
+					: binding,
+			);
+}
 
 function clampIndex(index: number, count: number): number {
 	return Math.max(0, Math.min(index, count - 1));
@@ -71,6 +95,7 @@ export function useListNav({
 	isActive = true,
 	isWrapping = false,
 	onSelect,
+	selectLabel,
 	initialCursor = 0,
 }: ListNavOptions): ListNav {
 	const [state, setState] = useState(() => clampIndex(initialCursor, count));
@@ -89,7 +114,7 @@ export function useListNav({
 	};
 
 	useKeys(
-		LIST_NAV_BINDINGS,
+		onSelect === undefined ? LIST_MOVE_BINDINGS : listNavBindings(selectLabel),
 		{
 			up() {
 				move(-1);

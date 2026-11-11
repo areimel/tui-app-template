@@ -6,7 +6,7 @@ import {useState} from 'react';
 import {useAppConfig, useServices, useToast} from '../../shell/context.js';
 import {useListNav} from '../../ui/hooks/index.js';
 import {useKeys} from '../../ui/input/index.js';
-import {TASK_KEY_BINDINGS} from './bindings.js';
+import {SELECT_LABEL, TASK_KEY_BINDINGS} from './bindings.js';
 import {APP_ID, TASKS_CONFIG} from './config.js';
 import {listHeightFor} from './tasks-layout.js';
 import {
@@ -42,6 +42,7 @@ export function useTasks(rows: number) {
 		count: visible.length,
 		pageSize: Math.max(1, listHeight - 1),
 		isActive: isLoaded,
+		selectLabel: SELECT_LABEL,
 		onSelect(index) {
 			const task = visible[index];
 			if (task !== undefined) {

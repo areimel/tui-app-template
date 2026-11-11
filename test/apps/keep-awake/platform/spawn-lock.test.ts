@@ -3,7 +3,7 @@ import {readFileSync, mkdtempSync, rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import test, {type ExecutionContext} from 'ava';
-import {isPidAlive} from '../../../../source/platform/process-alive.js';
+import {isPidAlive} from '../../../../source/apps/keep-awake/platform/process-alive.js';
 import {spawnLock} from '../../../../source/apps/keep-awake/platform/spawn-lock.js';
 import type {LockDeathInfo} from '../../../../source/apps/keep-awake/platform/types.js';
 
@@ -88,11 +88,11 @@ test('a missing binary rejects as not installed', async t => {
 		spawnLock({
 			kind: 'system',
 			method: 'systemd-inhibit',
-			command: 'coffee-term-no-such-binary',
+			command: 'keep-awake-no-such-binary',
 			args: [],
 		}),
 	);
-	t.is(error?.message, 'coffee-term-no-such-binary is not installed');
+	t.is(error?.message, 'keep-awake-no-such-binary is not installed');
 });
 
 test('onDied fires with the exit code when the child exits by itself', async t => {

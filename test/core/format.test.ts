@@ -12,6 +12,7 @@ import {
 	padTwo,
 	truncate,
 } from '../../source/core/format.js';
+import {textWidth} from '../../source/core/text-width.js';
 
 test('padTwo zero-pads single digits and keeps wider values', t => {
 	t.is(padTwo(7), '07');
@@ -158,7 +159,15 @@ const truncateCases: Array<[string, number, string]> = [
 	['hello', 1, '…'],
 	['hello', 0, ''],
 	['hello', -2, ''],
-	['日本語テキスト', 4, '日本語…'],
+	['日本語テキスト', 4, '日…'],
+	['日本語テキスト', 5, '日本…'],
+	['日本語', 6, '日本語'],
+	['日本語', 5, '日本…'],
+	['a日本', 2, 'a…'],
+	['日本', 1, '…'],
+	['🎉🎉🎉', 4, '🎉…'],
+	['e\u{301}e\u{301}e\u{301}', 3, 'e\u{301}e\u{301}e\u{301}'],
+	['e\u{301}e\u{301}e\u{301}', 2, 'e\u{301}…'],
 ];
 
 for (const [text, width, expected] of truncateCases) {
@@ -166,3 +175,16 @@ for (const [text, width, expected] of truncateCases) {
 		t.is(truncate(text, width), expected);
 	});
 }
+
+test('truncate never returns more cells than the limit', t => {
+	const samples = [
+		'plain ascii text',
+		'日本語テキスト',
+		'mix 漢字 and 🎉 emoji 👨\u{200D}👩',
+	];
+	for (const text of samples) {
+		for (let width = 0; width <= 20; width++) {
+			t.true(textWidth(truncate(text, width)) <= width, `${text} @ ${width}`);
+		}
+	}
+});

@@ -7,20 +7,23 @@ given, so it must be cleaned before it reaches a component.
 Removed: whole escape sequences (CSI `ESC [ … final`, OSC / DCS / SOS / PM / APC strings up to BEL or
 ST, two-character `ESC x` escapes, their C1 forms such as `\u009B`), then every remaining C0 control,
 DEL and C1 control. Kept: `\n` (`sanitizeText` only). `\r\n` becomes `\n`, a lone `\r` is dropped and a
-tab becomes two spaces. Printable Unicode (CJK, emoji, box drawing) is untouched.
+tab becomes two spaces.
 
-Where it is applied (one layer per kind of data, always where the data enters the app's model, so
-the fake services used by tests go through the same path as the real ones):
+Also removed, before the escapes, invisible format characters that can make text read differently
+from what it is (Trojan Source, CVE-2021-42574, and look-alike names): the bidi embeddings and
+overrides U+202A-U+202E, the bidi isolates U+2066-U+2069, the direction marks LRM U+200E, RLM U+200F
+and ALM U+061C, the zero-width space U+200B and the BOM / zero-width no-break space U+FEFF. Kept:
+ZWJ U+200D and ZWNJ U+200C, which emoji sequences and Persian / Indic scripts need and which cannot
+reorder text. Right-to-left scripts still display in their natural order (the terminal's own bidi
+handling, if any, is untouched); only the explicit controls go. Other printable Unicode (CJK, emoji,
+box drawing, combining marks) is untouched.
 
-- HTTP responses and errors: `cleanResponse` / `cleanError` in `apps/http-client/response-model.ts`,
-  run as each result arrives; JSON keys and values again in `jsonToTree` (`ui/kit/tree-model.ts`), so
-  every tree consumer is covered.
-- File names, paths and previews: the File Explorer's display helpers (`explorer-model.ts`) and its
-  load results (`use-explorer.ts`). Not in `FsService`, because a name must stay byte-exact to be
-  opened again.
-- Log lines and the source name: `apps/log-viewer/log-model.ts` (`appendLines`) and `sourceLabel`.
-- Process names, users and the hostname: `apps/system-monitor/monitor-model.ts` (`cleanProcesses`,
-  `hostLine`).
+Where to apply it: once per kind of data, where the data enters an app's model (so the fake services
+used by tests go through the same path as the real ones), never in the services themselves (a file
+name must stay byte-exact to be opened again). JSON keys and values are cleaned again in `jsonToTree`
+(`ui/kit/tree-model.ts`), so every tree consumer is covered. The examples show the pattern: the HTTP
+Client cleans each response as it arrives, the File Explorer its names and previews, the Log Viewer each
+appended line and the System Monitor process names and the host name.
 */
 
 const ESC = 0x1b;
@@ -39,6 +42,12 @@ Any character `sanitizeText` would change (everything but `\n` below space, DEL 
 */
 const UNSAFE = /[\u{0}-\u{9}\u{B}-\u{1F}\u{7F}-\u{9F}]/v;
 /* eslint-enable no-control-regex, regexp/no-control-character */
+
+/**
+Invisible bidi and zero-width format characters that are stripped (see the module comment).
+*/
+const SPOOFING =
+	/[\u{61C}\u{200B}\u{200E}\u{200F}\u{202A}-\u{202E}\u{2066}-\u{2069}\u{FEFF}]/gv;
 
 /**
 `text` holds a control character (newline included), e.g. to reject it in a header value.
@@ -110,9 +119,14 @@ function skipEscape(codes: readonly number[], index: number): number {
 }
 
 /**
-`text` without escape sequences or control characters; newlines kept, tabs as two spaces.
+`text` without escape sequences, control characters or bidi / zero-width spoofing characters;
+newlines kept, tabs as two spaces.
 */
 export function sanitizeText(text: string): string {
+	return stripControls(text.replaceAll(SPOOFING, ''));
+}
+
+function stripControls(text: string): string {
 	if (!UNSAFE.test(text)) {
 		return text;
 	}

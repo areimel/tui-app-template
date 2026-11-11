@@ -1,8 +1,10 @@
 import test from 'ava';
 import {render} from 'ink-testing-library';
 import {Text} from 'ink';
-import type {SystemStats} from '../../../../source/platform/system-stats.js';
-import {useStats} from '../../../../source/apps/keep-awake/hooks/use-stats.js';
+import {
+	type SystemStats,
+	useStats,
+} from '../../../../source/apps/keep-awake/hooks/use-stats.js';
 
 const delay = async (ms: number) =>
 	new Promise(resolve => {

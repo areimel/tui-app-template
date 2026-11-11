@@ -2,7 +2,7 @@ import process from 'node:process';
 import {spawn} from 'node:child_process';
 import {once} from 'node:events';
 import test from 'ava';
-import {isPidAlive} from '../../source/platform/process-alive.js';
+import {isPidAlive} from '../../../../source/apps/keep-awake/platform/process-alive.js';
 
 test('own pid is alive', t => {
 	t.true(isPidAlive(process.pid));

@@ -5,6 +5,7 @@ import type {BatteryInfo, Capabilities} from '../../platform/types.js';
 import {
 	FieldRow,
 	NumberField,
+	optionalProp,
 	T,
 	TextInput,
 	Toggle,
@@ -184,8 +185,8 @@ export function OptionsEditor({
 						label={field.label}
 						isFocused={isFocused}
 						isDisabled={reason !== undefined}
-						{...(reason === undefined ? {} : {hint: reason})}
-						{...(labelWidth === undefined ? {} : {labelWidth})}
+						{...optionalProp('hint', reason)}
+						{...optionalProp('labelWidth', labelWidth)}
 					>
 						<Control
 							field={field}

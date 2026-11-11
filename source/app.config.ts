@@ -8,15 +8,15 @@ Astro/Vite and the init script's text rewrite, can load it on its own.
 
 export type AppIdentity = {
 	/**
-	Package name (`package.json` `name`), e.g. `tui-app-template`.
+	Package name (`package.json` `name`), e.g. `my-app`.
 	*/
 	readonly name: string;
 	/**
-	The installed command (`package.json` `bin` key), e.g. `tui-app`.
+	The installed command (`package.json` `bin` key), e.g. `my-app`.
 	*/
 	readonly command: string;
 	/**
-	Human name for titles and prose, e.g. `TUI App Template`.
+	Human name for titles and prose, e.g. `My App`.
 	*/
 	readonly displayName: string;
 	/**
@@ -41,7 +41,7 @@ export type AppIdentity = {
 	*/
 	readonly siteUrl: string;
 	/**
-	Site base path with a leading slash and no trailing slash, e.g. `/tui-app-template` (`''` for a root site).
+	Site base path with a leading slash and no trailing slash, e.g. `/my-app` (`''` for a root site).
 	*/
 	readonly siteBase: string;
 	/**
@@ -61,7 +61,7 @@ export const APP: AppIdentity = {
 	headingText: 'TUI APP',
 	tagline: 'A showcase template for building Ink terminal apps',
 	description:
-		'A starting point for Ink 8 / React 19 terminal apps: a menu, seven example apps, a themed component kit, input scopes, config and a matching website.',
+		'A starting point for Ink 8 / React 19 terminal apps: a menu, example apps, a themed component kit, input scopes, config and a matching website.',
 	author: {name: 'Alec Reimel', url: 'https://github.com/areimel'},
 	repoUrl: 'https://github.com/areimel/tui-app-template',
 	siteUrl: 'https://areimel.github.io',

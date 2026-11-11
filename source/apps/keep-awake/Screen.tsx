@@ -27,14 +27,12 @@ import {useLayout} from './hooks/use-layout.js';
 import {useSession} from './hooks/use-session.js';
 import {useStats} from './hooks/use-stats.js';
 import {DashboardLayout} from './layouts/DashboardLayout.js';
-import {Hints, Warnings} from './layouts/Footer.js';
+import {Hints} from './layouts/Footer.js';
 import {hintsWidth} from './layouts/frame-plan.js';
-import {planWithWarnings} from './layouts/plan-for-state.js';
+import {planForState} from './layouts/plan-for-state.js';
 import {OPTION_LABEL_WIDTH, trimStats} from './layouts/region-heights.js';
 import {isActivePhase, isTerminalPhase} from './session/selectors.js';
 import type {KeepAwakeService} from './service.js';
-
-const NO_WARNINGS: readonly string[] = [];
 
 export function Screen() {
 	const service = useAppService<KeepAwakeService>();
@@ -78,14 +76,7 @@ export function Screen() {
 		battery: state.battery,
 		isPidAlive: service.isPidAlive,
 	};
-	const {plan, warnings} = planWithWarnings({
-		layout,
-		state,
-		now,
-		lines,
-		context,
-		warnings: NO_WARNINGS,
-	});
+	const plan = planForState({layout, state, now, lines, context});
 	const besideGrow = plan.stats === 'beside' ? {flexGrow: 1} : {};
 
 	return (
@@ -132,7 +123,6 @@ export function Screen() {
 				</Panel>
 			}
 			hints={<Hints width={hintsWidth(plan, layout)} />}
-			warnings={<Warnings warnings={warnings} />}
 			{...(theme.colors.bg === undefined
 				? {}
 				: {backgroundColor: theme.colors.bg})}

@@ -19,7 +19,7 @@ import {InputRoot} from '../ui/input/index.js';
 import type {AppServiceRegistry} from './app-services.js';
 import {ShellProviders} from './context.js';
 import {ShellPages} from './ShellPages.js';
-import type {AppDefinition, Route} from './types.js';
+import {isAppSupported, type AppDefinition, type Route} from './types.js';
 import {useRouterState} from './use-router.js';
 import {useSettingsState} from './use-settings-state.js';
 import {
@@ -104,7 +104,12 @@ export function Shell({
 		[settings.shownTheme, colorLevel],
 	);
 	const [toast, showToast] = useToastState(timers);
-	const router = useRouterState(initialRoute);
+	const canOpen = useCallback(
+		(id: string) =>
+			apps.some(app => app.id === id && isAppSupported(app, services.platform)),
+		[apps, services.platform],
+	);
+	const router = useRouterState(initialRoute, canOpen);
 	const terminal = useWindowSize();
 	const [isQuitting, setIsQuitting] = useState(false);
 	const quittingRef = useRef(false);

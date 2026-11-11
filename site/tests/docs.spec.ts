@@ -57,7 +57,6 @@ test("docs overview shows the install commands", async ({ page }) => {
 });
 
 test("docs pages keep the example guides under docs/examples", async () => {
-  expect(EXAMPLE_IDS.length).toBeGreaterThan(0);
   for (const id of EXAMPLE_IDS)
     expect(
       DOC_PAGES.some((p) => p.route === `${DOCS_HOME}examples/${id}/`),

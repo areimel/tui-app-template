@@ -38,7 +38,7 @@ test('first heading line matches the expected art', t => {
 });
 
 test('re-running the generator reproduces the committed lines', t => {
-	t.deepEqual(renderHeading(), [...HEADING_LINES]);
+	t.deepEqual(renderHeading(HEADING_TEXT), [...HEADING_LINES]);
 });
 
 test('re-running the generator reproduces the committed module source', t => {
@@ -49,5 +49,5 @@ test('re-running the generator reproduces the committed module source', t => {
 		),
 		'utf8',
 	);
-	t.is(emitHeadingModule(renderHeading()), committed);
+	t.is(emitHeadingModule(renderHeading(HEADING_TEXT), HEADING_TEXT), committed);
 });

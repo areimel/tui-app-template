@@ -1,6 +1,7 @@
 /**
 Row counts of each dashboard region as rendered, computed from the same models the components draw, so `planDashboard` can fit them before rendering. Every glyph used is one cell wide, so string length is cell width.
 */
+import {widestText} from '../../../core/text-width.js';
 import type {SessionState} from '../session/types.js';
 import {
 	type OptionContext,
@@ -136,7 +137,7 @@ export function optionsPanelHeight(
 Natural width of the Stats panel for these lines, border included.
 */
 export function statsPanelWidth(lines: readonly StatLine[]): number {
-	const labelWidth = Math.max(0, ...lines.map(({label}) => label.length));
+	const labelWidth = widestText(lines.map(({label}) => label));
 	const content = Math.max(
 		'Stats'.length,
 		...lines.map(

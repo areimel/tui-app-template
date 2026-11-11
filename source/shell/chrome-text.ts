@@ -2,6 +2,7 @@
 Pure text for the shell chrome: the title in the top edge and its truncation.
 */
 import {truncate} from '../core/format.js';
+import {textWidth} from '../core/text-width.js';
 
 /**
 Separator between the menu and the open app in the title.
@@ -22,5 +23,5 @@ export function chromeTitle(
 	}
 
 	const full = `Menu ${BREADCRUMB_SEPARATOR} ${appTitle}`;
-	return [...full].length <= maxWidth ? full : truncate(appTitle, maxWidth);
+	return textWidth(full) <= maxWidth ? full : truncate(appTitle, maxWidth);
 }

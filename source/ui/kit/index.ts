@@ -50,7 +50,6 @@ export {
 	visibleSlice,
 	type TextBuffer,
 } from './text-buffer.js';
-export {TextField, type TextFieldProps} from './TextField.js';
 export {TextInput} from './TextInput.js';
 export {Toast} from './Toast.js';
 export {Toggle, type ToggleProps} from './Toggle.js';

@@ -1,5 +1,5 @@
 import {Box} from 'ink';
-import {truncate} from '../../core/format.js';
+import {fitToWidth} from '../../core/format.js';
 import {FOCUS_MARKER} from './glyphs.js';
 import {useListWindow} from './VirtualList.js';
 import {T} from './T.js';
@@ -41,15 +41,15 @@ export function fitColumnWidths(
 }
 
 /**
-`text` cut to `cells` with a trailing `…`, then padded (left- or right-aligned) to exactly `cells`.
+`text` (whitespace runs as one space) cut to `cells` terminal cells with a trailing `…`, then padded
+(left- or right-aligned) to exactly `cells`. Wide CJK / emoji count two cells.
 */
 export function fitCell(
 	text: string,
 	cells: number,
 	align: 'left' | 'right' = 'left',
 ): string {
-	const cut = truncate(text.replaceAll(/\s+/gv, ' '), cells);
-	return align === 'right' ? cut.padStart(cells) : cut.padEnd(cells);
+	return fitToWidth(text.replaceAll(/\s+/gv, ' '), cells, align);
 }
 
 function headerTitle<R>(

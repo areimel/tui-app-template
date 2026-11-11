@@ -1,7 +1,7 @@
 /**
 Make this template your own: ask for the app's identity and rewrite it everywhere it is stored.
 
-Run `pnpm run init` (interactive) or `pnpm run init -- --yes --name my-app ...` (see `--help`). It rewrites `source/app.config.ts`, `package.json`, `site/package.json`, `LICENSE`, `source/shell/brand/heading-art.ts` and the readme's identity block. It does not delete example apps.
+Run `pnpm run init` (interactive) or `pnpm run init --yes --name my-app ...` (see `--help`). Put the flags straight after the script name: with pnpm 11 a `--` separator reaches the script as a stray argument. It rewrites `source/app.config.ts`, `package.json`, `site/package.json`, `LICENSE`, `source/shell/brand/heading-art.ts` and the readme's identity block. It does not delete example apps.
 */
 import {existsSync, mkdirSync, readFileSync, writeFileSync} from 'node:fs';
 import {dirname, join, resolve} from 'node:path';
@@ -24,7 +24,7 @@ export type InitIo = {
 	readonly output: NodeJS.WritableStream;
 };
 
-const HELP = `Usage: pnpm run init [-- options]
+const HELP = `Usage: pnpm run init [options]
 
 Options:
   --yes                  Do not prompt; use flags, falling back to the current values
@@ -116,10 +116,12 @@ const NEXT_STEPS = `
 Next steps:
   1. pnpm install
   2. pnpm test
-  3. Delete the example apps you do not need: remove their folder under
-     source/apps/ and its entry in source/apps/registry.ts
-     (see docs/superpowers/specs/2026-11-11-tui-template-design.md).
-  4. Review the diff (git diff), then commit.`;
+  3. Delete the example apps you do not need: their folder under source/apps/,
+     their tests under test/apps/, their guide page under
+     site/src/pages/docs/examples/ and their line in source/apps/registry.ts
+     (site/src/pages/docs/template/add-or-remove-an-example.md).
+  4. Finish the manual steps in site/src/pages/docs/template/start-a-new-app.md.
+  5. Review the diff (git diff), then commit.`;
 
 async function interview(
 	io: InitIo,

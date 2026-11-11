@@ -1,70 +1,12 @@
 import test from 'ava';
-import {Screen} from '../../../source/apps/file-explorer/Screen.js';
 import {
 	assertFits,
 	assertNoEscapes,
 	HOSTILE,
 	HOSTILE_LEFTOVERS,
 } from '../../helpers/assert-frame.js';
-import {
-	createFakeServices,
-	KEYS,
-	renderScreen,
-	type ScreenRender,
-} from '../../helpers/render-screen.js';
-
-const HOME = '/home/tester';
-const longFile = Array.from(
-	{length: 100},
-	(_, index) => `line ${index + 1}`,
-).join('\n');
-
-const FILES = {
-	[`${HOME}/alpha/inner/deep.txt`]: 'deep\n',
-	[`${HOME}/alpha/readme.md`]: 'hello from alpha\n',
-	[`${HOME}/zeta/z.txt`]: 'z\n',
-	[`${HOME}/empty`]: {isDir: true},
-	[`${HOME}/locked/x`]: 'x\n',
-	[`${HOME}/.hidden`]: 'secret\n',
-	[`${HOME}/apple.txt`]: 'apple contents\n',
-	[`${HOME}/banana.log`]: 'banana line one\nbanana line two\n',
-	[`${HOME}/big.bin`]: {binaryBytes: 5000},
-	[`${HOME}/notes.txt`]: `${'notes '.repeat(50)}\nsecond notes line\n`,
-	[`${HOME}/long.txt`]: longFile,
-} as const;
-
-type MountOptions = {
-	readonly columns?: number;
-	readonly rows?: number;
-	readonly config?: Record<string, Record<string, unknown>>;
-	readonly params?: Record<string, string>;
-	readonly files?: Record<string, string>;
-};
-
-function mount(options: MountOptions = {}) {
-	const {services} = createFakeServices({
-		files: {...FILES, ...options.files},
-		modifiedMs: Date.UTC(2026, 10, 11),
-		errors: {
-			[`${HOME}/locked`]: `EACCES: permission denied, scandir '${HOME}/locked'`,
-		},
-	});
-	const view = renderScreen(<Screen />, {
-		columns: options.columns ?? 116,
-		rows: options.rows ?? 38,
-		services,
-		...(options.config !== undefined && {config: options.config}),
-		route: {
-			id: 'file-explorer',
-			...(options.params !== undefined && {params: options.params}),
-		},
-	});
-	return view;
-}
-
-const text = (view: ScreenRender) => view.lines().join('\n');
-const cursorLine = (view: ScreenRender) =>
-	view.lines().find(line => /❯ [?·↪▸]/v.test(line)) ?? '';
+import {KEYS} from '../../helpers/render-screen.js';
+import {cursorLine, HOME, mount, text} from './harness.js';
 
 test('lists a directory, folders first, hiding dot-files', async t => {
 	const view = mount();
@@ -202,32 +144,6 @@ test('a permission error is shown inline and the previous folder stays usable', 
 	t.true(text(view).includes('apple.txt'));
 	await view.press('j');
 	t.true(cursorLine(view).includes('zeta/'));
-	view.unmount();
-});
-
-test('o opens a text file in the log viewer with its path', async t => {
-	const view = mount();
-	await view.waitForText('apple.txt');
-	await view.press('j', 'j', 'j', 'j', 'o');
-	t.deepEqual(view.router.calls, [
-		{
-			type: 'push',
-			route: {id: 'log-viewer', params: {path: `${HOME}/apple.txt`}},
-		},
-	]);
-	view.unmount();
-});
-
-test('o refuses folders and binary files with a toast', async t => {
-	const view = mount();
-	await view.waitForText('apple.txt');
-	await view.press('o');
-	t.is(view.toasts.length, 1);
-	await view.press('j', 'j', 'j', 'j', 'j', 'j');
-	await view.waitForText('binary file, 5000 bytes');
-	await view.press('o');
-	t.is(view.toasts.length, 2);
-	t.deepEqual(view.router.calls, []);
 	view.unmount();
 });
 

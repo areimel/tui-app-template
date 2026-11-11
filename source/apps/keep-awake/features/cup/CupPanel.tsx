@@ -1,6 +1,6 @@
 import {Box} from 'ink';
 import {CUP_FRAME_COLUMNS} from '../../layouts/dashboard-plan.js';
-import {Panel} from '../../../../ui/kit/index.js';
+import {optionalProp, Panel} from '../../../../ui/kit/index.js';
 import {AnimatedCup} from './AnimatedCup.js';
 import {CUP_WIDTH} from './cup-art.js';
 import {Credits} from './Credits.js';
@@ -31,7 +31,7 @@ export function CupPanel({
 		<Panel
 			title={isHot ? 'brewing' : 'paused'}
 			width={CUP_FRAME_COLUMNS}
-			{...(flexGrow === undefined ? {} : {flexGrow})}
+			{...optionalProp('flexGrow', flexGrow)}
 		>
 			<AnimatedCup isAnimated={isAnimated} isHot={isHot} />
 			<Box flexGrow={1} />

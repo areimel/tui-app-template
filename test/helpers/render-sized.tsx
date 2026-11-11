@@ -10,8 +10,8 @@ import {InputRoot} from '../../source/ui/input/index.js';
 
 class FakeStdout extends EventEmitter {
 	readonly frames: string[] = [];
-	readonly columns: number;
-	readonly rows: number;
+	columns: number;
+	rows: number;
 
 	constructor(columns: number, rows: number) {
 		super();
@@ -85,6 +85,10 @@ export type SizedRender = {
 	sequence in it came from the rendered text (see `assertNoEscapes`).
 	*/
 	rawFrame(): string;
+	/**
+	Change the terminal size and tell Ink (a `resize` event), as a real terminal does.
+	*/
+	resize(columns: number, rows: number): void;
 	unmount(): void;
 };
 
@@ -115,6 +119,11 @@ export function renderSized(
 		stdin,
 		plainFrame: () => stripVTControlCharacters(stdout.frames.at(-1) ?? ''),
 		rawFrame: () => stdout.frames.at(-1) ?? '',
+		resize(nextColumns, nextRows) {
+			stdout.columns = nextColumns;
+			stdout.rows = nextRows;
+			stdout.emit('resize');
+		},
 		unmount() {
 			instance.unmount();
 			instance.cleanup();

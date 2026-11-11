@@ -36,7 +36,13 @@ export type RecordingRouter = {
 /**
 A router whose stack starts as `[menu, route]` and that records every call.
 */
-export function createRecordingRouter(route: Route): RecordingRouter {
+/**
+`canOpen` answers `Router.canOpen` (default: any id is registered).
+*/
+export function createRecordingRouter(
+	route: Route,
+	canOpen: (id: string) => boolean = () => true,
+): RecordingRouter {
 	const stack = createStore<readonly Route[]>(
 		route.id === MENU_ROUTE.id ? [MENU_ROUTE] : [MENU_ROUTE, route],
 	);
@@ -47,6 +53,7 @@ export function createRecordingRouter(route: Route): RecordingRouter {
 		routerFor: routes => ({
 			current: routes.at(-1) ?? MENU_ROUTE,
 			depth: routes.length,
+			canOpen,
 			push(next) {
 				calls.push({type: 'push', route: next});
 				stack.setState(previous => [...previous, next]);
