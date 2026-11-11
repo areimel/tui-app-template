@@ -198,5 +198,6 @@ export function createDemoServices(base: Services): Services {
 		data: createMemoryData(),
 		now: () => DEMO_NOW,
 		platform: base.platform,
+		isDemo: true,
 	};
 }

@@ -291,4 +291,9 @@ export type Services = {
 	`process.platform` (`'linux'`, `'darwin'`, ...).
 	*/
 	readonly platform: string;
+	/**
+	True for the `--demo` services: canned data, nothing read from or written to the machine. An app
+	with side effects of its own (keep-awake's sleep locks) must simulate them when this is set.
+	*/
+	readonly isDemo?: boolean;
 };

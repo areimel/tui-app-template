@@ -28,7 +28,11 @@ export const LOCK_KINDS = [
  A future win32 adapter would add e.g. `'SetThreadExecutionState'`.
  */
 export type LockMethod =
-	'caffeinate' | 'systemd-inhibit' | 'gnome-session-inhibit' | 'xset';
+	| 'caffeinate'
+	| 'systemd-inhibit'
+	| 'gnome-session-inhibit'
+	| 'xset'
+	| 'simulated';
 
 /**
 Adapter identity. A future Windows adapter would add `'win32'`.

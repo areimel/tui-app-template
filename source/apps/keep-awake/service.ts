@@ -13,12 +13,12 @@ Hard rules: every supervisor gets the node PID-tied lock adapter (`platform/spaw
 `releaseSync` releases both locks on every exit path.
 */
 import {createStore, type ReadableStore} from '../../core/store.js';
-import {isPidAlive as probePid} from '../../platform/process-alive.js';
 import type {
 	AppService,
 	CliFlagValues,
 	ServiceContext,
 } from '../../shell/types.js';
+import {isPidAlive as probePid} from './platform/process-alive.js';
 import {toSessionOptions, type KeepAwakeConfig} from './config.js';
 import {
 	layerFlags,
@@ -26,6 +26,7 @@ import {
 	type StartupSettings,
 } from './flags.js';
 import {selectAdapter} from './platform/index.js';
+import {createSimulatedAdapter} from './platform/simulated.js';
 import type {Adapter, Capabilities} from './platform/types.js';
 import {createSupervisor} from './session/supervisor.js';
 import type {
@@ -102,9 +103,11 @@ function withCapabilities(
 export function createKeepAwakeService(
 	context: ServiceContext<KeepAwakeConfig>,
 	{
-		adapter = selectAdapter({
-			platform: context.services.platform as NodeJS.Platform,
-		}),
+		adapter = context.services.isDemo === true
+			? createSimulatedAdapter(async () => context.services.battery.read())
+			: selectAdapter({
+					platform: context.services.platform as NodeJS.Platform,
+				}),
 		deps = {},
 	}: KeepAwakeServiceOptions = {},
 ): KeepAwakeService {
