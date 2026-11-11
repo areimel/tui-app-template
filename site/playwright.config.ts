@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { HOME, ORIGIN, PORT } from "./tests/helpers";
 
 export default defineConfig({
   testDir: "./tests",
@@ -8,14 +9,13 @@ export default defineConfig({
   workers: process.env.CI ? 2 : undefined,
   reporter: "list",
   use: {
-    baseURL: "http://127.0.0.1:4322",
+    baseURL: ORIGIN,
     trace: "retain-on-failure",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command:
-      "pnpm run build && pnpm run preview --host 127.0.0.1 --port 4322 --ignore-lock",
-    url: "http://127.0.0.1:4322/coffee-cli/",
+    command: `pnpm run build && pnpm run preview --host 127.0.0.1 --port ${PORT} --ignore-lock`,
+    url: `${ORIGIN}${HOME}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },

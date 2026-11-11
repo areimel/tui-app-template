@@ -4,7 +4,7 @@ the init script rewrites) plus site-only settings. Import from here, not from th
 directly, so every derivation lives in one place. Rebranding = edit app.config.ts and this file.
 */
 import { APP } from "../../../source/app.config.ts";
-import rootPackage from "../../../package.json";
+import rootPackage from "../../../package.json" with { type: "json" };
 
 export { APP };
 
