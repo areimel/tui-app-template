@@ -2,6 +2,8 @@
 layout: ../../layouts/DocsLayout.astro
 title: Getting started
 description: Keep your machine awake from a cosy terminal dashboard. Install it from npm and start your first session.
+section: Guide
+order: 1
 ---
 
 coffee-term is a visible, steerable alternative to `caffeinate`. It starts keeping your machine awake as soon as it launches, shows the locks it holds, and lets you change your session live.

@@ -2,6 +2,8 @@
 layout: ../../layouts/DocsLayout.astro
 title: Reference
 description: Command-line flags, keyboard controls, and exit codes in one place.
+section: Guide
+order: 3
 ---
 
 ## Command-line flags

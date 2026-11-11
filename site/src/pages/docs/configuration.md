@@ -2,6 +2,8 @@
 layout: ../../layouts/DocsLayout.astro
 title: Configuration
 description: Save your preferred session settings, choose a terminal palette, and control where configuration lives.
+section: Guide
+order: 4
 ---
 
 ## Saved settings

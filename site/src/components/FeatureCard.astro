@@ -1,0 +1,51 @@
+---
+import ArrowLink from "./ArrowLink.astro";
+interface Props {
+  title: string;
+  text: string;
+  /** Decorative glyph (a character or short string), hidden from assistive tech. */
+  glyph?: string;
+  /** Optional link; the card shows an ArrowLink labelled `linkLabel`. */
+  href?: string;
+  linkLabel?: string;
+}
+const { title, text, glyph, href, linkLabel = "Learn more" } = Astro.props;
+---
+
+<article class="feature-card">
+  {
+    glyph && (
+      <span class="feature-glyph" aria-hidden="true">
+        {glyph}
+      </span>
+    )
+  }
+  <h3>{title}</h3>
+  <p>{text}</p>
+  {href && <ArrowLink {href} label={linkLabel} />}
+</article>
+<style>
+  .feature-card {
+    display: grid;
+    gap: 0.6rem;
+    align-content: start;
+    padding: 1.5rem;
+    border: 1px solid var(--border);
+    background: var(--card);
+  }
+  .feature-glyph {
+    font: 500 1.4rem/1 var(--font-mono);
+    color: var(--kojima-accent-ink);
+  }
+  h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 500;
+  }
+  p {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: var(--muted-foreground);
+  }
+</style>

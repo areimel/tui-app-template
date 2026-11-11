@@ -41,4 +41,4 @@ Pages is enabled with **GitHub Actions** as its source (**Settings → Pages →
 
 CI also runs `npm ci --ignore-scripts` at the repository root before installing `site/`. The Astro/Vite build resolves the root `tsconfig.json`, which extends `@sindresorhus/tsconfig`, and fails with `Tsconfig not found @sindresorhus/tsconfig` if the root dependencies are missing. Locally this means running `npm install` at the root as well as in `site/`.
 
-If the repository name or hosting changes, update `site` and `base` in `astro.config.mjs` together, then rerun the browser checks against the new base URL. Static documentation needs no secrets, backend, or runtime configuration.
+If the repository name or hosting changes, update `site` and `base` in `astro.config.ts` (reads `source/app.config.ts`) together, then rerun the browser checks against the new base URL. Static documentation needs no secrets, backend, or runtime configuration.

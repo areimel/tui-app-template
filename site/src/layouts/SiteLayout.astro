@@ -1,17 +1,20 @@
 ---
 import "../styles/global.css";
 import { href } from "../lib/urls";
-// Spike: proves the site can import the root identity config (not rendered yet).
-import { SITE_URL } from "../config/site.config";
-void SITE_URL;
+import {
+  SITE_NAME,
+  SITE_DESCRIPTION,
+  REPO_URL,
+  AUTHOR,
+  LICENSE_LABEL,
+  THEME_COLOR,
+  THEME_STORAGE_KEY,
+} from "../config/site.config";
 interface Props {
   title: string;
   description?: string;
 }
-const {
-  title,
-  description = "Keep your machine awake from a cosy terminal dashboard. A visible, controllable caffeinate for Linux and macOS.",
-} = Astro.props;
+const { title, description = SITE_DESCRIPTION } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const docsActive = Astro.url.pathname.startsWith(href("docs/"));
 ---
@@ -21,12 +24,12 @@ const docsActive = Astro.url.pathname.startsWith(href("docs/"));
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
-    <meta name="theme-color" content="#141310" />
-    <title>{title === "coffee-term" ? title : `${title} | coffee-term`}</title>
+    <meta name="theme-color" content={THEME_COLOR} />
+    <title>{title === SITE_NAME ? title : `${title} | ${SITE_NAME}`}</title>
     <link rel="canonical" href={canonical} />
     <link rel="icon" type="image/svg+xml" href={href("favicon.svg")} />
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="coffee-term" />
+    <meta property="og:site_name" content={SITE_NAME} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
@@ -35,11 +38,11 @@ const docsActive = Astro.url.pathname.startsWith(href("docs/"));
       content={new URL(href("og-image.png"), Astro.site)}
     />
     <meta name="twitter:card" content="summary_large_image" />
-    <script is:inline>
+    <script is:inline define:vars={{ themeKey: THEME_STORAGE_KEY }}>
       try {
         document.documentElement.classList.toggle(
           "dark",
-          localStorage.getItem("coffee-site-theme") !== "light",
+          localStorage.getItem(themeKey) !== "light",
         );
       } catch {
         /* Default to the server-rendered dark palette. */
@@ -50,16 +53,14 @@ const docsActive = Astro.url.pathname.startsWith(href("docs/"));
     <a class="skip-link" href="#main-content">Skip to content</a>
     <header class="site-header">
       <div class="container header-inner">
-        <a class="wordmark" href={href("")} aria-label="coffee-term home"
-          ><span aria-hidden="true">&gt;_</span>coffee-term</a
+        <a class="wordmark" href={href("")} aria-label={`${SITE_NAME} home`}
+          ><span aria-hidden="true">&gt;_</span>{SITE_NAME}</a
         >
         <nav class="site-nav" aria-label="Main navigation">
           <a href={href("docs/")} aria-current={docsActive ? "true" : undefined}
             >Docs</a
           >
-          <a href="https://github.com/areimel/coffee-cli"
-            >GitHub <span aria-hidden="true">↗</span></a
-          >
+          <a href={REPO_URL}>GitHub <span aria-hidden="true">↗</span></a>
           <button class="theme-toggle" hidden aria-label="Switch to light mode"
             >Light mode</button
           >
@@ -69,20 +70,17 @@ const docsActive = Astro.url.pathname.startsWith(href("docs/"));
     <main id="main-content" tabindex="-1"><slot /></main>
     <footer class="site-footer">
       <div class="container footer-inner">
-        <span
-          >coffee-term / made by <a href="https://github.com/areimel"
-            >Alec Reimel</a
-          ></span
+        <span>{SITE_NAME} / made by <a href={AUTHOR.url}>{AUTHOR.name}</a></span
         >
         <div class="footer-links">
-          <a href={href("docs/")}>Documentation</a><a
-            href="https://github.com/areimel/coffee-cli">Source ↗</a
-          ><span>MIT license</span>
+          <a href={href("docs/")}>Documentation</a><a href={REPO_URL}
+            >Source ↗</a
+          ><span>{LICENSE_LABEL}</span>
         </div>
       </div>
     </footer>
-    <script>
-      const button = document.querySelector<HTMLButtonElement>(".theme-toggle");
+    <script is:inline define:vars={{ themeKey: THEME_STORAGE_KEY }}>
+      const button = document.querySelector(".theme-toggle");
       if (button) {
         const update = () => {
           const next = document.documentElement.classList.contains("dark")
@@ -96,7 +94,7 @@ const docsActive = Astro.url.pathname.startsWith(href("docs/"));
         button.addEventListener("click", () => {
           const dark = document.documentElement.classList.toggle("dark");
           try {
-            localStorage.setItem("coffee-site-theme", dark ? "dark" : "light");
+            localStorage.setItem(themeKey, dark ? "dark" : "light");
           } catch {
             /* Storage is optional. */
           }

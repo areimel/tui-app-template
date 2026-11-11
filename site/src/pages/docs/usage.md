@@ -2,6 +2,8 @@
 layout: ../../layouts/DocsLayout.astro
 title: Usage
 description: Set a timer, follow a process, protect your battery, or run quietly in a script.
+section: Guide
+order: 2
 ---
 
 The examples below use the `coffee-term` command from `npm install -g coffee-term` (or prefix them with `npx`). From a source checkout, use `npm run dev --` followed by the same flags.

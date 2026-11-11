@@ -2,6 +2,8 @@
 layout: ../../layouts/DocsLayout.astro
 title: Platforms & troubleshooting
 description: Understand system and display locks, platform verification, and common terminal issues.
+section: Guide
+order: 5
 ---
 
 ## What awake means
