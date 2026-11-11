@@ -107,6 +107,7 @@ Markdown for the readme's identity block, markers included.
 export function readmeBlock(id: AppIdentity): string {
 	return [
 		README_START,
+		'',
 		`# ${id.displayName}`,
 		'',
 		`${id.tagline}.`,
@@ -118,6 +119,7 @@ export function readmeBlock(id: AppIdentity): string {
 		'# or run it once',
 		`npx ${id.name}`,
 		'```',
+		'',
 		README_END,
 	].join('\n');
 }
