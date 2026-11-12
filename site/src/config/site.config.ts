@@ -20,7 +20,7 @@ export const ISSUES_URL = `${APP.repoUrl}/issues`;
 export const README_URL = `${APP.repoUrl}/blob/main/readme.md`;
 export const AUTHOR = APP.author;
 
-/** The commands end users run (published on npm). */
+/** The commands end users run once the package is published on npm. */
 export const INSTALL_COMMAND = `npm install -g ${APP.name}`;
 export const NPX_COMMAND = `npx ${APP.name}`;
 export const RUN_COMMAND = APP.command;
@@ -33,6 +33,39 @@ export const NODE_VERSION: string = NODE_RANGE.replace(/^[>=~^\s]+/, "");
 export const PLATFORMS = ["Linux", "macOS"] as const;
 
 export const LICENSE_LABEL = "MIT license";
+
+/**
+Build-time public env (`PUBLIC_*`). Astro/Vite inline `import.meta.env`; plain Node (Playwright helpers)
+has none, hence the guard. Values here end up in the HTML, so only put public identifiers in them.
+*/
+const ENV: Record<string, string | undefined> =
+  (import.meta as { env?: Record<string, string | undefined> }).env ?? {};
+
+/**
+Google Tag Manager container ID. Google Analytics (GA4) is configured inside the GTM container, not
+here. Override per build with `PUBLIC_GTM_ID`; set it to an empty string to emit no tag at all.
+Forks: replace this with your own container ID (or "") — `pnpm run init` does not rewrite it.
+*/
+export const GTM_ID: string = ENV["PUBLIC_GTM_ID"] ?? "GTM-WSPXM88X";
+
+/**
+Web3Forms access key for the contact page (public by design; it only lets the form send mail to the
+key owner). Supplied at build time via `PUBLIC_WEB3FORMS_KEY` (a GitHub Actions repository
+variable in CI). Empty: the contact page shows a fallback and the Contact links are hidden.
+*/
+export const WEB3FORMS_KEY: string = ENV["PUBLIC_WEB3FORMS_KEY"] ?? "";
+export const WEB3FORMS_ENDPOINT = "https://api.web3forms.com/submit";
+export const CONTACT_ENABLED = WEB3FORMS_KEY !== "";
+
+/** localStorage key holding the visitor's analytics consent: "granted" or "denied". */
+export const CONSENT_STORAGE_KEY = `${STORAGE_PREFIX}-consent`;
+
+/** Social preview image (in `public/`), its size and alt text, and the content locale. */
+export const OG_IMAGE_PATH = "og-image.png";
+export const OG_IMAGE_WIDTH = 1200;
+export const OG_IMAGE_HEIGHT = 630;
+export const OG_IMAGE_ALT = `${APP.displayName}: ${APP.tagline}`;
+export const LOCALE = "en_US";
 
 /** Prefix for localStorage keys, e.g. `${STORAGE_PREFIX}-theme`. */
 export const STORAGE_PREFIX = APP.command;
@@ -52,8 +85,7 @@ export type DocsSection = (typeof DOCS_SECTIONS)[number];
 
 /**
 Terminal preview palettes. The matching CSS variables still live in `src/styles/terminal.css`
-(`.terminal-preview[data-palette="<id>"]`); the hex values here mirror them. W2: consume this list
-to render the selector, and move the colours into config if you own terminal.css.
+(`.terminal-preview[data-palette="<id>"]`); the hex values here mirror them, so change both together.
 */
 export const PREVIEW_PALETTES = [
   {
