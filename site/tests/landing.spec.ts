@@ -106,15 +106,21 @@ test("preview palettes expose selection, caption and persistence", async ({
   await expect(figure).toHaveAttribute("data-palette", last.id);
 });
 
-test("commands can be copied", async ({ page, context }) => {
-  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+test("commands can be copied", async ({ page, context, browserName }) => {
+  // Only Chromium lets a test grant clipboard-read; elsewhere check the status text alone.
+  const canRead = browserName === "chromium";
+  if (canRead) {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  }
   await page.goto(HOME);
   await page
     .getByRole("button", { name: "Copy command", exact: true })
     .first()
     .click();
   await expect(page.getByText("Copied", { exact: true }).first()).toBeVisible();
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toContain(
-    APP.repoUrl,
-  );
+  if (canRead) {
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toContain(
+      APP.repoUrl,
+    );
+  }
 });

@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import {
+  AXE_CHROMIUM_ONLY,
   CONSENT_STORAGE_KEY,
   CONTACT,
   DOC_ROUTES,
@@ -92,7 +93,11 @@ test("banner buttons are reachable by keyboard", async ({ page }) => {
   await expect(banner(page)).toBeHidden();
 });
 
-test("home passes axe with the banner visible", async ({ page }) => {
+test("home passes axe with the banner visible", async ({
+  page,
+  browserName,
+}) => {
+  test.skip(browserName !== "chromium", AXE_CHROMIUM_ONLY);
   await page.goto(HOME);
   await expect(banner(page)).toBeVisible();
   const result = await new AxeBuilder({ page })
@@ -110,7 +115,9 @@ for (const theme of ["dark", "light"]) {
   for (const [name, route] of axePages) {
     test(`${name} with banner passes axe in ${theme} theme`, async ({
       page,
+      browserName,
     }) => {
+      test.skip(browserName !== "chromium", AXE_CHROMIUM_ONLY);
       await page.addInitScript(
         ([key, value]) => localStorage.setItem(key as string, value as string),
         [THEME_STORAGE_KEY, theme],

@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import {
+  AXE_CHROMIUM_ONLY,
   blockThirdParty,
   HOME,
   seedConsent,
@@ -126,7 +127,11 @@ test("empty submit is blocked by native validation", async ({ page }) => {
 });
 
 for (const theme of ["dark", "light"]) {
-  test(`contact page is accessible in ${theme} mode`, async ({ page }) => {
+  test(`contact page is accessible in ${theme} mode`, async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(browserName !== "chromium", AXE_CHROMIUM_ONLY);
     await page.addInitScript(
       ([key, value]) => localStorage.setItem(key as string, value as string),
       [THEME_STORAGE_KEY, theme],

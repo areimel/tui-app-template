@@ -48,19 +48,21 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm run format:check && pnpm run check
         working-directory: site
-      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm exec playwright install --with-deps chromium firefox webkit
         working-directory: site
       # Playwright builds the site itself (with a dummy form key for tests), so build the
       # deployable output afterwards with the real values. These are repository variables, not
       # secrets: they end up in the HTML. Unset PUBLIC_WEB3FORMS_KEY hides the contact form.
       # PUBLIC_GTM_ID is deliberately not passed: an unset variable expands to "", which would
-      # disable the tag; the default lives in site/src/config/site.config.ts.
+      # disable the tag; the default lives in site/src/config/site.config.ts. An unset
+      # PUBLIC_PRIVACY_EMAIL falls back to the PRIVACY_EMAIL constant.
       - run: pnpm run test:e2e
         working-directory: site
       - run: pnpm run build
         working-directory: site
         env:
           PUBLIC_WEB3FORMS_KEY: ${{ vars.PUBLIC_WEB3FORMS_KEY }}
+          PUBLIC_PRIVACY_EMAIL: ${{ vars.PUBLIC_PRIVACY_EMAIL }}
       - uses: actions/upload-pages-artifact@v5
         with:
           path: site/dist
