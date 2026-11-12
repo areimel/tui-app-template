@@ -6,7 +6,7 @@ section: Guide
 order: 3
 ---
 
-Commands on this page use the installed command, `tui-app`. If you run from a checkout, use `pnpm run dev` in its place (for example `pnpm run dev tasks`). If you have not installed it, `npx tui-app-template` stands in for `tui-app`.
+Commands on this page use the installed command, `tui-app`. If you run from a checkout, use `pnpm run dev` in its place (for example `pnpm run dev tasks`). Once the package is published to npm, `npm install -g tui-app-template` installs `tui-app`, and `npx tui-app-template` runs it without installing. Until then, run from a checkout.
 
 ## The menu
 

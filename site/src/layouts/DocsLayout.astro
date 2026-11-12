@@ -12,7 +12,7 @@ import {
 import "../styles/docs.css";
 
 interface Props {
-  frontmatter: { title: string; description?: string };
+  frontmatter: { title: string; description: string };
   headings: { depth: number; slug: string; text: string }[];
 }
 const { frontmatter, headings: pageHeadings } = Astro.props;
@@ -22,7 +22,7 @@ const currentPath = Astro.url.pathname.replace(/\/$/, "");
 ---
 
 <SiteLayout
-  title={`${frontmatter.title} — Docs`}
+  title={`${frontmatter.title} | Docs`}
   description={frontmatter.description}
 >
   <div class="docs-shell">

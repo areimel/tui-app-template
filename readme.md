@@ -76,7 +76,7 @@ pnpm test
 pnpm run dev
 ```
 
-`pnpm run init` rewrites `source/app.config.ts`, `package.json`, `site/package.json`, `LICENSE`, the menu heading art and the block at the top of this readme. It does not delete anything. Run it again any time; with the same answers it changes nothing. `pnpm run init --dry-run` shows what it would do.
+`pnpm run init` rewrites `source/app.config.ts`, `package.json`, `site/package.json`, the template's GTM ID in `site/src/config/site.config.ts`, `LICENSE`, the menu heading art and the block at the top of this readme. It does not delete anything. Run it again any time; with the same answers it changes nothing. `pnpm run init --dry-run` shows what it would do.
 
 Then delete the examples you do not need. For each one, remove:
 

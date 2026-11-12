@@ -1,5 +1,18 @@
 import { expect, test } from "@playwright/test";
-import { ALL_ROUTES, APP, DOCS_HOME, HOME, ORIGIN } from "./helpers";
+import {
+  ALL_ROUTES,
+  APP,
+  DOCS_HOME,
+  HOME,
+  ORIGIN,
+  blockThirdParty,
+  seedConsent,
+} from "./helpers";
+
+test.beforeEach(async ({ page }) => {
+  await seedConsent(page);
+  await blockThirdParty(page);
+});
 
 for (const route of ALL_ROUTES) {
   test(`serves ${route} with valid local links and assets`, async ({

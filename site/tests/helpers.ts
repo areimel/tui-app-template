@@ -1,24 +1,33 @@
+import type { Page } from "@playwright/test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import {
   APP,
+  CONSENT_STORAGE_KEY,
   DOCS_SECTIONS,
   INSTALL_COMMAND,
   NPX_COMMAND,
   PREVIEW_PALETTES,
   PREVIEW_STORAGE_KEY,
   SITE_NAME,
+  SITE_URL,
+  THEME_COLOR,
+  THEME_COLOR_LIGHT,
   THEME_STORAGE_KEY,
 } from "../src/config/site.config";
 
 export {
   APP,
+  CONSENT_STORAGE_KEY,
   DOCS_SECTIONS,
   INSTALL_COMMAND,
   NPX_COMMAND,
   PREVIEW_PALETTES,
   PREVIEW_STORAGE_KEY,
   SITE_NAME,
+  SITE_URL,
+  THEME_COLOR,
+  THEME_COLOR_LIGHT,
   THEME_STORAGE_KEY,
 };
 
@@ -82,7 +91,9 @@ export const DOC_PAGES: DocPage[] = walk(docsDir).map((file) => {
 });
 
 export const DOC_ROUTES = DOC_PAGES.map((page) => page.route);
-export const ALL_ROUTES = [HOME, ...DOC_ROUTES];
+export const CONTACT = `${HOME}contact/`;
+export const PRIVACY = `${HOME}privacy/`;
+export const ALL_ROUTES = [HOME, CONTACT, PRIVACY, ...DOC_ROUTES];
 /** Ids that have a page under `docs/examples/`. */
 export const EXAMPLE_IDS = DOC_PAGES.filter((p) =>
   p.slug.startsWith("examples/"),
@@ -100,3 +111,31 @@ export function builtHtmlFiles(dir = DIST_DIR): string[] {
         : [],
   );
 }
+
+/** Stores a consent choice before any page script runs, so the banner stays hidden. */
+export async function seedConsent(page: Page, value = "denied") {
+  await page.addInitScript(
+    ([key, choice]) => {
+      localStorage.setItem(key as string, choice as string);
+    },
+    [CONSENT_STORAGE_KEY, value],
+  );
+}
+
+/** Answers Google requests locally so tests never reach the network. */
+export async function blockThirdParty(page: Page) {
+  for (const pattern of [
+    "**/*googletagmanager.com/**",
+    "**/*google-analytics.com/**",
+  ])
+    await page.route(pattern, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/javascript",
+        body: "",
+      }),
+    );
+}
+
+/** Skip reason for axe checks: they run in Chromium only (Firefox headless crashes on long pages). */
+export const AXE_CHROMIUM_ONLY = "axe checks run in Chromium only";

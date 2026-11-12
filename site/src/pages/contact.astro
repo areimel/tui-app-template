@@ -1,0 +1,33 @@
+---
+import "../styles/contact.css";
+import ContactForm from "../components/ContactForm.astro";
+import SiteLayout from "../layouts/SiteLayout.astro";
+import { CONTACT_ENABLED, ISSUES_URL, SITE_NAME } from "../config/site.config";
+---
+
+<SiteLayout
+  title="Contact"
+  noindex={!CONTACT_ENABLED}
+  description={`Send a message to the ${SITE_NAME} maintainers with a question, idea or note.`}
+>
+  <section class="container contact-page">
+    <p class="eyebrow">CONTACT</p>
+    <h1>Get in touch</h1>
+    <p>Questions, ideas or a quick hello: send a message and we'll read it.</p>
+    {
+      CONTACT_ENABLED ? (
+        <ContactForm />
+      ) : (
+        <p>
+          The contact form isn't configured for this site. You can reach us
+          through <a href={ISSUES_URL}>GitHub issues</a> instead.
+        </p>
+      )
+    }
+    <p class="contact-note">
+      Bug reports and feature requests are best filed as <a href={ISSUES_URL}
+        >GitHub issues</a
+      >.
+    </p>
+  </section>
+</SiteLayout>

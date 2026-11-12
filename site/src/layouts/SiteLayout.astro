@@ -1,6 +1,9 @@
 ---
 import "../styles/global.css";
 import { href } from "../lib/urls";
+import Analytics from "../components/Analytics.astro";
+import ConsentBanner from "../components/ConsentBanner.astro";
+import fontRegular from "../assets/fonts/dm-sans/DMSans-Regular.woff2?url";
 import {
   SITE_NAME,
   SITE_DESCRIPTION,
@@ -8,45 +11,124 @@ import {
   AUTHOR,
   LICENSE_LABEL,
   THEME_COLOR,
+  THEME_COLOR_LIGHT,
   THEME_STORAGE_KEY,
+  GTM_ID,
+  SITE_URL,
+  CONTACT_ENABLED,
+  OG_IMAGE_PATH,
+  OG_IMAGE_WIDTH,
+  OG_IMAGE_HEIGHT,
+  OG_IMAGE_ALT,
+  LOCALE,
 } from "../config/site.config";
 interface Props {
   title: string;
   description?: string;
+  /** Keeps the page out of search results; also drops the canonical and og:url. */
+  noindex?: boolean;
+  /** Extra JSON-LD objects for this page, emitted after the site-wide WebSite one. */
+  jsonLd?: Record<string, unknown>[];
 }
-const { title, description = SITE_DESCRIPTION } = Astro.props;
+const {
+  title,
+  description = SITE_DESCRIPTION,
+  noindex = false,
+  jsonLd = [],
+} = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
+const fullTitle = title === SITE_NAME ? title : `${title} | ${SITE_NAME}`;
+const ogImage = new URL(href(OG_IMAGE_PATH), Astro.site);
 const docsActive = Astro.url.pathname.startsWith(href("docs/"));
+const contactActive = Astro.url.pathname === href("contact/");
+const privacyActive = Astro.url.pathname === href("privacy/");
+const structuredData = [
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: SITE_NAME,
+    url: SITE_URL,
+    description: SITE_DESCRIPTION,
+    inLanguage: "en",
+  },
+  ...jsonLd.map((item) => ({ "@context": "https://schema.org", ...item })),
+].map((item) => JSON.stringify(item).replace(/</g, "\\u003c"));
 ---
 
 <html lang="en" data-theme="kojima" class="dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <Analytics />
     <meta name="description" content={description} />
+    <meta name="color-scheme" content="dark light" />
     <meta name="theme-color" content={THEME_COLOR} />
-    <title>{title === SITE_NAME ? title : `${title} | ${SITE_NAME}`}</title>
-    <link rel="canonical" href={canonical} />
+    <title>{fullTitle}</title>
+    {noindex && <meta name="robots" content="noindex" />}
+    {!noindex && <link rel="canonical" href={canonical} />}
     <link rel="icon" type="image/svg+xml" href={href("favicon.svg")} />
+    <link rel="icon" href={href("favicon.ico")} sizes="32x32" />
+    <link rel="apple-touch-icon" href={href("apple-touch-icon.png")} />
+    <link rel="manifest" href={href("site.webmanifest")} />
+    <link
+      rel="preload"
+      href={fontRegular}
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    {
+      /* Crawlers only read /robots.txt at the host root, so on a GitHub project-pages subpath this link is the discovery route. */
+    }
+    <link
+      rel="sitemap"
+      type="application/xml"
+      href={href("sitemap-index.xml")}
+    />
+    <meta name="author" content={AUTHOR.name} />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content={SITE_NAME} />
-    <meta property="og:title" content={title} />
+    <meta property="og:locale" content={LOCALE} />
+    <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
-    <meta property="og:url" content={canonical} />
-    <meta
-      property="og:image"
-      content={new URL(href("og-image.png"), Astro.site)}
-    />
+    {!noindex && <meta property="og:url" content={canonical} />}
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content={String(OG_IMAGE_WIDTH)} />
+    <meta property="og:image:height" content={String(OG_IMAGE_HEIGHT)} />
+    <meta property="og:image:alt" content={OG_IMAGE_ALT} />
     <meta name="twitter:card" content="summary_large_image" />
-    <script is:inline define:vars={{ themeKey: THEME_STORAGE_KEY }}>
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content={OG_IMAGE_ALT} />
+    {
+      structuredData.map((json) => (
+        <script type="application/ld+json" set:html={json} />
+      ))
+    }
+    <script
+      is:inline
+      define:vars={{
+        themeKey: THEME_STORAGE_KEY,
+        darkColor: THEME_COLOR,
+        lightColor: THEME_COLOR_LIGHT,
+      }}
+    >
+      /* A saved choice wins; otherwise follow the OS. Without JS the page stays dark. */
+      let stored = null;
       try {
-        document.documentElement.classList.toggle(
-          "dark",
-          localStorage.getItem(themeKey) !== "light",
-        );
+        stored = localStorage.getItem(themeKey);
       } catch {
-        /* Default to the server-rendered dark palette. */
+        /* Storage is optional. */
       }
+      const dark =
+        stored === "light" || stored === "dark"
+          ? stored === "dark"
+          : !matchMedia("(prefers-color-scheme: light)").matches;
+      document.documentElement.classList.toggle("dark", dark);
+      document
+        .querySelector('meta[name="theme-color"]')
+        ?.setAttribute("content", dark ? darkColor : lightColor);
     </script>
   </head>
   <body>
@@ -73,13 +155,44 @@ const docsActive = Astro.url.pathname.startsWith(href("docs/"));
         <span>{SITE_NAME} / made by <a href={AUTHOR.url}>{AUTHOR.name}</a></span
         >
         <div class="footer-links">
-          <a href={href("docs/")}>Documentation</a><a href={REPO_URL}
-            >Source ↗</a
-          ><span>{LICENSE_LABEL}</span>
+          <a href={href("docs/")}>Documentation</a>
+          {
+            CONTACT_ENABLED && (
+              <a
+                href={href("contact/")}
+                aria-current={contactActive ? "page" : undefined}
+              >
+                Contact
+              </a>
+            )
+          }<a
+            href={href("privacy/")}
+            aria-current={privacyActive ? "page" : undefined}>Privacy</a
+          ><a href={REPO_URL}>Source ↗</a><span>{LICENSE_LABEL}</span>
+          {
+            GTM_ID !== "" && (
+              <button
+                type="button"
+                class="footer-link-button"
+                data-consent-reopen
+                hidden
+              >
+                Cookie settings
+              </button>
+            )
+          }
         </div>
       </div>
     </footer>
-    <script is:inline define:vars={{ themeKey: THEME_STORAGE_KEY }}>
+    <ConsentBanner />
+    <script
+      is:inline
+      define:vars={{
+        themeKey: THEME_STORAGE_KEY,
+        darkColor: THEME_COLOR,
+        lightColor: THEME_COLOR_LIGHT,
+      }}
+    >
       const button = document.querySelector(".theme-toggle");
       if (button) {
         const update = () => {
@@ -93,6 +206,9 @@ const docsActive = Astro.url.pathname.startsWith(href("docs/"));
         update();
         button.addEventListener("click", () => {
           const dark = document.documentElement.classList.toggle("dark");
+          document
+            .querySelector('meta[name="theme-color"]')
+            ?.setAttribute("content", dark ? darkColor : lightColor);
           try {
             localStorage.setItem(themeKey, dark ? "dark" : "light");
           } catch {

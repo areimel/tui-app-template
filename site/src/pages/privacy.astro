@@ -1,0 +1,198 @@
+---
+import "../styles/contact.css";
+import "../styles/privacy.css";
+import SiteLayout from "../layouts/SiteLayout.astro";
+import {
+  AUTHOR,
+  CONTACT_ENABLED,
+  GTM_ID,
+  ISSUES_URL,
+  PRIVACY_EMAIL,
+  PRIVACY_UPDATED,
+  SITE_NAME,
+} from "../config/site.config";
+import { href } from "../lib/urls";
+
+const updated = new Date(`${PRIVACY_UPDATED}T00:00:00Z`).toLocaleDateString(
+  "en-GB",
+  { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" },
+);
+const analytics = GTM_ID !== "";
+---
+
+<SiteLayout
+  title="Privacy policy"
+  description={`How the ${SITE_NAME} website handles personal data: analytics, the contact form, hosting and your rights.`}
+>
+  <section class="container contact-page privacy-page">
+    <p class="eyebrow">PRIVACY</p>
+    <h1>Privacy policy</h1>
+    <p class="privacy-updated">
+      Last updated: <time datetime={PRIVACY_UPDATED}>{updated}</time>
+    </p>
+
+    <h2>Who runs this site</h2>
+    <p>
+      The {SITE_NAME} website is run by
+      {
+        AUTHOR.url !== "" ? <a href={AUTHOR.url}>{AUTHOR.name}</a> : AUTHOR.name
+      }, who decides how personal data collected through it is used (the
+      "controller" in data protection law). This policy covers this website
+      only, not the command-line app.
+    </p>
+
+    <h2>What we collect and why</h2>
+    <ul>
+      <li>
+        <strong>Hosting logs.</strong> The site is hosted on GitHub Pages. GitHub
+        may log technical data such as your IP address and browser details when you
+        load a page, for security and to run the service. We do not receive or use
+        those logs.
+      </li>
+      {
+        analytics && (
+          <li>
+            <strong>Analytics, only if you accept.</strong> We use Google Tag
+            Manager and Google Analytics 4 to see which pages are visited and
+            how people find the site, so we can improve it. If you accept,
+            Google sets cookies (such as <code>_ga</code>) and collects usage
+            data, including your IP address. Our legal basis is your consent.
+          </li>
+        )
+      }
+      {
+        CONTACT_ENABLED && (
+          <li>
+            <strong>Contact form.</strong> If you use the form on the{" "}
+            <a href={href("contact/")}>contact page</a>, we receive the name,
+            email address and message you type. We use them only to read and
+            answer your message. Our legal basis is our legitimate interest in
+            replying to you.
+          </li>
+        )
+      }
+    </ul>
+    <p>We do not sell personal data or use it for advertising.</p>
+
+    <h2>Cookies and consent</h2>
+    {
+      analytics ? (
+        <>
+          <p>
+            All analytics consent is off by default. Until you choose, Google
+            may receive cookieless, anonymous pings, but no analytics cookies
+            are set. If you choose Accept, analytics cookies are set. If you
+            choose Decline, they are not, and any existing <code>_ga</code>
+            cookies are removed. Your choice is stored in your browser's local
+            storage so we can remember it.
+          </p>
+          <p>
+            You can change your mind at any time with the "Cookie settings" link
+            in the site footer.
+          </p>
+          <p class="privacy-actions">
+            <button type="button" class="button" data-consent-reopen hidden>
+              Change cookie choice
+            </button>
+          </p>
+        </>
+      ) : (
+        <p>
+          This site does not use analytics or advertising cookies. The only
+          thing it stores in your browser is your light or dark theme choice.
+        </p>
+      )
+    }
+
+    <h2>Third parties and international transfers</h2>
+    <ul>
+      <li>
+        <strong>GitHub</strong> (hosting): <a
+          href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement"
+          >privacy statement</a
+        >.
+      </li>
+      {
+        analytics && (
+          <li>
+            <strong>Google</strong> (Tag Manager and Analytics, only with your
+            consent):
+            <a href="https://policies.google.com/privacy">privacy policy</a>.
+          </li>
+        )
+      }
+      {
+        CONTACT_ENABLED && (
+          <li>
+            <strong>Web3Forms</strong> (delivers contact form messages to us by
+            email):
+            <a href="https://web3forms.com/privacy">privacy policy</a>.
+          </li>
+        )
+      }
+    </ul>
+    <p>
+      These providers may process data outside the UK and the European Economic
+      Area, including in the United States. Where they do, they rely on
+      safeguards such as adequacy decisions or standard contractual clauses. See
+      their policies for details.
+    </p>
+
+    <h2>How long we keep data</h2>
+    <ul>
+      {
+        analytics && (
+          <li>
+            Analytics data is kept by Google for the retention period set in our
+            Google Analytics account (2 or 14 months; Google's default is 2
+            months).
+          </li>
+        )
+      }
+      {
+        CONTACT_ENABLED && (
+          <li>
+            Contact messages stay in our email for as long as needed to reply
+            and handle any follow-up, then are deleted.
+          </li>
+        )
+      }
+      <li>
+        Hosting logs are kept by GitHub under its own policies. Your cookie
+        choice stays in your browser until you clear it.
+      </li>
+    </ul>
+
+    <h2>Your rights</h2>
+    <p>
+      Under the UK GDPR and the EU GDPR you have the right to ask for access to
+      your personal data, to have it corrected or erased, to restrict or object
+      to its use, and to receive a copy of data you gave us. Where we rely on
+      consent, you can withdraw it at any time, without affecting what happened
+      before. You can also complain to your data protection authority, such as
+      the <a href="https://ico.org.uk/make-a-complaint/"
+        >Information Commissioner's Office (ICO)</a
+      > in the UK.
+    </p>
+
+    <h2>Contact</h2>
+    {
+      PRIVACY_EMAIL !== "" ? (
+        <p>
+          For any privacy question or request, email{" "}
+          <a href={`mailto:${PRIVACY_EMAIL}`}>{PRIVACY_EMAIL}</a>.
+        </p>
+      ) : CONTACT_ENABLED ? (
+        <p>
+          For any privacy question or request, use the{" "}
+          <a href={href("contact/")}>contact page</a>.
+        </p>
+      ) : (
+        <p>
+          For any privacy question, open a <a href={ISSUES_URL}>GitHub issue</a>
+          . Please do not post personal data publicly.
+        </p>
+      )
+    }
+  </section>
+</SiteLayout>

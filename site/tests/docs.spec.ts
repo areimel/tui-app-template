@@ -6,7 +6,14 @@ import {
   DOC_PAGES,
   EXAMPLE_IDS,
   HOME,
+  blockThirdParty,
+  seedConsent,
 } from "./helpers";
+
+test.beforeEach(async ({ page }) => {
+  await seedConsent(page);
+  await blockThirdParty(page);
+});
 
 test("docs index is the first Guide page and the sidebar lists the sections in config order", async ({
   page,

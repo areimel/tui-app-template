@@ -27,19 +27,28 @@ const {
   <pre tabindex="0"><code>{code}</code></pre>
 </div>
 <script>
+  const STATUS_CLEAR_MS = 2000;
   document.querySelectorAll<HTMLElement>(".code-block").forEach((block) => {
     const button = block.querySelector<HTMLButtonElement>(".copy-command");
     const status = block.querySelector<HTMLElement>(".copy-status");
     if (!button || !status || !navigator.clipboard) return;
+    let timer: number | undefined;
+    const say = (message: string) => {
+      window.clearTimeout(timer);
+      status.textContent = message;
+      timer = window.setTimeout(() => {
+        status.textContent = "";
+      }, STATUS_CLEAR_MS);
+    };
     button.hidden = false;
     button.addEventListener("click", async () => {
       try {
         await navigator.clipboard.writeText(
           block.querySelector("code")?.textContent ?? "",
         );
-        status.textContent = "Copied";
+        say("Copied");
       } catch {
-        status.textContent = "Select and copy the command below.";
+        say("Select and copy the command below.");
       }
     });
   });

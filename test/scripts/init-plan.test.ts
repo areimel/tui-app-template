@@ -11,6 +11,7 @@ import {
 	FILES,
 	README_END,
 	README_START,
+	TEMPLATE_GTM_ID,
 	planInit,
 	type FileEdit,
 } from '../../scripts/init-plan.js';
@@ -244,6 +245,35 @@ test('planInit rewrites the identity files', t => {
 	);
 	t.true((next[FILES.readme] ?? '').startsWith('Intro\n\n'));
 	t.true((next[FILES.readme] ?? '').endsWith('\n\nRest\n'));
+});
+
+test('planInit clears the template GTM container from the site config', t => {
+	const files = loadRepoFiles();
+	t.true(
+		(files[FILES.siteConfig] ?? '').includes(`"${TEMPLATE_GTM_ID}"`),
+		'fixture: the template ships its own container ID',
+	);
+	const next = apply(files, plan(files));
+	const config = next[FILES.siteConfig] ?? '';
+	t.false(config.includes(TEMPLATE_GTM_ID));
+	t.true(
+		config.includes(
+			'export const GTM_ID: string = ENV["PUBLIC_GTM_ID"] ?? "";',
+		),
+	);
+});
+
+test('planInit keeps a GTM container that is not the template one', t => {
+	const files = loadRepoFiles();
+	const own = (files[FILES.siteConfig] ?? '').replace(
+		TEMPLATE_GTM_ID,
+		'GTM-MINE123',
+	);
+	t.false(
+		plan({...files, [FILES.siteConfig]: own}).some(
+			edit => edit.path === FILES.siteConfig,
+		),
+	);
 });
 
 test('planInit leaves a readme without markers alone', t => {
