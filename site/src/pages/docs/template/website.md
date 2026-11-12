@@ -53,7 +53,7 @@ The CI workflow deliberately does not pass `PUBLIC_GTM_ID`. An unset Actions var
 
 ### Consent
 
-The site uses Google Consent Mode v2. Until a visitor chooses, all four signals (`ad_storage`, `analytics_storage`, `ad_user_data` and `ad_personalization`) are `denied`.
+The site uses Google Consent Mode v2. Until a visitor chooses, all four signals (`ad_storage`, `analytics_storage`, `ad_user_data` and `ad_personalization`) are `denied`. Accept grants `analytics_storage` only; the three ad signals stay denied, because the banner and privacy page describe analytics alone. If you add advertising tags, update the banner, the privacy page and `Analytics.astro` / `ConsentBanner.astro` together.
 
 - The banner offers Accept and Decline with equal weight. Either choice updates the consent signals, stores the choice in `localStorage` under `<command>-consent`, and pushes a `consent_update` event to `dataLayer`.
 - The footer's "Cookie settings" button reopens the banner.

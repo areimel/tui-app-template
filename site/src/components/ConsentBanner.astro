@@ -35,7 +35,7 @@ if(v!=="granted"&&v!=="denied"){b.hidden=false;sync()}
 b.querySelectorAll("[data-consent]").forEach(function(btn){
 btn.addEventListener("click",function(){
 var c=btn.dataset.consent;
-if(window.gtag)window.gtag("consent","update",{ad_storage:c,analytics_storage:c,ad_user_data:c,ad_personalization:c});
+if(window.gtag)window.gtag("consent","update",{analytics_storage:c});
 try{localStorage.setItem(key,c)}catch(e){}
 if(c==="denied")expireGa();
 if(window.dataLayer)window.dataLayer.push({event:"consent_update",consent:c});

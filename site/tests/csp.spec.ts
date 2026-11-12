@@ -56,6 +56,8 @@ for (const route of ALL_ROUTES) {
   });
 }
 
+// Third-party responses are stubbed, so this proves the GTM loader is allowed, not that every
+// request real GA4 tags make is; check that with GTM Preview after deploy.
 test("no CSP violations when consent is granted and GTM loads", async ({
   page,
 }) => {

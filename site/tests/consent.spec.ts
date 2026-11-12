@@ -63,9 +63,10 @@ test("Accept grants consent and persists", async ({ page }) => {
   await banner(page).getByRole("button", { name: "Accept" }).click();
   await expect(banner(page)).toBeHidden();
   expect(await stored(page)).toBe("granted");
-  expect((await consentUpdates(page)).at(-1)?.["analytics_storage"]).toBe(
-    "granted",
-  );
+  const accepted = (await consentUpdates(page)).at(-1);
+  expect(accepted?.["analytics_storage"]).toBe("granted");
+  // The banner asks for analytics only: no ad signal is granted.
+  expect(accepted?.["ad_storage"]).toBeUndefined();
   await page.reload();
   await expect(banner(page)).toBeHidden();
   expect((await consentUpdates(page))[0]?.["analytics_storage"]).toBe(
@@ -210,9 +211,7 @@ test("built pages set consent defaults before loading gtm.js", () => {
       readFileSync(file, "utf8"),
     )?.[1];
     expect(head, file).toBeDefined();
-    const defaultAt = head?.indexOf("'consent'") ?? -1;
-    const alt = head?.indexOf('"consent"') ?? -1;
-    const consent = Math.max(defaultAt, alt);
+    const consent = head?.indexOf('gtag("consent","default"') ?? -1;
     const loader = head?.indexOf("googletagmanager.com/gtm.js") ?? -1;
     expect(consent, file).toBeGreaterThan(-1);
     expect(loader, file).toBeGreaterThan(consent);

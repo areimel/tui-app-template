@@ -1,15 +1,14 @@
 ---
 import { GTM_ID, CONSENT_STORAGE_KEY } from "../config/site.config";
 
-const grant = {
-  ad_storage: "granted",
-  analytics_storage: "granted",
-  ad_user_data: "granted",
-  ad_personalization: "granted",
+// The banner asks for analytics only, so Accept grants analytics_storage; the ad signals stay denied.
+const denied = {
+  ad_storage: "denied",
+  analytics_storage: "denied",
+  ad_user_data: "denied",
+  ad_personalization: "denied",
 };
-const denied = Object.fromEntries(
-  Object.keys(grant).map((key) => [key, "denied"]),
-);
+const grant = { analytics_storage: "granted" };
 const script = `window.dataLayer=window.dataLayer||[];
 window.gtag=function gtag(){window.dataLayer.push(arguments)};
 gtag("consent","default",${JSON.stringify({ ...denied, wait_for_update: 500 })});

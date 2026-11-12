@@ -86,6 +86,8 @@ export const CSP_EXTRA_SOURCES = {
     "https://*.googletagmanager.com",
     "https://ssl.gstatic.com",
     "https://www.gstatic.com",
+    "https://www.google.com",
+    "https://*.g.doubleclick.net",
   ],
   "font-src": ["https://fonts.gstatic.com"],
   "connect-src": [
@@ -93,6 +95,9 @@ export const CSP_EXTRA_SOURCES = {
     "https://*.google-analytics.com",
     "https://*.analytics.google.com",
     "https://*.googletagmanager.com",
+    // Consent Mode pings (/ccm/collect) and Google signals, per Google's GA4 CSP guide.
+    "https://www.google.com",
+    "https://*.g.doubleclick.net",
   ],
   "form-action": ["https://api.web3forms.com"],
 } as const satisfies Record<string, readonly string[]>;
