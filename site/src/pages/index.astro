@@ -5,7 +5,14 @@ import CodeBlock from "../components/CodeBlock.astro";
 import SectionHeading from "../components/SectionHeading.astro";
 import FeatureCard from "../components/FeatureCard.astro";
 import ArrowLink from "../components/ArrowLink.astro";
-import { SITE_NAME, SITE_DESCRIPTION } from "../config/site.config";
+import {
+  SITE_NAME,
+  SITE_DESCRIPTION,
+  SITE_URL,
+  REPO_URL,
+  AUTHOR,
+  PLATFORMS,
+} from "../config/site.config";
 import {
   HERO,
   FEATURES,
@@ -26,11 +33,26 @@ const linkProps = (link: Link) => ({
   href: resolve(link.path, link.external),
   label: link.label,
 });
+const jsonLd = [
+  {
+    "@type": "SoftwareApplication",
+    name: SITE_NAME,
+    description: SITE_DESCRIPTION,
+    applicationCategory: "DeveloperApplication",
+    operatingSystem: PLATFORMS.join(", "),
+    url: SITE_URL,
+    sameAs: REPO_URL,
+    author: { "@type": "Person", name: AUTHOR.name, url: AUTHOR.url },
+    license: "https://opensource.org/licenses/MIT",
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+  },
+];
 ---
 
 <SiteLayout
   title={`${SITE_NAME}: ${HERO.tagline}`}
   description={SITE_DESCRIPTION}
+  jsonLd={jsonLd}
 >
   <div class="container home">
     <section class="home-intro" aria-labelledby="home-heading">

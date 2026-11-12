@@ -10,6 +10,7 @@ import {
   PREVIEW_PALETTES,
   PREVIEW_STORAGE_KEY,
   SITE_NAME,
+  SITE_URL,
   THEME_STORAGE_KEY,
 } from "../src/config/site.config";
 
@@ -22,6 +23,7 @@ export {
   PREVIEW_PALETTES,
   PREVIEW_STORAGE_KEY,
   SITE_NAME,
+  SITE_URL,
   THEME_STORAGE_KEY,
 };
 
@@ -85,7 +87,8 @@ export const DOC_PAGES: DocPage[] = walk(docsDir).map((file) => {
 });
 
 export const DOC_ROUTES = DOC_PAGES.map((page) => page.route);
-export const ALL_ROUTES = [HOME, ...DOC_ROUTES];
+export const CONTACT = `${HOME}contact/`;
+export const ALL_ROUTES = [HOME, CONTACT, ...DOC_ROUTES];
 /** Ids that have a page under `docs/examples/`. */
 export const EXAMPLE_IDS = DOC_PAGES.filter((p) =>
   p.slug.startsWith("examples/"),

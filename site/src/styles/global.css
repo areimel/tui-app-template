@@ -144,7 +144,8 @@ svg {
 }
 .footer-links {
   display: flex;
-  gap: 24px;
+  flex-wrap: wrap;
+  gap: 4px 24px;
 }
 .skip-link {
   position: fixed;
