@@ -45,6 +45,8 @@ In the root `package.json`:
 
 ## What users run
 
+Once the package is published to npm, users can run:
+
 ```sh
 npm install -g tui-app-template
 tui-app

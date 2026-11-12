@@ -7,7 +7,6 @@ import {
   NPX_COMMAND,
   PLATFORMS,
   REPO_URL,
-  RUN_COMMAND,
   SITE_NAME,
   SITE_TAGLINE,
 } from "../config/site.config";
@@ -187,9 +186,9 @@ export const STEPS = {
   ] as Step[],
   more: { label: "Full walkthrough", path: "docs/" } satisfies Link,
   tryIt: {
-    label: "Or run the example menu without cloning",
+    label: "After publishing, run it without cloning",
     code: NPX_COMMAND,
-    note: `Once published, the installed command is ${RUN_COMMAND}.`,
+    note: "Works once the package is published to npm. Until then, run the example menu from a checkout with pnpm run dev.",
   },
 };
 
