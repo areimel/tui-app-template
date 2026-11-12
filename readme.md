@@ -47,7 +47,7 @@ A starting point for rich terminal apps built with [Ink](https://github.com/vadi
 - **Config and data files**: one config file with a section per app, validated on load, saved atomically.
 - **Injectable platform services** (system stats, read-only file access, HTTP, battery), so every screen is tested against fakes.
 - **One identity file** (`source/app.config.ts`) read by the app and the website, and an init script that renames everything from it.
-- **A website** in `site/` (Astro): landing page and docs driven by the same identity file, deployed to GitHub Pages.
+- **A website** in `site/` (Astro): landing page and docs driven by the same identity file, deployed to GitHub Pages. It also ships Google Tag Manager with a cookie consent banner, a contact form (Web3Forms), a draft privacy policy, a build-time Content-Security-Policy and browser tests in Chromium, Firefox and WebKit. Analytics and the contact form stay off in a new app until you configure them.
 
 ## The examples
 
@@ -65,7 +65,7 @@ Keep Awake is the tool this template grew out of (`coffee-term`, a `caffeinate` 
 
 ## Start a new app
 
-Requirements: Node 22.22.2 or newer, [pnpm](https://pnpm.io), Linux or macOS.
+Requirements: Node 22.22.2 or newer (22.23.4 for the website), [pnpm](https://pnpm.io), Linux or macOS.
 
 ```sh
 git clone https://github.com/areimel/tui-app-template.git my-app
@@ -95,7 +95,7 @@ tui-app [app] [options]
   --theme <name>      amber, green, severance
   --no-animation      no animations
   --config <path>     use this config file (or set TUI_APP_CONFIG)
-  --demo              deterministic demo data; reads and saves nothing
+  --demo              deterministic demo data; reads and saves nothing, takes no real sleep locks
   --plain             no TUI: run the app's plain mode (when it has one)
   --help, -h          show help, including each app's own flags
   --version
@@ -121,6 +121,7 @@ Config is saved to `~/.config/tui-app/config.json` on Linux (honouring `XDG_CONF
 | One test file   | `pnpm run ava test/core/format.test.ts`                      |
 | Build and run   | `pnpm run build && node dist/cli.js`                         |
 | Website         | `pnpm --dir site run dev` (see `site/README.md`)             |
+| Website checks  | `pnpm --dir site run check` / `test:e2e`                     |
 
 The codebase is layered so pieces can be reused and swapped: `core`, `theme`, `platform`, `config` ← `ui` (kit, input, hooks, form) ← `shell` ← `apps`. `CLAUDE.md` is the working guide for contributors and AI agents: architecture, hard rules, testing conventions and lint gotchas. `.research_docs/` holds Ink 8 references checked against the installed version.
 
@@ -134,7 +135,7 @@ pnpm pack --dry-run   # check what ships
 pnpm publish          # rebuilds dist/ first
 ```
 
-The website deploys from `main` through `.github/workflows/site.yml` once GitHub Pages is set to deploy from Actions.
+The website deploys from `main` through `.github/workflows/site.yml` once GitHub Pages is set to deploy from Actions. To turn on its optional parts, set `GTM_ID` in `site/src/config/site.config.ts` to your Google Tag Manager container (with GA4 configured inside it), and add the repository variables `PUBLIC_WEB3FORMS_KEY` (contact form) and `PUBLIC_PRIVACY_EMAIL` (privacy contact). Review the draft privacy policy in `site/src/pages/privacy.astro`. The Website guide on the site has the details.
 
 ## Known limitations
 
