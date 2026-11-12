@@ -11,6 +11,8 @@ import {
   PREVIEW_STORAGE_KEY,
   SITE_NAME,
   SITE_URL,
+  THEME_COLOR,
+  THEME_COLOR_LIGHT,
   THEME_STORAGE_KEY,
 } from "../src/config/site.config";
 
@@ -24,6 +26,8 @@ export {
   PREVIEW_STORAGE_KEY,
   SITE_NAME,
   SITE_URL,
+  THEME_COLOR,
+  THEME_COLOR_LIGHT,
   THEME_STORAGE_KEY,
 };
 
@@ -88,7 +92,8 @@ export const DOC_PAGES: DocPage[] = walk(docsDir).map((file) => {
 
 export const DOC_ROUTES = DOC_PAGES.map((page) => page.route);
 export const CONTACT = `${HOME}contact/`;
-export const ALL_ROUTES = [HOME, CONTACT, ...DOC_ROUTES];
+export const PRIVACY = `${HOME}privacy/`;
+export const ALL_ROUTES = [HOME, CONTACT, PRIVACY, ...DOC_ROUTES];
 /** Ids that have a page under `docs/examples/`. */
 export const EXAMPLE_IDS = DOC_PAGES.filter((p) =>
   p.slug.startsWith("examples/"),
@@ -131,3 +136,6 @@ export async function blockThirdParty(page: Page) {
       }),
     );
 }
+
+/** Skip reason for axe checks: they run in Chromium only (Firefox headless crashes on long pages). */
+export const AXE_CHROMIUM_ONLY = "axe checks run in Chromium only";

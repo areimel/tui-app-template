@@ -3,6 +3,7 @@ import "../styles/global.css";
 import { href } from "../lib/urls";
 import Analytics from "../components/Analytics.astro";
 import ConsentBanner from "../components/ConsentBanner.astro";
+import fontRegular from "../assets/fonts/dm-sans/DMSans-Regular.woff2?url";
 import {
   SITE_NAME,
   SITE_DESCRIPTION,
@@ -10,6 +11,7 @@ import {
   AUTHOR,
   LICENSE_LABEL,
   THEME_COLOR,
+  THEME_COLOR_LIGHT,
   THEME_STORAGE_KEY,
   GTM_ID,
   SITE_URL,
@@ -39,6 +41,7 @@ const fullTitle = title === SITE_NAME ? title : `${title} | ${SITE_NAME}`;
 const ogImage = new URL(href(OG_IMAGE_PATH), Astro.site);
 const docsActive = Astro.url.pathname.startsWith(href("docs/"));
 const contactActive = Astro.url.pathname === href("contact/");
+const privacyActive = Astro.url.pathname === href("privacy/");
 const structuredData = [
   {
     "@context": "https://schema.org",
@@ -58,11 +61,22 @@ const structuredData = [
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <Analytics />
     <meta name="description" content={description} />
+    <meta name="color-scheme" content="dark light" />
     <meta name="theme-color" content={THEME_COLOR} />
     <title>{fullTitle}</title>
     {noindex && <meta name="robots" content="noindex" />}
     {!noindex && <link rel="canonical" href={canonical} />}
     <link rel="icon" type="image/svg+xml" href={href("favicon.svg")} />
+    <link rel="icon" href={href("favicon.ico")} sizes="32x32" />
+    <link rel="apple-touch-icon" href={href("apple-touch-icon.png")} />
+    <link rel="manifest" href={href("site.webmanifest")} />
+    <link
+      rel="preload"
+      href={fontRegular}
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
     {
       /* Crawlers only read /robots.txt at the host root, so on a GitHub project-pages subpath this link is the discovery route. */
     }
@@ -92,15 +106,29 @@ const structuredData = [
         <script type="application/ld+json" set:html={json} />
       ))
     }
-    <script is:inline define:vars={{ themeKey: THEME_STORAGE_KEY }}>
+    <script
+      is:inline
+      define:vars={{
+        themeKey: THEME_STORAGE_KEY,
+        darkColor: THEME_COLOR,
+        lightColor: THEME_COLOR_LIGHT,
+      }}
+    >
+      /* A saved choice wins; otherwise follow the OS. Without JS the page stays dark. */
+      let stored = null;
       try {
-        document.documentElement.classList.toggle(
-          "dark",
-          localStorage.getItem(themeKey) !== "light",
-        );
+        stored = localStorage.getItem(themeKey);
       } catch {
-        /* Default to the server-rendered dark palette. */
+        /* Storage is optional. */
       }
+      const dark =
+        stored === "light" || stored === "dark"
+          ? stored === "dark"
+          : !matchMedia("(prefers-color-scheme: light)").matches;
+      document.documentElement.classList.toggle("dark", dark);
+      document
+        .querySelector('meta[name="theme-color"]')
+        ?.setAttribute("content", dark ? darkColor : lightColor);
     </script>
   </head>
   <body>
@@ -137,7 +165,10 @@ const structuredData = [
                 Contact
               </a>
             )
-          }<a href={REPO_URL}>Source ↗</a><span>{LICENSE_LABEL}</span>
+          }<a
+            href={href("privacy/")}
+            aria-current={privacyActive ? "page" : undefined}>Privacy</a
+          ><a href={REPO_URL}>Source ↗</a><span>{LICENSE_LABEL}</span>
           {
             GTM_ID !== "" && (
               <button
@@ -154,7 +185,14 @@ const structuredData = [
       </div>
     </footer>
     <ConsentBanner />
-    <script is:inline define:vars={{ themeKey: THEME_STORAGE_KEY }}>
+    <script
+      is:inline
+      define:vars={{
+        themeKey: THEME_STORAGE_KEY,
+        darkColor: THEME_COLOR,
+        lightColor: THEME_COLOR_LIGHT,
+      }}
+    >
       const button = document.querySelector(".theme-toggle");
       if (button) {
         const update = () => {
@@ -168,6 +206,9 @@ const structuredData = [
         update();
         button.addEventListener("click", () => {
           const dark = document.documentElement.classList.toggle("dark");
+          document
+            .querySelector('meta[name="theme-color"]')
+            ?.setAttribute("content", dark ? darkColor : lightColor);
           try {
             localStorage.setItem(themeKey, dark ? "dark" : "light");
           } catch {

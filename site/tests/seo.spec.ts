@@ -89,3 +89,50 @@ test("the Contact link is in the footer and marked on the contact page", async (
     page.locator(`.footer-links a[href="${CONTACT}"]`),
   ).toHaveAttribute("aria-current", "page");
 });
+
+test("icons and the web manifest are linked and served", async ({
+  page,
+  request,
+}) => {
+  await page.goto(HOME);
+  const links = {
+    icon: 'link[rel="icon"][sizes="32x32"]',
+    apple: 'link[rel="apple-touch-icon"]',
+    manifest: 'link[rel="manifest"]',
+  };
+  const urls: Record<string, string> = {};
+  for (const [name, selector] of Object.entries(links)) {
+    const value = await page.locator(selector).getAttribute("href");
+    expect(value, name).not.toBeNull();
+    urls[name] = value ?? "";
+    expect((await request.get(urls[name]!)).status(), name).toBe(200);
+  }
+  const manifest = (await (await request.get(urls["manifest"]!)).json()) as {
+    name: string;
+    start_url: string;
+    icons: { src: string; sizes: string }[];
+  };
+  expect(manifest.name).toBe(SITE_NAME);
+  expect(manifest.start_url).toBe(HOME);
+  for (const icon of manifest.icons) {
+    expect((await request.get(icon.src)).status(), icon.src).toBe(200);
+  }
+});
+
+test("the regular font is preloaded as woff2 and matches the stylesheet", async ({
+  page,
+}) => {
+  await page.goto(HOME);
+  const preload = page.locator('link[rel="preload"][as="font"]');
+  await expect(preload).toHaveCount(1);
+  const href = (await preload.getAttribute("href")) ?? "";
+  expect(href).toMatch(/\.woff2$/);
+  const used = await page.evaluate(async () => {
+    await document.fonts.ready;
+    return performance
+      .getEntriesByType("resource")
+      .map((entry) => new URL(entry.name).pathname)
+      .filter((path) => path.endsWith(".woff2"));
+  });
+  expect(used).toContain(href);
+});

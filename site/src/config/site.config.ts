@@ -57,6 +57,46 @@ export const WEB3FORMS_KEY: string = ENV["PUBLIC_WEB3FORMS_KEY"] ?? "";
 export const WEB3FORMS_ENDPOINT = "https://api.web3forms.com/submit";
 export const CONTACT_ENABLED = WEB3FORMS_KEY !== "";
 
+/**
+Address for privacy requests, shown on the privacy page. Empty in the repo so forks never inherit
+it; set it here or via `PUBLIC_PRIVACY_EMAIL` (a repository variable in CI). Empty: the privacy page
+points to the contact page (or GitHub issues when the form is off).
+*/
+// `||`, not `??`: CI passes an unset repository variable as "", which must not hide an address set here.
+export const PRIVACY_EMAIL: string = ENV["PUBLIC_PRIVACY_EMAIL"] || "";
+/** Date the privacy page was last changed (ISO `YYYY-MM-DD`). Update it when you edit the policy. */
+export const PRIVACY_UPDATED = "2026-11-12";
+
+/**
+Third-party hosts allowed by the build-time Content-Security-Policy, per directive. The hashes of the
+site's own inline scripts are added automatically. Widen these when you add a GTM tag that loads
+from another host; GTM "Custom HTML" tags (inline script) are blocked by design.
+*/
+export const CSP_EXTRA_SOURCES = {
+  "script-src": [
+    "https://www.googletagmanager.com",
+    "https://tagmanager.google.com",
+  ],
+  "style-src": [
+    "https://tagmanager.google.com",
+    "https://fonts.googleapis.com",
+  ],
+  "img-src": [
+    "https://*.google-analytics.com",
+    "https://*.googletagmanager.com",
+    "https://ssl.gstatic.com",
+    "https://www.gstatic.com",
+  ],
+  "font-src": ["https://fonts.gstatic.com"],
+  "connect-src": [
+    "https://api.web3forms.com",
+    "https://*.google-analytics.com",
+    "https://*.analytics.google.com",
+    "https://*.googletagmanager.com",
+  ],
+  "form-action": ["https://api.web3forms.com"],
+} as const satisfies Record<string, readonly string[]>;
+
 /** Social preview image (in `public/`), its size and alt text, and the content locale. */
 export const OG_IMAGE_PATH = "og-image.png";
 export const OG_IMAGE_WIDTH = 1200;
@@ -73,6 +113,8 @@ export const CONSENT_STORAGE_KEY = `${STORAGE_PREFIX}-consent`;
 
 /** Browser chrome colour: matches `--background` in the dark palette (`kojima.css`). */
 export const THEME_COLOR = "#141310";
+/** Browser chrome colour in light mode: matches `--background` in the light palette. */
+export const THEME_COLOR_LIGHT = "#efebe0";
 
 /** Label for the CodeBlock copy button and its accessible name. */
 export const COPY_LABEL = "Copy";
