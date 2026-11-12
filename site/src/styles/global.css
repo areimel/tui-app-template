@@ -2,13 +2,13 @@
 
 @font-face {
   font-family: "DM Sans";
-  src: url("../assets/fonts/dm-sans/DMSans-Regular.ttf") format("truetype");
+  src: url("../assets/fonts/dm-sans/DMSans-Regular.woff2") format("woff2");
   font-weight: 400;
   font-display: swap;
 }
 @font-face {
   font-family: "DM Sans";
-  src: url("../assets/fonts/dm-sans/DMSans-Bold.ttf") format("truetype");
+  src: url("../assets/fonts/dm-sans/DMSans-Bold.woff2") format("woff2");
   font-weight: 700;
   font-display: swap;
 }
