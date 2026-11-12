@@ -33,6 +33,55 @@ Because of that import, the site build needs the root dependencies installed, an
 
 `site.config.ts` also holds site-only settings: the browser theme colour, the list of docs sections and the terminal preview palettes.
 
+## Analytics, consent and contact
+
+Two settings in `site/src/config/site.config.ts` control the optional analytics and contact features: `GTM_ID` (a constant you can override per build) and `WEB3FORMS_KEY` (read from the `PUBLIC_WEB3FORMS_KEY` build-time variable). Neither is a secret.
+
+### Google Tag Manager
+
+`GTM_ID` is the Google Tag Manager container ID. The default is this template's container. Override it for one build with `PUBLIC_GTM_ID`:
+
+```sh
+PUBLIC_GTM_ID=GTM-XXXXXXX pnpm --dir site run build
+```
+
+An empty string turns analytics off completely: no tag is emitted, the consent banner does not appear and the footer has no Cookie settings link.
+
+Forks must replace the container ID with their own, or set it to `""`. `pnpm run init` does not rewrite `GTM_ID`, so a renamed app keeps sending data to this template's container until you change it.
+
+The CI workflow deliberately does not pass `PUBLIC_GTM_ID`. An unset Actions variable expands to an empty string, which would disable the tag. Deployed builds use the default in `site.config.ts`.
+
+### Consent
+
+The site uses Google Consent Mode v2. Until a visitor chooses, all four signals (`ad_storage`, `analytics_storage`, `ad_user_data` and `ad_personalization`) are `denied`.
+
+- The banner offers Accept and Decline with equal weight. Either choice updates the consent signals, stores the choice in `localStorage` under `<command>-consent`, and pushes a `consent_update` event to `dataLayer`.
+- The footer's "Cookie settings" button reopens the banner.
+
+### Set up GA4 in GTM
+
+The GA4 tag is configured in the GTM container, not in the code:
+
+1. In tagmanager.google.com, open the container and create a tag of type **Google tag**. Enter your GA4 measurement ID (`G-…`).
+2. Set its trigger to **Initialization - All Pages**.
+3. Leave the consent settings on the built-in checks, which respect `analytics_storage`.
+4. Publish the container.
+5. Check it with GTM Preview or Tag Assistant on the deployed site. Accept the banner, then confirm the Google tag fires.
+
+### Contact page
+
+`/contact/` sends messages through [Web3Forms](https://web3forms.com):
+
+1. Create an access key at web3forms.com. The key is sent to the email address that should receive the messages.
+2. Add it as a GitHub Actions repository variable named `PUBLIC_WEB3FORMS_KEY`: Settings, Secrets and variables, Actions, Variables. Use a variable, not a secret, so the deploy build can read it.
+3. For local development, set it when starting the dev server: `PUBLIC_WEB3FORMS_KEY=… pnpm --dir site run dev`.
+
+The access key is public by design. It ends up in the page HTML and only allows the form to send mail to the key's owner. The form has a hidden honeypot field to catch simple bots.
+
+Without a key, the contact page shows a fallback that points to GitHub issues, and the Contact links in the header and footer are hidden.
+
+Privacy: the template ships no privacy policy. If you serve EU or UK visitors, link a policy that describes Google Analytics and the contact form.
+
 ## Where content lives
 
 | What                        | Where                                                                                                                                                                                                                                                                               |
@@ -81,4 +130,4 @@ Use **relative links** between pages, with a trailing slash (`../examples/tasks/
 
 One-time setup in the repository: **Settings, Pages, Build and deployment, Source: GitHub Actions**. After that, merging to `main` publishes.
 
-If you rename the repository or change hosting, update `siteUrl` and `siteBase` in `source/app.config.ts` (or rerun the init script with `--site-url` and `--site-base`). There are no secrets, backend or runtime settings to configure.
+If you rename the repository or change hosting, update `siteUrl` and `siteBase` in `source/app.config.ts` (or rerun the init script with `--site-url` and `--site-base`). The site needs no secrets and no backend. Its only configuration is two optional public build-time values, `PUBLIC_GTM_ID` and `PUBLIC_WEB3FORMS_KEY`, described in the Analytics, consent and contact section above.

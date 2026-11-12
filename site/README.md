@@ -52,7 +52,8 @@ After running `pnpm run init` at the repository root (which rewrites `source/app
 3. **Docs pages.** Rewrite `src/pages/docs/**`. They are plain content and name the template's values (`tui-app-template`, `tui-app`) literally; delete the example pages for examples you removed.
 4. **Public assets (manual swaps).** Replace `public/og-image.svg` and `public/og-image.png` (the social card) and `public/favicon.svg`.
 5. **Theme colour.** Set `THEME_COLOR` in `src/config/site.config.ts` if you change the dark background.
-6. **Provenance.** Edit `TEMPLATE.md`, and keep `LICENSE`.
+6. **Analytics and contact (not rewritten by `pnpm run init`).** Replace `GTM_ID` in `src/config/site.config.ts` with your Google Tag Manager container ID, or set it to `""` to turn analytics off. For the contact page, add your Web3Forms access key as the `PUBLIC_WEB3FORMS_KEY` repository variable. See "Analytics, consent and contact" on the Website docs page.
+7. **Provenance.** Edit `TEMPLATE.md`, and keep `LICENSE`.
 
 ## Deploy
 
@@ -60,6 +61,6 @@ After running `pnpm run init` at the repository root (which rewrites `source/app
 
 - Pull requests that touch `site/**`, `source/app.config.ts`, `pnpm-lock.yaml` or the workflow run the checks only.
 - Pushes to `main` (and manual runs on `main`) also deploy `site/dist`.
-- It installs the whole workspace with `pnpm install --frozen-lockfile` at the root, then runs the format check, the type check and the Playwright tests from `site/`.
+- It installs the whole workspace with `pnpm install --frozen-lockfile` at the root, then runs the format check, the type check and the Playwright tests from `site/`, and finally rebuilds `site/dist` with the `PUBLIC_WEB3FORMS_KEY` repository variable for deployment.
 
-Enable Pages once under **Settings, Pages, Build and deployment, Source: GitHub Actions**. If you change the repository name or host, update `siteUrl` and `siteBase` in `source/app.config.ts`. The site is static: it needs no secrets, backend or runtime configuration.
+Enable Pages once under **Settings, Pages, Build and deployment, Source: GitHub Actions**. If you change the repository name or host, update `siteUrl` and `siteBase` in `source/app.config.ts`. The site is static and needs no secrets or backend. Its only configuration is two optional public build-time values, `PUBLIC_GTM_ID` and `PUBLIC_WEB3FORMS_KEY`.
