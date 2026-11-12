@@ -1,5 +1,6 @@
 import { defineConfig } from "astro/config";
 import sitemap from "@astrojs/sitemap";
+import csp from "./integrations/csp.ts";
 import { APP } from "../source/app.config.ts";
 
 // Identity comes from source/app.config.ts (the one source of truth).
@@ -17,5 +18,6 @@ export default defineConfig({
           new URL(page).pathname.endsWith("/contact/")
         ),
     }),
+    csp(),
   ],
 });
