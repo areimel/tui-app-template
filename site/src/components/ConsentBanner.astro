@@ -4,23 +4,45 @@ import { GTM_ID, CONSENT_STORAGE_KEY } from "../config/site.config";
 
 const script = `(function(){
 var b=document.querySelector(".consent-banner");if(!b)return;
-var key=b.dataset.consentKey,v="";
+var key=b.dataset.consentKey,v="",opener=null,root=document.documentElement;
 try{v=localStorage.getItem(key)}catch(e){}
+function sync(){
+if(b.hidden){root.classList.remove("consent-open");root.style.removeProperty("--consent-height");return}
+root.style.setProperty("--consent-height",b.offsetHeight+"px");root.classList.add("consent-open");
+}
+if(window.ResizeObserver)new ResizeObserver(sync).observe(b);
+window.addEventListener("resize",sync);
+function expireGa(){
+try{
+var host=location.hostname;
+document.cookie.split(";").forEach(function(c){
+var n=c.split("=")[0].trim();
+if(n==="_ga"||n.indexOf("_ga_")===0||n.indexOf("_gid")===0){
+var x="=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+document.cookie=n+x;
+document.cookie=n+x+";domain="+host;
+document.cookie=n+x+";domain=."+host;
+}
+});
+}catch(e){}
+}
 document.querySelectorAll("[data-consent-reopen]").forEach(function(o){
 o.hidden=false;
-o.addEventListener("click",function(){b.hidden=false;b.querySelector("button").focus()});
+o.addEventListener("click",function(){opener=o;b.hidden=false;sync();b.querySelector("button").focus()});
 });
-if(v!=="granted"&&v!=="denied")b.hidden=false;
+if(v!=="granted"&&v!=="denied"){b.hidden=false;sync()}
 b.querySelectorAll("[data-consent]").forEach(function(btn){
 btn.addEventListener("click",function(){
 var c=btn.dataset.consent;
 if(window.gtag)window.gtag("consent","update",{ad_storage:c,analytics_storage:c,ad_user_data:c,ad_personalization:c});
 try{localStorage.setItem(key,c)}catch(e){}
+if(c==="denied")expireGa();
 if(window.dataLayer)window.dataLayer.push({event:"consent_update",consent:c});
 var had=b.contains(document.activeElement);
-b.hidden=true;
+b.hidden=true;sync();
 var m=document.getElementById("main-content");
-if(had&&m)m.focus();
+if(opener){opener.focus({preventScroll:true});opener=null}
+else if(had&&m)m.focus({preventScroll:true});
 });
 });
 })();`;
@@ -35,8 +57,9 @@ if(had&&m)m.focus();
       hidden
     >
       <p>
-        We use Google Analytics cookies to understand how the site is used, only
-        if you allow it.
+        This site uses Google Analytics to understand how it's used. Analytics
+        cookies are only set if you accept; until then, only cookieless,
+        anonymous signals are sent.
       </p>
       <div class="consent-actions">
         <button type="button" class="button" data-consent="granted">

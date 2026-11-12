@@ -98,11 +98,20 @@ import {
           },
           body: JSON.stringify(Object.fromEntries(new FormData(form))),
         });
-        const result = (await response.json()) as {
-          success: boolean;
-          message?: string;
-        };
-        if (response.ok && result.success) {
+        let result: { success: boolean; message?: string } | undefined;
+        try {
+          result = (await response.json()) as {
+            success: boolean;
+            message?: string;
+          };
+        } catch {
+          result = undefined;
+        }
+        if (result === undefined) {
+          show(
+            `Error: the server returned ${response.status}. Try again later, or open an issue on GitHub: ${issues}`,
+          );
+        } else if (response.ok && result.success) {
           show("Thanks — your message was sent.");
           form.reset();
           for (const field of form.querySelectorAll("[aria-invalid]")) {
@@ -119,7 +128,10 @@ import {
         );
       } finally {
         form.removeAttribute("aria-busy");
-        if (button) button.disabled = false;
+        if (button) {
+          button.disabled = false;
+          button.focus({ preventScroll: true });
+        }
       }
     });
   }

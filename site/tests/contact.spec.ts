@@ -76,6 +76,35 @@ test("failed submit shows an error", async ({ page }) => {
   ).toBeEnabled();
 });
 
+test("non-JSON server error shows the status code", async ({ page }) => {
+  await page.route(ENDPOINT, (route) =>
+    route.fulfill({
+      status: 500,
+      contentType: "text/html",
+      body: "<html>oops</html>",
+    }),
+  );
+  await page.goto(ROUTE);
+  await fillForm(page);
+  await page.getByRole("button", { name: "Send message" }).click();
+  await expect(page.getByRole("status")).toContainText(
+    "the server returned 500",
+  );
+});
+
+test("focus stays on the submit button after submitting", async ({ page }) => {
+  await page.route(ENDPOINT, (route) =>
+    route.fulfill({ json: { success: true } }),
+  );
+  await page.goto(ROUTE);
+  await fillForm(page);
+  const submit = page.getByRole("button", { name: "Send message" });
+  await submit.click();
+  await expect(page.getByRole("status")).toContainText("Thanks");
+  await expect(submit).toBeEnabled();
+  await expect(submit).toBeFocused();
+});
+
 test("network failure shows an error", async ({ page }) => {
   await page.route(ENDPOINT, (route) => route.abort());
   await page.goto(ROUTE);

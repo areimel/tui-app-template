@@ -79,7 +79,7 @@ Running it twice with the same answers changes nothing ("Already up to date").
 | `source/app.config.ts`              | The `APP` constant, rewritten whole.                                                                                                                             |
 | `package.json`                      | `name`, `version` (reset to `0.1.0`), `description`, `homepage`, `bugs.url`, `repository.url`, `author` and `bin` (the command).                                 |
 | `site/package.json`                 | `name`, set to `<name>-site`.                                                                                                                                    |
-| `site/src/config/site.config.ts`    | `GTM_ID`: the template's own Google Tag Manager container is cleared (analytics off). Any other ID is kept. |
+| `site/src/config/site.config.ts`    | `GTM_ID`: the template's own Google Tag Manager container is cleared (analytics off). Any other ID is kept.                                                      |
 | `LICENSE`                           | The copyright holder on the `Copyright (c) <years>` line.                                                                                                        |
 | `source/shell/brand/heading-art.ts` | Regenerated ANSI Shadow art for the heading text.                                                                                                                |
 | `readme.md`                         | Only the block between `<!-- init:identity:start -->` and `<!-- init:identity:end -->`. If the markers are missing the script says so and leaves the file alone. |

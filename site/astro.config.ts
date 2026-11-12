@@ -9,5 +9,13 @@ export default defineConfig({
   trailingSlash: "always",
   output: "static",
   markdown: { shikiConfig: { theme: "github-dark-high-contrast" } },
-  integrations: [sitemap()],
+  integrations: [
+    sitemap({
+      filter: (page) =>
+        !(
+          (process.env["PUBLIC_WEB3FORMS_KEY"] ?? "") === "" &&
+          new URL(page).pathname.endsWith("/contact/")
+        ),
+    }),
+  ],
 });

@@ -3,10 +3,13 @@ import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import {
   CONSENT_STORAGE_KEY,
+  CONTACT,
+  DOC_ROUTES,
   HOME,
   ORIGIN,
   blockThirdParty,
   builtHtmlFiles,
+  THEME_STORAGE_KEY,
 } from "./helpers";
 
 const banner = (page: Page) =>
@@ -96,6 +99,70 @@ test("home passes axe with the banner visible", async ({ page }) => {
     .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
     .analyze();
   expect(result.violations).toEqual([]);
+});
+
+const axePages = [
+  ["home", HOME],
+  ["contact", CONTACT],
+  ["docs", DOC_ROUTES[0] ?? HOME],
+] as const;
+for (const theme of ["dark", "light"]) {
+  for (const [name, route] of axePages) {
+    test(`${name} with banner passes axe in ${theme} theme`, async ({
+      page,
+    }) => {
+      await page.addInitScript(
+        ([key, value]) => localStorage.setItem(key as string, value as string),
+        [THEME_STORAGE_KEY, theme],
+      );
+      await page.goto(route);
+      await expect(banner(page)).toBeVisible();
+      const result = await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+        .analyze();
+      expect(result.violations).toEqual([]);
+    });
+  }
+}
+
+test("banner does not cover the submit button at 320px", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 640 });
+  await page.goto(CONTACT);
+  await expect(banner(page)).toBeVisible();
+  const submit = page.getByRole("button", { name: "Send message" });
+  await submit.scrollIntoViewIfNeeded();
+  const covered = await submit.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    const hit = document.elementFromPoint(
+      r.left + r.width / 2,
+      r.top + r.height / 2,
+    );
+    return hit === null || !(hit === el || el.contains(hit));
+  });
+  expect(covered).toBe(false);
+});
+
+test("focus returns to Cookie settings after choosing", async ({ page }) => {
+  await page.goto(HOME);
+  await banner(page).getByRole("button", { name: "Decline" }).click();
+  const opener = page.getByRole("button", { name: "Cookie settings" });
+  await opener.click();
+  await banner(page).getByRole("button", { name: "Accept" }).click();
+  await expect(banner(page)).toBeHidden();
+  await expect(opener).toBeFocused();
+});
+
+test("Decline expires existing _ga cookies", async ({ page, context }) => {
+  await context.addCookies([
+    { name: "_ga", value: "GA1.1.1.1", domain: "127.0.0.1", path: "/" },
+    { name: "_ga_ABC123", value: "x", domain: "127.0.0.1", path: "/" },
+  ]);
+  await page.goto(HOME);
+  await banner(page).getByRole("button", { name: "Decline" }).click();
+  await expect(banner(page)).toBeHidden();
+  const names = (await context.cookies()).map((c) => c.name);
+  expect(names).not.toContain("_ga");
+  expect(names).not.toContain("_ga_ABC123");
 });
 
 test("banner fits at 320px", async ({ page }) => {

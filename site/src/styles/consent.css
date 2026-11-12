@@ -44,3 +44,9 @@
 .footer-link-button:hover {
   color: var(--foreground);
 }
+html.consent-open {
+  scroll-padding-bottom: var(--consent-height, 0px);
+}
+html.consent-open body {
+  padding-bottom: var(--consent-height, 0px);
+}
