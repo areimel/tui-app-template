@@ -1,127 +1,94 @@
 ---
 import "../styles/terminal.css";
 import "../styles/terminal-responsive.css";
-const heading = ` ██████╗ ██████╗ ███████╗███████╗███████╗███████╗
-██╔════╝██╔═══██╗██╔════╝██╔════╝██╔════╝██╔════╝
-██║     ██║   ██║█████╗  █████╗  █████╗  █████╗
-██║     ██║   ██║██╔══╝  ██╔══╝  ██╔══╝  ██╔══╝
-╚██████╗╚██████╔╝██║     ██║     ███████╗███████╗
- ╚═════╝ ╚═════╝ ╚═╝     ╚═╝     ╚══════╝╚══════╝`;
-const cup = `       '     .
-        ) (     )
-        ) (    (
-       )   )   (
-       (   )   (
-  ╭──────────────╮
-  │▒▒▒▒▒▒▒▒▒▒▒▒▒▒│
-  │              │──╮
-  │              │  │
-  ╰╮            ╭╯──╯
-   ╰────────────╯
- ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀`;
+import { APP, PREVIEW_STORAGE_KEY } from "../config/site.config";
+import {
+  HEADING_LINES,
+  PREVIEW_APPS,
+  PREVIEW_CURSOR,
+  PREVIEW_KEYS,
+  PREVIEW_LABELS,
+  PREVIEW_PALETTES,
+  PREVIEW_TITLEBAR,
+} from "../data/preview";
+
+const [defaultPalette] = PREVIEW_PALETTES;
+/** Palette colours from the site config become CSS custom properties, one rule per palette. */
+const paletteCss = PREVIEW_PALETTES.map(
+  (p) =>
+    `.terminal-preview[data-palette="${p.id}"]{--terminal-accent:${p.accent};--terminal-text:${p.text};--terminal-muted:${p.muted};--terminal-border:${p.border};--terminal-bg:${p.bg}}`,
+).join("");
 ---
 
+<style is:global set:html={paletteCss}></style>
 <div class="terminal-workspace">
   <div class="preview-toolbar">
-    <span class="eyebrow">01 / In the terminal</span>
-    <div class="preview-themes" role="group" aria-label="Preview colour theme">
-      <span>Phosphor</span>
-      <button
-        type="button"
-        data-preview-theme="amber"
-        aria-label="Amber"
-        aria-pressed="true">Amber</button
-      >
-      <button
-        type="button"
-        data-preview-theme="green"
-        aria-label="Green"
-        aria-pressed="false">Green</button
-      >
-      <button
-        type="button"
-        data-preview-theme="severance"
-        aria-label="Severance"
-        aria-pressed="false">Severance</button
-      >
+    <span class="eyebrow">{PREVIEW_LABELS.eyebrow}</span>
+    <div
+      class="preview-themes"
+      role="group"
+      aria-label={PREVIEW_LABELS.groupLabel}
+    >
+      <span>{PREVIEW_LABELS.groupTitle}</span>
+      {
+        PREVIEW_PALETTES.map((p) => (
+          <button
+            type="button"
+            data-preview-theme={p.id}
+            data-label={p.label}
+            aria-label={p.label}
+            aria-pressed={p.id === defaultPalette.id ? "true" : "false"}
+          >
+            {p.label}
+          </button>
+        ))
+      }
     </div>
   </div>
   <figure
     class="terminal-preview"
     data-terminal-preview
-    data-palette="amber"
-    aria-label="Illustrative coffee-term dashboard"
+    data-storage-key={PREVIEW_STORAGE_KEY}
+    data-palette={defaultPalette.id}
+    aria-label={PREVIEW_LABELS.figureLabel}
   >
     <div class="terminal-titlebar">
-      <span>~/projects <b>❯ coffee-term -d 1h30m</b></span><span
-        >TTY / 120 × 32</span
-      >
+      <span>{PREVIEW_TITLEBAR.prompt} <b>❯ {PREVIEW_TITLEBAR.command}</b></span>
+      <span>{PREVIEW_TITLEBAR.size}</span>
     </div>
     <div class="terminal-screen">
-      <div class="terminal-heading">
-        <span class="terminal-rule"></span><pre
-          aria-hidden="true">{heading}</pre><span class="terminal-rule"></span>
-      </div>
-      <div class="terminal-dashboard">
-        <div class="terminal-panel cup-panel">
-          <span class="panel-title">brewing</span>
-          <pre
-            class="terminal-cup"
-            aria-label="A warm cup of coffee">{cup}</pre>
-          <div class="cup-caption">
-            A little company.<br />A little less sleep.
-          </div>
+      <div class="terminal-frame">
+        <span class="frame-edge frame-top">{APP.displayName}</span>
+        <pre
+          class="terminal-art"
+          aria-hidden="true">{HEADING_LINES.join("\n")}</pre>
+        <p class="terminal-tagline">{APP.tagline}</p>
+        <ul class="terminal-menu" aria-label={PREVIEW_LABELS.menuLabel}>
+          {
+            PREVIEW_APPS.map((app, index) => (
+              <li class:list={[{ "is-selected": index === PREVIEW_CURSOR }]}>
+                <span class="menu-cursor" aria-hidden="true">
+                  {index === PREVIEW_CURSOR ? "❯" : ""}
+                </span>
+                <span class="menu-number">{index + 1}</span>
+                <span class="menu-glyph" aria-hidden="true">
+                  {app.glyph}
+                </span>
+                <span class="menu-title">{app.title}</span>
+                <span class="menu-desc">{app.description}</span>
+              </li>
+            ))
+          }
+        </ul>
+        <div class="frame-edge frame-bottom">
+          {PREVIEW_KEYS.map((key) => <span>{key}</span>)}
         </div>
-        <div class="terminal-data">
-          <div class="terminal-top-panels">
-            <div class="terminal-panel session-panel">
-              <span class="panel-title">Session</span>
-              <p class="awake-status">● AWAKE</p>
-              <dl>
-                <div><dt>Elapsed</dt><dd>00:24:18</dd></div><div>
-                  <dt>Remaining</dt><dd>01:05:42</dd>
-                </div>
-              </dl>
-              <div class="lock-status">
-                <span>● System <small>systemd-inhibit</small></span><span
-                  >● Display <small>gnome-session-inhibit</small></span
-                >
-              </div>
-            </div>
-            <div class="terminal-panel stats-panel">
-              <span class="panel-title">Stats</span>
-              <dl>
-                <div><dt>Uptime</dt><dd>3h 02m</dd></div><div>
-                  <dt>Battery</dt><dd>████████░░ 80%</dd>
-                </div><div><dt>Power</dt><dd>on AC</dd></div><div>
-                  <dt>Load</dt><dd>0.42 0.38 0.35</dd>
-                </div><div><dt>Host</dt><dd>your-machine</dd></div>
-              </dl>
-            </div>
-          </div>
-          <div class="terminal-panel options-panel">
-            <span class="panel-title">❯ Options</span>
-            <dl>
-              <div class="option-selected">
-                <dt>❯ Mode</dt><dd>[ ‹ duration › ]</dd>
-              </div><div><dt>Duration</dt><dd>[ 1h30m ]</dd></div><div>
-                <dt>Display</dt><dd>[ ● on ]</dd>
-              </div><div><dt>AC only</dt><dd>[ ○ off ]</dd></div><div>
-                <dt>Min battery</dt><dd>[ off ]</dd>
-              </div><div><dt>Wait PID</dt><dd>[ none ]</dd></div>
-            </dl>
-          </div>
-        </div>
-      </div>
-      <div class="terminal-keys">
-        <span>↑↓ move</span><span>←→ change</span><span>enter edit</span><span
-          >space pause</span
-        ><span>t theme</span><span>? help</span><span>q quit</span>
       </div>
     </div>
     <figcaption>
-      <span>ILLUSTRATIVE PREVIEW / SAMPLE SESSION DATA</span><span
-        >Linux · GNOME · Amber phosphor</span
+      <span>{PREVIEW_LABELS.caption}</span>
+      <span data-preview-caption
+        >{PREVIEW_LABELS.captionPalette(defaultPalette.label)}</span
       >
     </figcaption>
   </figure>
@@ -134,30 +101,29 @@ const cup = `       '     .
   const buttons = document.querySelectorAll<HTMLButtonElement>(
     "[data-preview-theme]",
   );
+  const storageKey = preview?.dataset.storageKey ?? "";
   function selectTheme(theme: string) {
-    if (!preview || !["amber", "green", "severance"].includes(theme)) return;
+    const chosen = [...buttons].find((b) => b.dataset.previewTheme === theme);
+    if (!preview || !chosen) return;
     preview.dataset.palette = theme;
     buttons.forEach((button) =>
-      button.setAttribute(
-        "aria-pressed",
-        String(button.dataset.previewTheme === theme),
-      ),
+      button.setAttribute("aria-pressed", String(button === chosen)),
     );
-    const caption = preview.querySelector("figcaption span:last-child");
-    if (caption)
-      caption.textContent = `Linux · GNOME · ${theme[0]?.toUpperCase()}${theme.slice(1)} phosphor`;
+    const caption = preview.querySelector("[data-preview-caption]");
+    if (caption) caption.textContent = `${chosen.dataset.label ?? theme} theme`;
   }
   try {
-    selectTheme(localStorage.getItem("coffee-preview-theme") || "amber");
+    const saved = localStorage.getItem(storageKey);
+    if (saved) selectTheme(saved);
   } catch {
     /* Storage is optional. */
   }
   buttons.forEach((button) =>
     button.addEventListener("click", () => {
-      const theme = button.dataset.previewTheme || "amber";
+      const theme = button.dataset.previewTheme ?? "";
       selectTheme(theme);
       try {
-        localStorage.setItem("coffee-preview-theme", theme);
+        localStorage.setItem(storageKey, theme);
       } catch {
         /* Storage is optional. */
       }

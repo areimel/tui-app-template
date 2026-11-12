@@ -1,3 +1,4 @@
+import {Box} from 'ink';
 import test from 'ava';
 import {
 	Badge,
@@ -65,6 +66,32 @@ test('FieldRow shows label, value, hint and the focus gutter marker', t => {
 	);
 	t.is(r.plainFrame().trimEnd(), '  Duration 45m');
 	r.unmount();
+});
+
+test('FieldRow keeps a one-cell gap when the label exactly fills labelWidth', t => {
+	const exact = renderThemed(
+		<FieldRow label="Status" labelWidth={6}>
+			<T>[ on ]</T>
+		</FieldRow>,
+	);
+	t.is(exact.plainFrame().trimEnd(), '  Status [ on ]');
+	exact.unmount();
+	const longer = renderThemed(
+		<FieldRow label="Priority" labelWidth={6}>
+			<T>x</T>
+		</FieldRow>,
+	);
+	t.is(longer.plainFrame().trimEnd(), '  Prior… x');
+	longer.unmount();
+	const narrow = renderThemed(
+		<Box width={12}>
+			<FieldRow label="Status" labelWidth={6}>
+				<T wrap="truncate-end">[ a long value ]</T>
+			</FieldRow>
+		</Box>,
+	);
+	t.regex(narrow.plainFrame(), /^ {2}Status \[/v);
+	narrow.unmount();
 });
 
 test('Toggle on and off differ in text', t => {

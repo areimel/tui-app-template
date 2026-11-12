@@ -1,17 +1,27 @@
 ---
+import { COPY_LABEL, COPY_ARIA_LABEL } from "../config/site.config";
 interface Props {
   code: string;
   label?: string;
+  /** Visible copy button text. */
+  copyLabel?: string;
+  /** Accessible name of the copy button. */
+  copyAriaLabel?: string;
 }
-const { code, label = "terminal" } = Astro.props;
+const {
+  code,
+  label = "terminal",
+  copyLabel = COPY_LABEL,
+  copyAriaLabel = COPY_ARIA_LABEL,
+} = Astro.props;
 ---
 
 <div class="code-block">
   <div class="code-bar">
     <span>{label}</span><button
       class="copy-command"
-      aria-label="Copy command"
-      hidden>Copy</button
+      aria-label={copyAriaLabel}
+      hidden>{copyLabel}</button
     ><span class="copy-status" role="status"></span>
   </div>
   <pre tabindex="0"><code>{code}</code></pre>

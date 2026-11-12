@@ -1,242 +1,263 @@
 /**
-Command-line flags: the meow flag table, the help text, and the pure step that turns parsed flags into validated startup input.
+The command line: `<command> [app-id] [flags]`. The generic flag table, parsing (meow over a flag table
+that also holds every app's own `cli.flags`) and validation into a `CliRequest`. `help-text.ts` renders
+`--help`; `run-plan.ts` picks the TUI, an app's plain runner or the no-TTY message.
+
+Exit codes: 0 normal quit (and `--help` / `--version`), 1 an app's failure or a platform the app does not
+support, 2 bad flags / unknown app / an interactive screen requested without a terminal, 128+N killed by
+signal N. Apps' plain runners return their own codes.
+
+Without a TTY (or with `--plain`) only an app with `cli.runPlain` can run; anything else prints what the
+program is, that it needs a terminal and which apps have a plain mode, and exits 2 (the caller asked for
+something that cannot run). `--help` and `--version` never need a terminal.
 */
-import {parseClock} from './core/clock-time.js';
-import {parseDuration} from './core/duration.js';
-import type {FlagOverrides} from './config/merge.js';
+import meow from 'meow';
+import {APP} from './app.config.js';
+import {fail, ok, type Result} from './core/result.js';
+import type {Overrides} from './config/schema.js';
+import type {AppDefinition, CliFlagSpec, CliFlagValues} from './shell/types.js';
 import {THEME_NAMES, type ThemeName} from './theme/tokens.js';
 
-export const HELP_TEXT = `
-	Usage
-	  $ coffee-term [options]
-
-	Keeps the machine awake from the moment it starts, with a dashboard to
-	change the session live. Flag values apply to this session only.
-
-	Session
-	  --duration, -d <time>   Stay awake for a duration (45m, 1h30m, 2h)
-	  --until, -u <clock>     Stay awake until a clock time (17:30, 5pm)
-	  --indefinite            Stay awake until you quit
-	  --pid, -p <pid>         Stop when this process exits
-	  --display               Also keep the display awake (default)
-	  --no-display            Keep only the system awake; the screen may sleep
-	  --ac-only               Stop when the machine switches to battery
-	  --min-battery <1-99>    Stop when the battery falls below this percentage
-
-	Interface
-	  --theme <name>          amber, green or severance
-	  --no-animation          Static cup, no steam
-	  --plain                 No dashboard: one log line per state change
-	  --config <path>         Use this config file instead of the default
-
-	Examples
-	  $ coffee-term -d 1h30m
-	  $ coffee-term -u 5pm --no-display
-	  $ coffee-term -p 4242 --theme severance
-	  $ coffee-term -d 2h --plain &
-
-	Exit codes: 0 stopped normally, 1 lock or platform failure, 2 bad flags,
-	128+N killed by signal N.
-`;
-
-/**
-Flag table for meow. Booleans have no default on purpose: with `booleanDefault: undefined` an absent boolean is missing from the result instead of `false`, so it cannot override the saved config.
-*/
-export const MEOW_FLAGS = {
-	theme: {type: 'string'},
-	duration: {type: 'string', shortFlag: 'd'},
-	until: {type: 'string', shortFlag: 'u'},
-	indefinite: {type: 'boolean'},
-	pid: {type: 'string', shortFlag: 'p'},
-	display: {type: 'boolean'},
-	acOnly: {type: 'boolean'},
-	minBattery: {type: 'string'},
-	animation: {type: 'boolean'},
-	plain: {type: 'boolean'},
-	config: {type: 'string'},
-} as const;
-
-/**
-What meow hands back. Every key is absent unless the user passed it.
-*/
-export type RawFlags = {
-	theme?: string | undefined;
-	duration?: string | undefined;
-	until?: string | undefined;
-	indefinite?: boolean | undefined;
-	pid?: string | undefined;
-	display?: boolean | undefined;
-	acOnly?: boolean | undefined;
-	minBattery?: string | undefined;
-	animation?: boolean | undefined;
-	plain?: boolean | undefined;
-	config?: string | undefined;
-};
-
-export type StartupInput = {
+type GlobalFlag = CliFlagSpec & {
 	/**
-	Only the settings the user actually passed.
+	As shown in help, e.g. `--theme <name>`.
 	*/
-	overrides: FlagOverrides;
-	pid: number | undefined;
-	isPlain: boolean;
-	configOverride: string | undefined;
+	readonly usage: string;
 };
 
-export type FlagsResult =
-	{isOk: true; value: StartupInput} | {isOk: false; errors: string[]};
+export const GLOBAL_FLAGS = {
+	theme: {
+		type: 'string',
+		usage: '--theme <name>',
+		description: `Colour theme: ${THEME_NAMES.join(', ')}`,
+	},
+	animation: {
+		type: 'boolean',
+		usage: '--no-animation',
+		description: 'No animations',
+	},
+	config: {
+		type: 'string',
+		usage: '--config <path>',
+		description: `Use this config file (or set ${APP.configEnvVar})`,
+	},
+	demo: {
+		type: 'boolean',
+		usage: '--demo',
+		description: 'Deterministic demo data; reads and saves nothing',
+	},
+	plain: {
+		type: 'boolean',
+		usage: '--plain',
+		description: 'No TUI: run the app’s plain mode (when it has one)',
+	},
+	help: {
+		type: 'boolean',
+		shortFlag: 'h',
+		usage: '--help, -h',
+		description: 'Show this help',
+	},
+	version: {
+		type: 'boolean',
+		usage: '--version',
+		description: 'Show the version',
+	},
+} as const satisfies Record<string, GlobalFlag>;
 
-const INTEGER = /^\d+$/v;
+type MeowFlag = {
+	readonly type: CliFlagSpec['type'];
+	readonly shortFlag?: string;
+};
 
-function parseEnd(
-	raw: RawFlags,
-	errors: string[],
-): FlagOverrides['end'] | undefined {
-	const given = [
-		raw.duration === undefined ? undefined : '--duration',
-		raw.until === undefined ? undefined : '--until',
-		raw.indefinite === true ? '--indefinite' : undefined,
-	].filter(name => name !== undefined);
-	if (given.length > 1) {
-		errors.push(`Use only one of ${given.join(', ')}`);
-		return undefined;
-	}
-
-	if (raw.duration !== undefined) {
-		const ms = parseDuration(raw.duration);
-		if (ms === undefined) {
-			errors.push(`Invalid --duration "${raw.duration}": try 45m, 1h30m or 2h`);
-			return undefined;
+/**
+The meow table: the global flags, then every app's flags (a global wins a name clash; registry tests
+forbid clashes).
+*/
+export function flagTable(
+	apps: readonly AppDefinition[],
+): Record<string, MeowFlag> {
+	const table: Record<string, MeowFlag> = {};
+	for (const flags of [
+		...apps.map(app => app.cli?.flags ?? {}),
+		GLOBAL_FLAGS as Readonly<Record<string, CliFlagSpec>>,
+	]) {
+		for (const [name, {type, shortFlag}] of Object.entries(flags)) {
+			table[name] = shortFlag === undefined ? {type} : {type, shortFlag};
 		}
-
-		return {mode: 'duration', minutes: ms / 60_000};
 	}
 
-	if (raw.until !== undefined) {
-		const clock = parseClock(raw.until);
-		if (clock === undefined) {
-			errors.push(`Invalid --until "${raw.until}": try 17:30 or 5pm`);
-			return undefined;
-		}
-
-		return {mode: 'until', clock};
-	}
-
-	return raw.indefinite === true ? {mode: 'indefinite'} : undefined;
+	return table;
 }
 
-function parseTheme(
-	value: string | undefined,
-	errors: string[],
-): ThemeName | undefined {
+/**
+A parsed flag name as typed: `minBattery` → `--min-battery`, `x` → `-x`.
+*/
+export function flagName(name: string): string {
+	return name.length === 1
+		? `-${name}`
+		: `--${name.replaceAll(/\p{Uppercase_Letter}/gv, letter => `-${letter.toLowerCase()}`)}`;
+}
+
+export type RunRequest = {
+	readonly kind: 'run';
+	readonly app: AppDefinition | undefined;
+	/**
+	The deep-linked app's own flags (absent ones omitted).
+	*/
+	readonly appFlags: CliFlagValues;
+	readonly overrides: Overrides;
+	readonly configOverride: string | undefined;
+	readonly isDemo: boolean;
+	readonly isPlain: boolean;
+};
+
+export type CliRequest =
+	RunRequest | {readonly kind: 'help'} | {readonly kind: 'version'};
+
+export type RawFlags = Readonly<Record<string, unknown>>;
+
+function parseTheme(value: unknown, errors: string[]): ThemeName | undefined {
 	if (value === undefined) {
 		return undefined;
 	}
 
-	const name = THEME_NAMES.find(theme => theme === value.toLowerCase());
+	const text = typeof value === 'string' ? value : '';
+	const name = THEME_NAMES.find(theme => theme === text.toLowerCase());
 	if (name === undefined) {
-		errors.push(`Unknown --theme "${value}": choose ${THEME_NAMES.join(', ')}`);
+		errors.push(`Unknown --theme "${text}": choose ${THEME_NAMES.join(', ')}`);
 	}
 
 	return name;
 }
 
-function parseInteger(
-	flag: string,
-	value: string | undefined,
-	range: {min: number; max: number},
-	errors: string[],
-): number | undefined {
-	if (value === undefined) {
-		return undefined;
-	}
+const GLOBAL_NAMES: ReadonlySet<string> = new Set(Object.keys(GLOBAL_FLAGS));
 
-	const trimmed = value.trim();
-	const number = Number(trimmed);
-	if (!INTEGER.test(trimmed) || number < range.min || number > range.max) {
-		const bounds =
-			range.max === Number.MAX_SAFE_INTEGER
-				? 'a positive whole number'
-				: `a whole number from ${range.min} to ${range.max}`;
-		errors.push(`Invalid ${flag} "${value}": expected ${bounds}`);
-		return undefined;
-	}
-
-	return number;
-}
-
-const KNOWN_FLAGS = new Set(Object.keys(MEOW_FLAGS));
-
-/**
-Flags meow passed through that are not in the table, as typed (`--foo-bar`).
-*/
-function unknownFlags(raw: RawFlags): string[] {
-	return Object.keys(raw)
-		.filter(key => !KNOWN_FLAGS.has(key))
-		.map(
-			key =>
-				`--${key.replaceAll(/\p{Uppercase_Letter}/gv, letter => `-${letter.toLowerCase()}`)}`,
-		);
+function owners(apps: readonly AppDefinition[], name: string): AppDefinition[] {
+	return apps.filter(app => app.cli?.flags[name] !== undefined);
 }
 
 /**
-Validate parsed flags. Pure: no process or file access (checking that `--pid` is alive is the caller's job).
+Sorts the parsed flags into the deep-linked app's flags and errors for everything else.
 */
-export function parseFlags(
+function appFlagsOf(
 	raw: RawFlags,
-	input: readonly string[] = [],
-): FlagsResult {
-	const errors: string[] = [
-		...unknownFlags(raw).map(name => `Unknown flag ${name}`),
-		...input.map(argument => `Unexpected argument "${argument}"`),
-	];
-	const end = parseEnd(raw, errors);
-	const theme = parseTheme(raw.theme, errors);
-	const minBattery = parseInteger(
-		'--min-battery',
-		raw.minBattery,
-		{min: 1, max: 99},
-		errors,
-	);
-	const pid = parseInteger(
-		'--pid',
-		raw.pid,
-		{min: 1, max: Number.MAX_SAFE_INTEGER},
-		errors,
-	);
-	if (raw.config?.trim() === '') {
+	apps: readonly AppDefinition[],
+	app: AppDefinition | undefined,
+	errors: string[],
+): Record<string, string | boolean | number> {
+	const flags: Record<string, string | boolean | number> = {};
+	for (const [name, value] of Object.entries(raw)) {
+		if (value === undefined || GLOBAL_NAMES.has(name)) {
+			continue;
+		}
+
+		const spec = app?.cli?.flags[name];
+		if (spec === undefined) {
+			const ids = owners(apps, name).map(each => each.id);
+			errors.push(
+				ids.length === 0
+					? `Unknown flag ${flagName(name)}`
+					: `${flagName(name)} is a flag of ${ids.join(', ')}: run ${APP.command} ${ids.join('|')} ${flagName(name)} ...`,
+			);
+		} else if (
+			spec.type === 'number' &&
+			(typeof value !== 'number' || !Number.isFinite(value))
+		) {
+			errors.push(`Invalid ${flagName(name)}: expected a number`);
+		} else if (
+			typeof value === 'string' ||
+			typeof value === 'boolean' ||
+			typeof value === 'number'
+		) {
+			flags[name] = value;
+		}
+	}
+
+	return flags;
+}
+
+/**
+Validate what meow parsed. Pure.
+*/
+export function parseCli(
+	raw: RawFlags,
+	input: readonly string[],
+	apps: readonly AppDefinition[],
+): Result<CliRequest, string[]> {
+	const {help, version, theme: themeFlag, config, animation, demo, plain} = raw;
+	if (help === true) {
+		return ok({kind: 'help'});
+	}
+
+	if (version === true) {
+		return ok({kind: 'version'});
+	}
+
+	const errors: string[] = [];
+	const [id, ...extra] = input;
+	const app = id === undefined ? undefined : apps.find(each => each.id === id);
+	if (id !== undefined && app === undefined) {
+		errors.push(
+			`Unknown app "${id}". Apps: ${apps.map(each => each.id).join(', ')}`,
+		);
+	}
+
+	errors.push(...extra.map(argument => `Unexpected argument "${argument}"`));
+	const theme = parseTheme(themeFlag, errors);
+	if (
+		config !== undefined &&
+		(typeof config !== 'string' || config.trim() === '')
+	) {
 		errors.push('Invalid --config: expected a file path');
 	}
 
-	if (errors.length > 0) {
-		return {isOk: false, errors};
+	const appFlags = appFlagsOf(raw, apps, app, errors);
+	if (errors.length === 0 && app?.cli?.validateFlags !== undefined) {
+		errors.push(...app.cli.validateFlags(appFlags));
 	}
 
-	const overrides: FlagOverrides = {
-		...(theme !== undefined && {theme}),
-		...(end !== undefined && {end}),
-		...(raw.display !== undefined && {display: raw.display}),
-		...(raw.acOnly !== undefined && {acOnly: raw.acOnly}),
-		...(minBattery !== undefined && {minBattery}),
-		...(raw.animation !== undefined && {animation: raw.animation}),
-	};
-	return {
-		isOk: true,
-		value: {
-			overrides,
-			pid,
-			isPlain: raw.plain === true,
-			configOverride: raw.config,
+	if (errors.length > 0) {
+		return fail(errors);
+	}
+
+	return ok({
+		kind: 'run',
+		app,
+		appFlags,
+		overrides: {
+			...(theme !== undefined && {theme}),
+			...(typeof animation === 'boolean' && {animation}),
 		},
-	};
+		configOverride: typeof config === 'string' ? config : undefined,
+		isDemo: demo === true,
+		isPlain: plain === true,
+	});
 }
 
-/**
-The dashboard needs a terminal on both ends: Ink draws to stdout and reads keys from stdin in raw mode (which throws on a pipe or `/dev/null`). Anything else runs plain mode.
-*/
-export function shouldRunDashboard(
-	input: Pick<StartupInput, 'isPlain'>,
-	tty: {stdin: boolean | undefined; stdout: boolean | undefined},
-): boolean {
-	return !input.isPlain && tty.stdin === true && tty.stdout === true;
+export type ParsedArgv = {
+	readonly request: Result<CliRequest, string[]>;
+	/**
+	`package.json` `version`.
+	*/
+	readonly version: string;
+};
+
+export function parseArgv(
+	argv: readonly string[],
+	apps: readonly AppDefinition[],
+): ParsedArgv {
+	const cli = meow('', {
+		importMeta: import.meta,
+		argv: [...argv],
+		flags: flagTable(apps),
+		autoHelp: false,
+		autoVersion: false,
+		booleanDefault: undefined,
+		// Unknown flags are reported by parseCli, in the same format as other errors.
+		allowUnknownFlags: true,
+	});
+	return {
+		request: parseCli(cli.flags, cli.input, apps),
+		version: cli.pkg.version ?? '0.0.0',
+	};
 }

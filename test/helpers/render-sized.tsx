@@ -1,16 +1,17 @@
 /**
-Like ink-testing-library's `render`, but with a chosen terminal size (ink-testing-library is fixed at 100 columns), so full-screen layouts can be checked at real sizes.
+Like ink-testing-library's `render`, but with a chosen terminal size (ink-testing-library is fixed at 100 columns), so full-screen layouts can be checked at real sizes. The tree is wrapped in an `InputRoot` (keyboard routing for `useKeys` / `useScopedInput`); it adds no `ThemeProvider`.
 */
-/* eslint-disable unicorn/prefer-event-target, @typescript-eslint/naming-convention, @typescript-eslint/class-literal-property-style, unicorn/consistent-class-member-order -- Mirrors the stream shapes Ink reads. */
+/* eslint-disable unicorn/prefer-event-target, @typescript-eslint/naming-convention, unicorn/consistent-class-member-order -- Mirrors the stream shapes Ink reads. */
 import {EventEmitter} from 'node:events';
 import {stripVTControlCharacters} from 'node:util';
 import type {ReactElement} from 'react';
 import {render} from 'ink';
+import {InputRoot} from '../../source/ui/input/index.js';
 
 class FakeStdout extends EventEmitter {
 	readonly frames: string[] = [];
-	readonly columns: number;
-	readonly rows: number;
+	columns: number;
+	rows: number;
 
 	constructor(columns: number, rows: number) {
 		super();
@@ -25,8 +26,13 @@ class FakeStdout extends EventEmitter {
 }
 
 class FakeStdin extends EventEmitter {
-	readonly isTTY = true;
+	readonly isTTY: boolean;
 	private data: string | undefined;
+
+	constructor(isTty = true) {
+		super();
+		this.isTTY = isTty;
+	}
 
 	write = (data: string): void => {
 		this.data = data;
@@ -74,17 +80,34 @@ export type SizedRender = {
 	The latest frame with colour codes stripped (`''` before the first render).
 	*/
 	plainFrame(): string;
+	/**
+	The latest frame exactly as written (no stripping). Under ava colour is off, so any escape
+	sequence in it came from the rendered text (see `assertNoEscapes`).
+	*/
+	rawFrame(): string;
+	/**
+	Change the terminal size and tell Ink (a `resize` event), as a real terminal does.
+	*/
+	resize(columns: number, rows: number): void;
 	unmount(): void;
+};
+
+export type RenderSizedOptions = {
+	/**
+	Default true. False simulates piped stdin: Ink reports raw mode as unsupported.
+	*/
+	isTty?: boolean;
 };
 
 export function renderSized(
 	node: ReactElement,
 	columns: number,
 	rows: number,
+	{isTty = true}: RenderSizedOptions = {},
 ): SizedRender {
 	const stdout = new FakeStdout(columns, rows);
-	const stdin = new FakeStdin();
-	const instance = render(node, {
+	const stdin = new FakeStdin(isTty);
+	const instance = render(<InputRoot>{node}</InputRoot>, {
 		stdout: stdout as unknown as NodeJS.WriteStream,
 		stderr: new FakeStdout(columns, rows) as unknown as NodeJS.WriteStream,
 		stdin: stdin as unknown as NodeJS.ReadStream,
@@ -95,6 +118,12 @@ export function renderSized(
 	return {
 		stdin,
 		plainFrame: () => stripVTControlCharacters(stdout.frames.at(-1) ?? ''),
+		rawFrame: () => stdout.frames.at(-1) ?? '',
+		resize(nextColumns, nextRows) {
+			stdout.columns = nextColumns;
+			stdout.rows = nextRows;
+			stdout.emit('resize');
+		},
 		unmount() {
 			instance.unmount();
 			instance.cleanup();

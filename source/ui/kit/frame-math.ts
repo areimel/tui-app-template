@@ -16,6 +16,16 @@ Columns taken by the left and right frame borders.
 export const FRAME_BORDER_COLUMNS = 2;
 
 /**
+Columns the outer `Frame` takes from the terminal: border (2) plus horizontal padding (2).
+*/
+export const FRAME_CHROME_COLUMNS = 4;
+
+/**
+Rows the outer `Frame` takes: the top and bottom edges (title and key hints ride in them).
+*/
+export const FRAME_CHROME_ROWS = 2;
+
+/**
 Fill lengths either side of a centred item on a top edge.
 `width` includes both corners; `contentWidth` includes the item's own gap spaces.
 */

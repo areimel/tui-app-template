@@ -1,20 +1,19 @@
 /**
-Hand-rolled config validation. Never throws: each invalid field falls back to its default and adds a warning, valid siblings are kept, unknown keys are ignored.
+Validates the config file. Never throws: each invalid field falls back to its default with a warning;
+`apps` keeps every section that is a plain object (validated per app later, by `AppConfigStore.read`)
+and drops others with a warning.
 */
-import {THEME_NAMES, type ThemeName} from '../theme/tokens.js';
+import {THEME_NAMES} from '../theme/tokens.js';
 import {CURRENT_VERSION, DEFAULTS, type Config} from './schema.js';
 
-export type ValidationResult = {
-	config: Config;
-	warnings: string[];
+export type ConfigValidation = {
+	readonly config: Config;
+	readonly warnings: readonly string[];
 	/**
-	The file's `version` is greater than `CURRENT_VERSION`.
+	The file's `version` is greater than `CURRENT_VERSION`: load it, never write it back.
 	*/
-	isNewerVersion: boolean;
+	readonly isNewerVersion: boolean;
 };
-
-const MAX_MINUTES = 43_200;
-const CLOCK_PATTERN = /^(?:[01]\d|2[0-3]):[0-5]\d$/v;
 
 type Bag = Record<string, unknown>;
 
@@ -22,183 +21,99 @@ function isBag(value: unknown): value is Bag {
 	return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function cloneDefaults(): Config {
-	return {
-		...DEFAULTS,
-		session: {...DEFAULTS.session, end: {...DEFAULTS.session.end}},
-		ui: {...DEFAULTS.ui},
-	};
-}
-
-function validateEnd(
-	value: unknown,
-	warnings: string[],
-): Config['session']['end'] {
-	const fallback = {...DEFAULTS.session.end};
-	if (!isBag(value)) {
-		warnings.push('session.end must be an object; using the default.');
-		return fallback;
+function readVersion(value: unknown, warnings: string[]): {isNewer: boolean} {
+	if (value === undefined) {
+		return {isNewer: false};
 	}
 
-	const {mode} = value;
-	if (mode === 'indefinite') {
-		return {mode: 'indefinite'};
-	}
-
-	if (mode === 'duration') {
-		const {minutes} = value;
-		if (typeof minutes === 'number' && minutes > 0 && minutes <= MAX_MINUTES) {
-			return {mode: 'duration', minutes};
-		}
-
+	if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 1) {
 		warnings.push(
-			`session.end.minutes must be a number above 0 and at most ${MAX_MINUTES}; using the default.`,
+			'version must be a whole number from 1; assuming the current one.',
 		);
-		return fallback;
+		return {isNewer: false};
 	}
 
-	if (mode === 'until') {
-		const {clock} = value;
-		if (typeof clock === 'string' && CLOCK_PATTERN.test(clock)) {
-			return {mode: 'until', clock};
-		}
-
-		warnings.push(
-			'session.end.clock must look like HH:MM (24 h); using the default.',
-		);
-		return fallback;
-	}
-
-	warnings.push(
-		'session.end.mode must be indefinite, duration or until; using the default.',
-	);
-	return fallback;
+	return {isNewer: value > CURRENT_VERSION};
 }
 
-function isFlagSet(
-	value: unknown,
-	path: string,
-	isFallback: boolean,
-	warnings: string[],
-): boolean {
-	if (value === undefined) {
-		return isFallback;
-	}
-
-	if (typeof value === 'boolean') {
-		return value;
-	}
-
-	warnings.push(`${path} must be true or false; using the default.`);
-	return isFallback;
-}
-
-function validateMinBattery(
-	value: unknown,
-	warnings: string[],
-): number | undefined {
-	if (value === undefined) {
-		return undefined;
-	}
-
-	if (
-		typeof value === 'number' &&
-		Number.isSafeInteger(value) &&
-		value >= 1 &&
-		value <= 99
-	) {
-		return value;
-	}
-
-	warnings.push(
-		'session.minBattery must be a whole number from 1 to 99; ignoring it.',
-	);
-	return undefined;
-}
-
-function validateTheme(value: unknown, warnings: string[]): ThemeName {
-	if (value === undefined) {
-		return DEFAULTS.theme;
-	}
-
-	const theme = THEME_NAMES.find(name => name === value);
-	if (theme !== undefined) {
-		return theme;
-	}
-
-	warnings.push(
-		`theme must be one of ${THEME_NAMES.join(', ')}; using the default.`,
-	);
-	return DEFAULTS.theme;
-}
-
-function section(root: Bag, key: string, warnings: string[]): Bag {
-	const value = root[key];
+function readApps(value: unknown, warnings: string[]): Config['apps'] {
 	if (value === undefined) {
 		return {};
 	}
 
-	if (isBag(value)) {
-		return value;
+	if (!isBag(value)) {
+		warnings.push('apps must be an object; using the default.');
+		return {};
 	}
 
-	warnings.push(`${key} must be an object; using defaults.`);
-	return {};
+	const apps: Record<string, Record<string, unknown>> = {};
+	for (const [id, section] of Object.entries(value)) {
+		if (isBag(section)) {
+			// A computed key never touches the prototype, so `__proto__` stays an own property.
+			Object.defineProperty(apps, id, {
+				value: section,
+				enumerable: true,
+				writable: true,
+				configurable: true,
+			});
+		} else {
+			warnings.push(`apps.${id} must be an object; dropped.`);
+		}
+	}
+
+	return apps;
 }
 
-/**
-Turn arbitrary parsed JSON into a valid `Config` plus human-readable warnings.
-*/
-export function validate(input: unknown): ValidationResult {
-	const warnings: string[] = [];
+export function validateConfig(input: unknown): ConfigValidation {
+	if (input === undefined) {
+		return {config: DEFAULTS, warnings: [], isNewerVersion: false};
+	}
+
 	if (!isBag(input)) {
-		warnings.push('Config must be a JSON object; using defaults.');
-		return {config: cloneDefaults(), warnings, isNewerVersion: false};
+		return {
+			config: DEFAULTS,
+			warnings: ['Config must be a JSON object; using defaults.'],
+			isNewerVersion: false,
+		};
 	}
 
-	let isNewerVersion = false;
-	const {version} = input;
-	if (typeof version === 'number' && version > CURRENT_VERSION) {
-		isNewerVersion = true;
-		warnings.push(
-			`Config version ${version} is newer than supported (${CURRENT_VERSION}); loaded read-only.`,
-		);
-	} else if (version !== undefined && version !== CURRENT_VERSION) {
-		warnings.push('Config version is invalid; assuming the current version.');
+	const warnings: string[] = [];
+	const {isNewer} = readVersion(input['version'], warnings);
+
+	const themeValue = input['theme'];
+	let {theme} = DEFAULTS;
+	if (themeValue !== undefined) {
+		const found = THEME_NAMES.find(name => name === themeValue);
+		if (found === undefined) {
+			warnings.push(
+				`theme must be one of ${THEME_NAMES.join(', ')}; using the default.`,
+			);
+		} else {
+			theme = found;
+		}
 	}
 
-	const session = section(input, 'session', warnings);
-	const ui = section(input, 'ui', warnings);
-	const config: Config = {
-		version: CURRENT_VERSION,
-		theme: validateTheme(input['theme'], warnings),
-		session: {
-			end:
-				session['end'] === undefined
-					? {...DEFAULTS.session.end}
-					: validateEnd(session['end'], warnings),
-			display: isFlagSet(
-				session['display'],
-				'session.display',
-				DEFAULTS.session.display,
-				warnings,
-			),
-			acOnly: isFlagSet(
-				session['acOnly'],
-				'session.acOnly',
-				DEFAULTS.session.acOnly,
-				warnings,
-			),
-			minBattery: validateMinBattery(session['minBattery'], warnings),
+	let {animation} = DEFAULTS.ui;
+	const {ui} = input;
+	if (ui !== undefined && !isBag(ui)) {
+		warnings.push('ui must be an object; using the default.');
+	} else if (ui !== undefined) {
+		const value = ui['animation'];
+		if (typeof value === 'boolean') {
+			animation = value;
+		} else if (value !== undefined) {
+			warnings.push('ui.animation must be true or false; using the default.');
+		}
+	}
+
+	return {
+		config: {
+			version: CURRENT_VERSION,
+			theme,
+			ui: {animation},
+			apps: readApps(input['apps'], warnings),
 		},
-		ui: {
-			animation: isFlagSet(
-				ui['animation'],
-				'ui.animation',
-				DEFAULTS.ui.animation,
-				warnings,
-			),
-		},
+		warnings,
+		isNewerVersion: isNewer,
 	};
-	return {config, warnings, isNewerVersion};
 }

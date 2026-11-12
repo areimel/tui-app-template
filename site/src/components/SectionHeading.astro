@@ -1,0 +1,33 @@
+---
+interface Props {
+  /** Small uppercase label above the heading. */
+  eyebrow?: string;
+  heading: string;
+  /** Heading level, default 2. */
+  level?: 2 | 3;
+  id?: string;
+}
+const { eyebrow, heading, level = 2, id } = Astro.props;
+const Tag = `h${level}` as "h2" | "h3";
+---
+
+<div class="section-heading-block">
+  {eyebrow && <p class="eyebrow">{eyebrow}</p>}
+  <Tag {id}>{heading}</Tag>
+</div>
+<style>
+  .section-heading-block h2,
+  .section-heading-block h3 {
+    margin: 0.4rem 0 0;
+    font-size: clamp(2rem, 3.8vw, 3.5rem);
+    line-height: 1.05;
+    letter-spacing: -0.05em;
+    font-weight: 500;
+  }
+  .section-heading-block h3 {
+    font-size: clamp(1.4rem, 2.5vw, 2rem);
+  }
+  .section-heading-block .eyebrow {
+    margin: 0;
+  }
+</style>

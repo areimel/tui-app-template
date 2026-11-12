@@ -12,7 +12,8 @@ export type ValueBoxProps = {
 };
 
 /**
-The bracketed value display `[ value ]` shared by Toggle, TextField and NumberField.
+The bracketed value display `[ value ]` shared by Toggle, NumberField and the form's text and choice
+fields. Always one row: in a column too narrow for it, it is cut at the end instead of wrapping.
 */
 export function ValueBox({
 	isFocused = false,
@@ -20,7 +21,7 @@ export function ValueBox({
 	children,
 }: ValueBoxProps) {
 	return (
-		<T bold={isFocused} inverse={isFocused} tone={tone}>
+		<T bold={isFocused} inverse={isFocused} tone={tone} wrap="truncate-end">
 			{'[ '}
 			{children}
 			{' ]'}

@@ -1,3 +1,5 @@
+import {padToWidth, sliceToWidth, textWidth} from './text-width.js';
+
 /**
 Zero-pad a non-negative integer to at least two digits.
 
@@ -66,4 +68,78 @@ export function formatRemaining(
 	now: number,
 ): string {
 	return endsAt === undefined ? 'no limit' : formatElapsed(endsAt - now);
+}
+
+const LONG_UNITS = ['B', 'KB', 'MB', 'GB', 'TB'] as const;
+const COMPACT_UNITS = ['B', 'K', 'M', 'G', 'T'] as const;
+
+export type FormatBytesOptions = {
+	/**
+	`1.1G` (tables) instead of `1.1 GB`. Default false.
+	*/
+	readonly isCompact?: boolean;
+};
+
+/**
+A binary size: `812 B`, `1.5 KB`, `10 KB`, `3.0 GB` (one decimal below 10 of a unit, whole above), or
+compact `512B`, `5.0M`, `1.5G`. Negative clamps to zero; `undefined` or not finite is `-`.
+*/
+export function formatBytes(
+	bytes: number | undefined,
+	{isCompact = false}: FormatBytesOptions = {},
+): string {
+	if (bytes === undefined || !Number.isFinite(bytes)) {
+		return '-';
+	}
+
+	const units = isCompact ? COMPACT_UNITS : LONG_UNITS;
+	let value = Math.max(0, bytes);
+	let unit = 0;
+	while (value >= 1024 && unit < units.length - 1) {
+		value /= 1024;
+		unit++;
+	}
+
+	const number =
+		unit > 0 && value < 10 ? value.toFixed(1) : String(Math.round(value));
+	return `${number}${isCompact ? '' : ' '}${units[unit] ?? ''}`;
+}
+
+/**
+A short duration: `240 ms` below a second, else `1.25 s`. Negative clamps to zero.
+*/
+export function formatMillis(ms: number): string {
+	const rounded = Math.max(0, Math.round(ms));
+	return rounded < 1000 ? `${rounded} ms` : `${(rounded / 1000).toFixed(2)} s`;
+}
+
+/**
+Elapsed seconds with one decimal, e.g. `0.4 s` (a running wait). Negative clamps to zero.
+*/
+export function formatSeconds(ms: number): string {
+	return `${(Math.max(0, ms) / 1000).toFixed(1)} s`;
+}
+
+/**
+`text` cut to `width` terminal cells, ending in `…` (one cell) when something was cut (`''` for no
+width). Measured with `textWidth`, so a wide character that would straddle the limit is dropped and
+the result is never wider than `width`.
+*/
+export function truncate(text: string, width: number): string {
+	if (textWidth(text) <= width) {
+		return text;
+	}
+
+	return width <= 0 ? '' : `${sliceToWidth(text, width - 1)}…`;
+}
+
+/**
+`text` cut with `truncate`, then padded with spaces to exactly `width` cells (`right`: aligned right).
+*/
+export function fitToWidth(
+	text: string,
+	width: number,
+	align: 'left' | 'right' = 'left',
+): string {
+	return padToWidth(truncate(text, width), width, align);
 }

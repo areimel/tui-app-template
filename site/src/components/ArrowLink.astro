@@ -1,0 +1,20 @@
+---
+interface Props {
+  href: string;
+  label: string;
+  /** Opens externally: adds rel. Defaults to true for http(s) links. */
+  external?: boolean;
+}
+const { href, label, external = /^https?:/.test(href) } = Astro.props;
+---
+
+<a class="arrow-link" {href} {...external ? { rel: "noopener noreferrer" } : {}}
+  >{label}<span aria-hidden="true"> ↗</span></a
+>
+<style>
+  .arrow-link {
+    font: 500 0.75rem/1.5 var(--font-mono);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.25em;
+  }
+</style>

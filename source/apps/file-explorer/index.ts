@@ -1,0 +1,20 @@
+/**
+The File Explorer example: a read-only file browser: a list and a preview pane, hidden-file toggle, filter, and open-in-log-viewer.
+*/
+import {LIST_NAV_BINDINGS} from '../../ui/hooks/use-list-nav.js';
+import {defineApp} from '../types.js';
+import {EXPLORER_BINDINGS} from './bindings.js';
+import {APP_ID, EXPLORER_CONFIG} from './config.js';
+import {Screen} from './Screen.js';
+
+export {APP_ID} from './config.js';
+
+export default defineApp({
+	id: APP_ID,
+	title: 'File Explorer',
+	description: 'Browse folders read-only, with a preview pane and a filter',
+	glyph: '▤',
+	screen: Screen,
+	bindings: [...LIST_NAV_BINDINGS, ...EXPLORER_BINDINGS],
+	config: EXPLORER_CONFIG,
+});

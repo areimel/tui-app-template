@@ -1,149 +1,223 @@
 import test from 'ava';
-import meow from 'meow';
+import {APP} from '../source/app.config.js';
+import {APPS} from '../source/apps/registry.js';
 import {
-	HELP_TEXT,
-	MEOW_FLAGS,
-	parseFlags,
-	shouldRunDashboard,
-	type FlagsResult,
+	flagTable,
+	GLOBAL_FLAGS,
+	parseArgv,
+	type CliRequest,
+	type RunRequest,
 } from '../source/flags.js';
+import {helpText} from '../source/help-text.js';
+import {planRun} from '../source/run-plan.js';
+import type {AppDefinition, CliFlagSpec} from '../source/shell/types.js';
 
-/**
-Parse argv exactly as `cli.tsx` does.
-*/
-function run(argv: string[]): FlagsResult {
-	const cli = meow(HELP_TEXT, {
-		importMeta: import.meta,
-		argv,
-		flags: MEOW_FLAGS,
-		booleanDefault: undefined,
-		allowUnknownFlags: true,
-	});
-	return parseFlags(cli.flags, cli.input);
+const screen = () => null;
+
+const TIMER: AppDefinition = {
+	id: 'timer',
+	title: 'Timer',
+	description: 'Counts down',
+	glyph: '*',
+	screen,
+	cli: {
+		flags: {
+			duration: {type: 'string', shortFlag: 'd', description: 'How long'},
+			loud: {type: 'boolean', description: 'Beep at the end'},
+			repeat: {type: 'number', description: 'Times to repeat'},
+		},
+		helpLines: [`$ ${APP.command} timer -d 5m`],
+		async runPlain() {
+			return 0;
+		},
+		validateFlags: flags =>
+			flags['duration'] === 'never' ? ['Invalid --duration "never"'] : [],
+	},
+};
+
+const NOTES: AppDefinition = {
+	id: 'notes',
+	title: 'Notes',
+	description: 'Write things down',
+	glyph: '+',
+	screen,
+};
+
+const APPS_UNDER_TEST = [TIMER, NOTES];
+
+function parse(...argv: string[]) {
+	return parseArgv(argv, APPS_UNDER_TEST).request;
 }
 
-function ok(argv: string[]) {
-	const result = run(argv);
-	if (!result.isOk) {
-		throw new Error(result.errors.join('; '));
+function run(...argv: string[]): RunRequest {
+	const result = parse(...argv);
+	if (!result.isOk || result.value.kind !== 'run') {
+		throw new Error(`expected a run request for ${argv.join(' ')}`);
 	}
 
 	return result.value;
 }
 
-function errors(argv: string[]): string[] {
-	const result = run(argv);
-	return result.isOk ? [] : result.errors;
+function errors(...argv: string[]): readonly string[] {
+	const result = parse(...argv);
+	return result.isOk ? [] : result.error;
 }
 
-test('no flags: no overrides, nothing plain', t => {
-	t.deepEqual(ok([]), {
-		overrides: {},
-		pid: undefined,
-		isPlain: false,
-		configOverride: undefined,
-	});
+test('no arguments opens the menu with no overrides', t => {
+	const request = run();
+	t.is(request.app, undefined);
+	t.deepEqual(request.appFlags, {});
+	t.deepEqual(request.overrides, {});
+	t.false(request.isDemo);
+	t.false(request.isPlain);
+	t.is(request.configOverride, undefined);
 });
 
-const valid: Array<[string, string[], Partial<ReturnType<typeof ok>>]> = [
-	['--theme', ['--theme', 'severance'], {overrides: {theme: 'severance'}}],
-	['--theme any case', ['--theme', 'Green'], {overrides: {theme: 'green'}}],
-	[
-		'--duration',
-		['--duration', '1h30m'],
-		{overrides: {end: {mode: 'duration', minutes: 90}}},
-	],
-	['-d', ['-d', '45m'], {overrides: {end: {mode: 'duration', minutes: 45}}}],
-	[
-		'--until',
-		['--until', '17:30'],
-		{overrides: {end: {mode: 'until', clock: '17:30'}}},
-	],
-	[
-		'-u 5pm',
-		['-u', '5pm'],
-		{overrides: {end: {mode: 'until', clock: '17:00'}}},
-	],
-	['--indefinite', ['--indefinite'], {overrides: {end: {mode: 'indefinite'}}}],
-	['--pid', ['--pid', '4242'], {pid: 4242}],
-	['-p', ['-p', '7'], {pid: 7}],
-	['--display', ['--display'], {overrides: {display: true}}],
-	['--no-display', ['--no-display'], {overrides: {display: false}}],
-	['--ac-only', ['--ac-only'], {overrides: {acOnly: true}}],
-	['--min-battery', ['--min-battery', '20'], {overrides: {minBattery: 20}}],
-	['--no-animation', ['--no-animation'], {overrides: {animation: false}}],
-	['--plain', ['--plain'], {isPlain: true}],
-	['--config', ['--config', '/tmp/x.json'], {configOverride: '/tmp/x.json'}],
-];
-
-for (const [name, argv, expected] of valid) {
-	test(`accepts ${name}`, t => {
-		t.like(ok(argv), expected);
-	});
-}
-
-test('only passed flags become overrides', t => {
-	const {overrides} = ok(['--no-display', '-d', '1h']);
-	t.deepEqual(Object.keys(overrides).toSorted(), ['display', 'end']);
-	t.false('acOnly' in overrides);
-	t.false('animation' in overrides);
-	t.false('minBattery' in overrides);
+test('global flags', t => {
+	const request = run(
+		'--theme',
+		'Green',
+		'--no-animation',
+		'--demo',
+		'--plain',
+		'--config',
+		'/tmp/c.json',
+	);
+	t.deepEqual(request.overrides, {theme: 'green', animation: false});
+	t.true(request.isDemo);
+	t.true(request.isPlain);
+	t.is(request.configOverride, '/tmp/c.json');
 });
 
-test('absent booleans are absent, not false', t => {
-	const {overrides, isPlain} = ok(['--theme', 'amber']);
-	t.false('display' in overrides);
-	t.false('acOnly' in overrides);
-	t.false('animation' in overrides);
-	t.false(isPlain);
+test('help and version win over everything else', t => {
+	const help = parse('nope', '--help');
+	t.true(help.isOk && help.value.kind === 'help');
+	t.true(parse('-h').isOk);
+	const version = parse('--version');
+	t.deepEqual(version.isOk ? version.value : undefined, {
+		kind: 'version',
+	} satisfies CliRequest);
 });
 
-const invalid: Array<[string, string[], RegExp]> = [
-	[
-		'duration + until',
-		['-d', '1h', '-u', '5pm'],
-		/only one of --duration, --until/v,
-	],
-	['duration + indefinite', ['-d', '1h', '--indefinite'], /only one of/v],
-	['all three', ['-d', '1h', '-u', '5pm', '--indefinite'], /--indefinite/v],
-	['bad duration', ['--duration', 'soon'], /Invalid --duration "soon"/v],
-	['empty duration', ['--duration', ''], /Invalid --duration/v],
-	['bad clock', ['--until', '25:00'], /Invalid --until "25:00"/v],
-	['unknown theme', ['--theme', 'nope'], /Unknown --theme "nope"/v],
-	['battery 0', ['--min-battery', '0'], /--min-battery "0".*1 to 99/v],
-	['battery 100', ['--min-battery', '100'], /--min-battery/v],
-	['battery not a number', ['--min-battery', 'lots'], /--min-battery/v],
-	['battery fraction', ['--min-battery', '20.5'], /--min-battery/v],
-	['pid not an integer', ['--pid', '12.5'], /Invalid --pid "12.5"/v],
-	['pid text', ['--pid', 'abc'], /Invalid --pid/v],
-	['pid zero', ['--pid', '0'], /Invalid --pid/v],
-	['stray argument', ['now'], /Unexpected argument "now"/v],
-	['unknown flag', ['--bogus-flag'], /Unknown flag --bogus-flag/v],
-];
+test('a deep link takes the app and its own flags', t => {
+	const request = run('timer', '-d', '5m', '--loud', '--repeat', '3');
+	t.is(request.app, TIMER);
+	t.deepEqual(request.appFlags, {duration: '5m', loud: true, repeat: 3});
+});
 
-for (const [name, argv, pattern] of invalid) {
-	test(`rejects ${name}`, t => {
-		const found = errors(argv);
-		t.true(found.length > 0);
-		t.regex(found.join('\n'), pattern);
-	});
-}
+test('an unknown app is an error that lists the apps', t => {
+	t.deepEqual(errors('nope'), ['Unknown app "nope". Apps: timer, notes']);
+});
 
-test('reports every problem at once', t => {
-	t.is(
-		errors(['--theme', 'nope', '--pid', 'x', '--min-battery', '0']).length,
-		3,
+test('unknown flags and extra arguments are errors', t => {
+	t.deepEqual(errors('notes', 'extra', '--bogus-flag', '-x'), [
+		'Unexpected argument "extra"',
+		'Unknown flag --bogus-flag',
+		'Unknown flag -x',
+	]);
+});
+
+test('an app flag without its app names the owner', t => {
+	t.deepEqual(errors('--loud'), [
+		`--loud is a flag of timer: run ${APP.command} timer --loud ...`,
+	]);
+	t.is(errors('notes', '--loud').length, 1);
+});
+
+test('bad values are errors', t => {
+	t.deepEqual(errors('--theme', 'pink'), [
+		'Unknown --theme "pink": choose amber, green, severance',
+	]);
+	t.deepEqual(errors('--config', ''), [
+		'Invalid --config: expected a file path',
+	]);
+	t.deepEqual(errors('timer', '--repeat', 'lots'), [
+		'Invalid --repeat: expected a number',
+	]);
+});
+
+test('the app validates its own flags', t => {
+	t.deepEqual(errors('timer', '-d', 'never'), ['Invalid --duration "never"']);
+});
+
+test('help lists the apps, global flags and app flags from the registry', t => {
+	const text = helpText(APPS_UNDER_TEST);
+	t.true(text.startsWith(`${APP.displayName}: ${APP.tagline}`));
+	t.regex(
+		text,
+		new RegExp(String.raw`\$ ${APP.command} \[app\] \[options\]`, 'v'),
+	);
+	t.regex(text, /timer\s+Timer: Counts down/v);
+	t.regex(text, /notes\s+Notes: Write things down/v);
+	for (const flag of Object.values(GLOBAL_FLAGS)) {
+		t.true(text.includes(flag.usage), flag.usage);
+	}
+
+	t.regex(text, /--duration, -d <value>\s+How long/v);
+	t.regex(text, /--repeat <n>\s+Times to repeat/v);
+	t.true(text.includes(`$ ${APP.command} timer -d 5m`));
+	t.false(text.includes('Notes ('));
+});
+
+test('plan: a terminal on both ends runs the TUI', t => {
+	t.deepEqual(
+		planRun(
+			{app: undefined, isPlain: false},
+			{stdin: true, stdout: true},
+			APPS_UNDER_TEST,
+		),
+		{mode: 'tui'},
 	);
 });
 
-test('the dashboard runs only with a TTY on stdin and stdout and no --plain', t => {
-	const both = {stdin: true, stdout: true};
-	t.true(shouldRunDashboard({isPlain: false}, both));
-	t.false(shouldRunDashboard({isPlain: true}, both));
-	t.false(
-		shouldRunDashboard({isPlain: false}, {stdin: undefined, stdout: true}),
+test('plan: no TTY or --plain runs the app plain runner when it has one', t => {
+	for (const [isPlain, stdout] of [
+		[true, true],
+		[false, false],
+	] as const) {
+		const plan = planRun(
+			{app: TIMER, isPlain},
+			{stdin: true, stdout},
+			APPS_UNDER_TEST,
+		);
+		t.is(plan.mode, 'plain');
+	}
+});
+
+test('plan: no TTY without a plain runner explains and lists plain apps', t => {
+	const plan = planRun(
+		{app: NOTES, isPlain: false},
+		{stdin: undefined, stdout: true},
+		APPS_UNDER_TEST,
 	);
-	t.false(
-		shouldRunDashboard({isPlain: false}, {stdin: true, stdout: undefined}),
+	t.is(plan.mode, 'no-tty');
+	const text = plan.mode === 'no-tty' ? plan.lines.join('\n') : '';
+	t.regex(text, /Notes needs an interactive terminal/v);
+	t.regex(text, /timer --plain/v);
+	const menu = planRun(
+		{app: undefined, isPlain: true},
+		{stdin: true, stdout: true},
+		APPS_UNDER_TEST,
+	);
+	t.is(menu.mode, 'no-tty');
+});
+
+test('the real registry: app flags clash with no global flag or other app', t => {
+	const globals = Object.entries(GLOBAL_FLAGS);
+	const names = [
+		...globals.map(([name]) => name),
+		...APPS.flatMap(app => Object.keys(app.cli?.flags ?? {})),
+	];
+	const shorts = [
+		...globals.map(([, flag]) => (flag as CliFlagSpec).shortFlag),
+		...APPS.flatMap(app =>
+			Object.values(app.cli?.flags ?? {}).map(spec => spec.shortFlag),
+		),
+	].filter(short => short !== undefined);
+	t.is(new Set(names).size, names.length, names.join(', '));
+	t.is(new Set(shorts).size, shorts.length, shorts.join(', '));
+
+	t.true(
+		Object.keys(flagTable(APPS)).length >= Object.keys(GLOBAL_FLAGS).length,
 	);
 });

@@ -1,61 +1,59 @@
 ---
 layout: ../../layouts/DocsLayout.astro
-title: Getting started
-description: Keep your machine awake from a cosy terminal dashboard. Install it from npm and start your first session.
+title: Overview
+description: What TUI App Template is, what is inside it, and where to find each part of the documentation.
+section: Guide
+order: 1
 ---
 
-coffee-term is a visible, steerable alternative to `caffeinate`. It starts keeping your machine awake as soon as it launches, shows the locks it holds, and lets you change your session live.
+TUI App Template is a starting point for terminal apps built with Ink 8 and React 19. It opens on a menu of example apps. You copy the repository, run an init script that renames it, delete the examples you do not need, and build your own app on the same shell, component kit and input system.
 
-## Requirements
+This website is part of the template. It reads the same identity file as the app (`source/app.config.ts`), so renaming the app renames the site too.
 
-- **Node.js 22.22.2 or newer.** For development tooling, use Node 22.22.2+ or 24.15+; earlier releases in those lines can show dependency engine warnings.
-- **Linux or macOS.** Windows and WSL are unsupported.
-- **npm**, which ships with Node.js.
+## What is inside
 
-Ubuntu with GNOME on Wayland is verified on hardware. macOS and the Linux X11 display path are unit-tested only. See [platform support](./platforms/) before relying on a particular display lock.
+| Part         | What it gives you                                                                                                              |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| Shell        | A menu, a framed page with title and key hints, a router, a help overlay, a theme picker and toasts.                           |
+| Example apps | Small, real apps behind the menu, each one folder you can keep or delete (one is the original keep-awake tool).                |
+| UI kit       | Themed Ink components: panels, tables, trees, tabs, dialogs, text inputs, scroll views, gauges and more.                       |
+| Input        | One place reads the keyboard. Actions are key binding tables, and the footer hints and help overlay are built from the tables. |
+| Config       | A layered, validated config file with one section per app, plus JSON data files for app data.                                  |
+| Services     | File system, HTTP, system stats, battery and data files behind one injected `Services` object, so tests can fake them.         |
+| Themes       | Three palettes (amber, green, severance) that respect `NO_COLOR` and the terminal colour depth.                                |
+| Init script  | `pnpm run init` rewrites the identity everywhere it is stored.                                                                 |
+| Website      | This Astro site, with docs navigation generated from the Markdown files.                                                       |
 
-## Install
+## The example apps
 
-Install the `coffee-term` command globally from npm:
+The menu lists these in this order. Each has a guide page. When you delete an example, delete its row here too.
 
-```bash
-npm install -g coffee-term
-coffee-term
-```
+| App                                          | Command to open it directly | What it shows                                                    |
+| -------------------------------------------- | --------------------------- | ---------------------------------------------------------------- |
+| [System Monitor](./examples/system-monitor/) | `tui-app system-monitor`    | Live polling, gauges, a sparkline and a sortable table.          |
+| [File Explorer](./examples/file-explorer/)   | `tui-app file-explorer`     | A read-only browser with a preview pane and a filter.            |
+| [Log Viewer](./examples/log-viewer/)         | `tui-app log-viewer`        | A followed stream, search and level filters.                     |
+| [Tasks](./examples/tasks/)                   | `tui-app tasks`             | A dialog form, confirmation, undo and a saved data file.         |
+| [HTTP Client](./examples/http-client/)       | `tui-app http-client`       | Async work with cancel, tabs and a JSON tree.                    |
+| [Component Gallery](./examples/gallery/)     | `tui-app gallery`           | Every kit component, with live theme switching.                  |
+| [Keep Awake](./examples/keep-awake/)         | `tui-app keep-awake`        | The original keep-awake tool: a full-screen, service-backed app. |
 
-Or run it once without installing:
+## Where to read next
 
-```bash
-npx coffee-term
-```
+**Guide**
 
-The dashboard opens with your saved settings, or defaults: no time limit, system and display locks enabled, amber theme, animated steam, and no battery stop rules.
+- [Getting started](./guide/getting-started/): requirements, install, run, test, build.
+- [Using the app](./guide/using-the-app/): the menu, keys, themes, flags, config file and exit codes.
+- [Platforms and limitations](./platforms/): what runs where, and what has been verified.
 
-A global install needs a writable npm prefix. If `npm install -g` fails with a permissions error, use a Node version manager such as nvm or fnm, or set a user-level npm prefix, rather than `sudo`.
+**Template**
 
-## Run from source
-
-To work on coffee-term itself, clone the project and run it straight from source:
-
-```bash
-git clone https://github.com/areimel/coffee-cli.git
-cd coffee-cli
-npm install
-npm run dev
-```
-
-Pass CLI flags after `--` when using the development command, e.g. `npm run dev -- --duration 45m`. `npm run build` then `npm start` runs the built app.
-
-## Your first timed session
-
-Start a 45-minute session:
-
-```bash
-coffee-term --duration 45m
-```
-
-Use the arrow keys to move through and change options. Press `Enter` to edit a field, `Space` to pause or resume, and `q` to quit. Pausing releases the locks while keeping the dashboard open. Quitting releases the locks and prints a one-line summary.
-
-## Next steps
-
-Read [usage](./usage/) for session recipes, [reference](./reference/) for every flag and key, or [configuration](./configuration/) for saved settings and themes.
+- [Start a new app](./template/start-a-new-app/): copy the repo and run the init script.
+- [Add or remove an example](./template/add-or-remove-an-example/)
+- [Architecture](./template/architecture/): folders, dependency direction and the shell hooks.
+- [UI kit reference](./template/ui-kit/)
+- [Input and key bindings](./template/input-and-key-bindings/)
+- [Config and data files](./template/config-and-data/)
+- [Testing](./template/testing/)
+- [Website](./template/website/)
+- [Publishing to npm](./template/publishing/)

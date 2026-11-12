@@ -3,20 +3,14 @@
     gap: 2rem;
   }
   .home-intro-copy {
-    width: 285px;
+    width: 300px;
   }
-  .home-heading-row h1 {
-    font-size: clamp(3rem, 7.2vw, 5rem);
+  .home-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .home-install,
+  .home-steps,
   .home-platforms {
     gap: 2rem;
-  }
-  .capabilities-grid article {
-    padding: 1.2rem;
-  }
-  .home-system-strip > span:nth-child(2) {
-    display: none;
   }
 }
 @media (max-width: 650px) {
@@ -26,75 +20,44 @@
   .home-statusline {
     font-size: 0.55rem;
   }
-  .home-statusline > span:last-child,
-  .home-section-label > span:last-child {
+  .home-statusline > span:last-child {
     display: none;
   }
-  .home-heading-row,
-  .home-section-heading {
+  .home-heading-row {
     display: block;
     padding-top: 2rem;
   }
   .home-heading-row h1 {
-    font-size: clamp(3.2rem, 11vw, 4.5rem);
+    font-size: clamp(2.6rem, 11vw, 4.5rem);
   }
   .home-intro-copy {
     width: auto;
-    max-width: 400px;
+    max-width: 420px;
     margin-top: 1.6rem;
   }
-  .home-intro-copy > p:first-child {
-    font-size: 0.9rem;
-  }
-  .home-intro-copy .button {
-    width: fit-content;
-    gap: 2rem;
-  }
-  .home-capabilities {
+  .home-section {
     padding-top: 3rem;
   }
-  .home-section-heading {
-    margin-top: 0;
-  }
-  .home-section-heading p {
-    margin-top: 1.5rem;
-  }
-  .capabilities-grid {
+  .home-grid {
     grid-template-columns: 1fr;
   }
-  .capabilities-grid article + article {
-    border-left: 0;
-    border-top: 1px solid var(--border);
-  }
-  .capability-index {
-    margin-bottom: 1.5rem;
-  }
-  .home-install,
+  .home-steps,
   .home-platforms {
     grid-template-columns: 1fr;
-    gap: 2rem;
   }
-  .home-install {
-    margin: 3rem 0;
-    padding: 2rem 0;
+  .home-steps-list li {
+    padding-left: 2.4rem;
+  }
+  .platform-list > div {
+    grid-template-columns: 70px 1fr;
+    gap: 0.6rem;
   }
   .home-final {
     display: block;
     margin-top: 3rem;
     padding-top: 2rem;
   }
-  .home-final > div:last-child {
-    margin-top: 2rem;
-    width: fit-content;
-  }
-  .home-final .button {
-    gap: 3rem;
-  }
-  .home-system-strip {
-    font-size: 0.55rem;
-  }
-  .platform-list > div {
-    grid-template-columns: 60px 1fr;
-    gap: 0.6rem;
+  .home-final .home-links {
+    margin-top: 1.5rem;
   }
 }

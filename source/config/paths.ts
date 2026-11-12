@@ -2,18 +2,26 @@
 Config file location. Pure: platform, environment and home directory are injected.
 */
 import {posix} from 'node:path';
+import {APP} from '../app.config.js';
 
 export type ConfigPathInput = {
-	platform: string;
-	env: Record<string, string | undefined>;
-	homedir: string;
+	readonly platform: string;
+	readonly env: Readonly<Record<string, string | undefined>>;
+	readonly homedir: string;
 	/**
 	Explicit `--config` path; wins over everything.
 	*/
-	override?: string;
+	readonly override?: string;
+	/**
+	Default `APP.configDir`.
+	*/
+	readonly configDir?: string;
+	/**
+	Default `APP.configEnvVar`.
+	*/
+	readonly envVar?: string;
 };
 
-const APP = 'coffee-term';
 const FILE = 'config.json';
 
 function nonEmpty(value: string | undefined): string | undefined {
@@ -21,23 +29,39 @@ function nonEmpty(value: string | undefined): string | undefined {
 }
 
 /**
-Resolve the config file path: `override` > `COFFEE_TERM_CONFIG` > platform default.
+The config file: `override` > `$<envVar>` > macOS `~/Library/Application Support/<configDir>/config.json`
+> `$XDG_CONFIG_HOME/<configDir>/config.json` > `~/.config/<configDir>/config.json`.
 */
 export function configPath({
 	platform,
 	env,
 	homedir,
 	override,
+	configDir = APP.configDir,
+	envVar = APP.configEnvVar,
 }: ConfigPathInput): string {
-	const explicit = nonEmpty(override) ?? nonEmpty(env['COFFEE_TERM_CONFIG']);
+	const explicit = nonEmpty(override) ?? nonEmpty(env[envVar]);
 	if (explicit !== undefined) {
 		return explicit;
 	}
 
 	if (platform === 'darwin') {
-		return posix.join(homedir, 'Library', 'Application Support', APP, FILE);
+		return posix.join(
+			homedir,
+			'Library',
+			'Application Support',
+			configDir,
+			FILE,
+		);
 	}
 
 	const xdg = nonEmpty(env['XDG_CONFIG_HOME']);
-	return posix.join(xdg ?? posix.join(homedir, '.config'), APP, FILE);
+	return posix.join(xdg ?? posix.join(homedir, '.config'), configDir, FILE);
+}
+
+/**
+Folder for app data files (`DataService`): the config file's folder.
+*/
+export function dataDir(configFile: string): string {
+	return posix.dirname(configFile);
 }

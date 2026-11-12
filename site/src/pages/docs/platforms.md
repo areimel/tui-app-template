@@ -1,64 +1,52 @@
 ---
 layout: ../../layouts/DocsLayout.astro
-title: Platforms & troubleshooting
-description: Understand system and display locks, platform verification, and common terminal issues.
+title: Platforms and limitations
+description: Which platforms the template and its examples target, what has been verified, and the known limits.
+section: Guide
+order: 4
 ---
 
-## What awake means
+The template targets **Linux and macOS** with Node.js 22.22.2 or newer. The root `package.json` lists only those two in `os`. Windows and WSL are not targets.
 
-coffee-term holds up to two locks and reports each separately:
+## What each example needs from the machine
 
-- **System lock:** prevents idle sleep.
-- **Display lock:** prevents the screen from blanking or locking.
+All machine access goes through the injected `Services` object (see [Architecture](../template/architecture/)). Each service picks its implementation by platform.
 
-If the display lock is unavailable, the session is **degraded** while the system remains awake. If the system lock cannot be held, the session stops with an error. Lock helpers are tied to the coffee-term process so the OS releases the locks when it exits, including a force kill.
+| Service           | Linux            | macOS                              | Used by                                 |
+| ----------------- | ---------------- | ---------------------------------- | --------------------------------------- |
+| CPU, load, uptime | Node `os` module | Node `os` module                   | System Monitor                          |
+| Memory and swap   | `/proc/meminfo`  | `os` plus `sysctl -n vm.swapusage` | System Monitor                          |
+| Process list      | `ps`             | `ps`                               | System Monitor                          |
+| Battery           | sysfs            | `pmset`                            | System Monitor                          |
+| File system       | Node `fs`        | Node `fs`                          | File Explorer, Log Viewer, config, data |
+| HTTP              | Node networking  | Node networking                    | HTTP Client                             |
 
-## Platform support
+On any other platform the battery service reports nothing and the System Monitor leaves the battery line out. The System Monitor needs `ps` on the `PATH`; if the process list cannot be read, the monitor shows the reason and keeps the last list it had.
 
-| Platform                      | System lock       | Display lock                         | Verification                                          |
-| ----------------------------- | ----------------- | ------------------------------------ | ----------------------------------------------------- |
-| Linux, GNOME on Wayland       | `systemd-inhibit` | `gnome-session-inhibit`              | Verified on Ubuntu hardware.                          |
-| Linux, X11 without GNOME      | `systemd-inhibit` | `xset s off -dpms`, restored on exit | Unit-tested only.                                     |
-| Linux, other Wayland desktops | `systemd-inhibit` | Unavailable in v1                    | System lock supported; no display lock.               |
-| macOS                         | `caffeinate -i`   | `caffeinate -d`                      | Implemented and unit-tested; not run on Mac hardware. |
-| Windows / WSL                 | Unsupported       | Unsupported                          | Prints an unsupported message and exits with code 1.  |
+## What is verified and what is not
 
-Battery stop rules have fixture coverage, but have not been tested on hardware while discharging.
+The repository does not claim hardware verification for the six template examples on macOS. They are covered by unit and screen tests that run against fake services and fixtures (for example `pmset` output and sysfs trees under `test/fixtures/`), not against a real Mac.
 
-## The display can still sleep
+For the Keep Awake example, the original project's own notes are specific:
 
-Check the dashboard's display-lock status. `--no-display` intentionally allows display sleep, and non-GNOME Wayland desktops have no display lock in v1. An unavailable display lock does not mean the system lock failed.
+| Platform                      | System lock                     | Display lock                          | Status                                                         |
+| ----------------------------- | ------------------------------- | ------------------------------------- | -------------------------------------------------------------- |
+| Linux, GNOME (Wayland)        | `systemd-inhibit` (sleep, idle) | `gnome-session-inhibit` (idle)        | Run for real on Ubuntu GNOME Wayland.                          |
+| Linux, X11 without GNOME      | `systemd-inhibit` (sleep, idle) | `xset s off -dpms` (restored on exit) | Unit-tested only.                                              |
+| Linux, other Wayland desktops | `systemd-inhibit` (sleep, idle) | unavailable (shown as such)           | No display lock.                                               |
+| macOS                         | `caffeinate -i`                 | `caffeinate -d`                       | Unit-tested only (argv, `pmset` fixtures); never run on a Mac. |
+| Windows / WSL                 | unsupported                     | unsupported                           | Disabled in the menu; `tui-app keep-awake` exits with code 1.  |
 
-On Linux, the required platform tools must be available in your session: `systemd-inhibit`, plus `gnome-session-inhibit` for GNOME or `xset` for non-GNOME X11. Check the reported mechanism and error text if acquisition fails.
+More detail is on the [Keep Awake page](../examples/keep-awake/).
 
-## Small terminals
+## Known limitations
 
-The dashboard adapts to your available rows and columns. The cup sits beside the panels from 90 columns when space permits, and stacks above them in narrower windows. As space decreases, it simplifies the title, removes credits and lower-priority stats, stacks panels, and finally hides the cup. The Options panel is kept whole.
+- Interactive screens need a real terminal. Without one the command exits with code 2 unless the app has a plain mode, and only Keep Awake does. See [Using the app](../guide/using-the-app/).
+- `kill -9` of the process cannot restore the terminal's alternate screen. Run `reset` afterwards. Keep Awake's locks are still dropped by the operating system, because each lock helper is tied to the process.
+- Keep Awake's battery stop rules have only been tested against fixtures, not on a machine that is discharging.
+- The HTTP Client sends real requests to whatever URL you enter. Under `--demo` they are answered by scripted responses instead.
+- A terminal narrower than 40 columns or shorter than 13 rows gets an unframed layout, and below 20 by 4 a "too small" notice.
 
-Below 40 columns or 13 rows, it uses an unframed status line and key hints. Widen or heighten the terminal to restore the fuller dashboard.
+## Site and tooling
 
-## Plain output instead of a dashboard
-
-The dashboard needs both stdin and stdout to be terminals. Pipes, redirects, and `--plain` select line-based output automatically. Run directly in an interactive terminal to restore the dashboard.
-
-## Terminal looks wrong after a force kill
-
-`kill -9` prevents coffee-term from restoring the terminal's alternate screen. Run:
-
-```bash
-reset
-```
-
-The locks are still released because their helper processes are tied to the coffee-term process.
-
-## Installation and configuration issues
-
-If `coffee-term` is not found after `npm install -g coffee-term`, the npm global `bin` folder is not on your PATH. Run `npm prefix -g` to find it and add its `bin` folder to your PATH, or use `npx coffee-term` instead.
-
-If dependency engine warnings appear, check `node --version`. The CLI requires Node 22.22.2 or newer; development tooling needs Node 22.22.2+ or 24.15+.
-
-If a setting is unexpected, check your saved configuration and command-line overrides. Invalid fields use defaults. Use `--config` to test with a separate file. See [configuration](../configuration/) for paths and precedence.
-
-## Report a problem
-
-[Open a GitHub issue](https://github.com/areimel/coffee-cli/issues) with your OS, desktop/session type, Node version, command, and the lock status or error shown. Include only configuration and logs you are comfortable making public.
+The `site/` project asks for Node 22.23.4 or newer, slightly newer than the app. CI builds the site on Node 24.

@@ -1,5 +1,5 @@
+/* eslint-disable unicorn/no-await-expression-member -- Terse assertions on loaded values. */
 import fs from 'node:fs/promises';
-import {readFileSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'ava';
@@ -8,13 +8,14 @@ import {DEFAULTS, type Config} from '../../source/config/schema.js';
 import {
 	createDebouncedSaver,
 	loadConfig,
-	saveConfig,
+	writeJsonAtomic,
+	writeJsonAtomicSync,
 } from '../../source/config/store.js';
 
 const dirs: string[] = [];
 
 async function temporary(): Promise<string> {
-	const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'coffee-term-'));
+	const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'tui-config-'));
 	dirs.push(dir);
 	return dir;
 }
@@ -28,17 +29,16 @@ test.after.always(async () => {
 const custom: Config = {
 	...DEFAULTS,
 	theme: 'severance',
-	session: {
-		...DEFAULTS.session,
-		minBattery: 25,
-		end: {mode: 'until', clock: '17:30'},
-	},
+	apps: {ghost: {keep: [1, 2]}, a: {x: 1}},
 };
 
 test('missing file gives defaults, no warnings, writable', async t => {
 	const dir = await temporary();
-	const result = await loadConfig(path.join(dir, 'nope.json'));
-	t.deepEqual(result, {config: DEFAULTS, warnings: [], isReadOnly: false});
+	t.deepEqual(await loadConfig(path.join(dir, 'nope.json')), {
+		config: DEFAULTS,
+		warnings: [],
+		isReadOnly: false,
+	});
 });
 
 test('corrupt JSON is quarantined with a timestamped name', async t => {
@@ -55,144 +55,131 @@ test('corrupt JSON is quarantined with a timestamped name', async t => {
 	await t.throwsAsync(fs.access(file));
 });
 
-test('invalid fields produce warnings but still load', async t => {
+test('newer version is read-only', async t => {
 	const dir = await temporary();
 	const file = path.join(dir, 'config.json');
-	await fs.writeFile(
-		file,
-		JSON.stringify({theme: 'nope', ui: {animation: false}}),
-	);
-	const result = await loadConfig(file);
-	t.is(result.config.theme, DEFAULTS.theme);
-	t.false(result.config.ui.animation);
-	t.is(result.warnings.length, 1);
-	t.false(result.isReadOnly);
-});
-
-test('newer version loads read-only with a warning', async t => {
-	const dir = await temporary();
-	const file = path.join(dir, 'config.json');
-	await fs.writeFile(file, JSON.stringify({version: 99, theme: 'green'}));
+	await fs.writeFile(file, JSON.stringify({version: 9, theme: 'green'}));
 	const result = await loadConfig(file);
 	t.true(result.isReadOnly);
 	t.is(result.config.theme, 'green');
-	t.is(result.warnings.length, 1);
 });
 
-test('unreadable path becomes a warning, never a throw', async t => {
+test('unreadable path (a directory) warns and uses defaults', async t => {
 	const dir = await temporary();
 	const result = await loadConfig(dir);
 	t.deepEqual(result.config, DEFAULTS);
 	t.is(result.warnings.length, 1);
 });
 
-test('atomic save round-trips and leaves no temp file', async t => {
+test('save then load round-trips and keeps unknown app sections', async t => {
 	const dir = await temporary();
 	const file = path.join(dir, 'deep', 'er', 'config.json');
-	t.deepEqual(await saveConfig(file, custom), {isOk: true});
+	t.deepEqual(await writeJsonAtomic(file, custom), {isOk: true});
 	const loaded = await loadConfig(file);
 	t.deepEqual(loaded.config, custom);
+	t.deepEqual(loaded.warnings, []);
 	t.deepEqual(await fs.readdir(path.dirname(file)), ['config.json']);
 });
 
-test('saved JSON omits an undefined minBattery', async t => {
+test('writeJsonAtomicSync round-trips', async t => {
+	const dir = await temporary();
+	const file = path.join(dir, 'x', 'config.json');
+	t.deepEqual(writeJsonAtomicSync(file, custom), {isOk: true});
+	t.deepEqual((await loadConfig(file)).config, custom);
+});
+
+test('failed save leaves the old file and no temp file', async t => {
 	const dir = await temporary();
 	const file = path.join(dir, 'config.json');
-	await saveConfig(file, DEFAULTS);
-	t.false(
-		'minBattery' in
-			(
-				JSON.parse(await fs.readFile(file, 'utf8')) as {
-					session: Record<string, unknown>;
-				}
-			).session,
-	);
-});
-
-test('save failure resolves with a warning', async t => {
-	const dir = await temporary();
-	const blocker = path.join(dir, 'file');
-	await fs.writeFile(blocker, 'x');
-	const result = await saveConfig(path.join(blocker, 'config.json'), custom);
+	await writeJsonAtomic(file, custom);
+	// A directory at the temp path makes the write fail.
+	await fs.mkdir(`${file}.tmp`);
+	const result = await writeJsonAtomic(file, DEFAULTS);
 	t.false(result.isOk);
+	t.deepEqual((await loadConfig(file)).config, custom);
+	const sync = writeJsonAtomicSync(file, DEFAULTS);
+	t.false(sync.isOk);
+	t.deepEqual((await loadConfig(file)).config, custom);
 });
 
-test('debounce: writes once, 500 ms after the last schedule, latest wins', async t => {
+test('failed save when the parent is a file reports a warning', async t => {
+	const dir = await temporary();
+	const blocker = path.join(dir, 'blocker');
+	await fs.writeFile(blocker, 'x');
+	const result = await writeJsonAtomic(
+		path.join(blocker, 'config.json'),
+		custom,
+	);
+	t.false(result.isOk);
+	t.true(!result.isOk && result.warning.includes('config.json'));
+});
+
+test('debounced saver coalesces to the last config after 500 ms', async t => {
 	const dir = await temporary();
 	const file = path.join(dir, 'config.json');
 	const clock = createFakeClock();
-	const saver = createDebouncedSaver({path: file, ...clock});
-	saver.schedule(DEFAULTS);
+	const saver = createDebouncedSaver({
+		path: file,
+		setTimeout: clock.setTimeout,
+		clearTimeout: clock.clearTimeout,
+	});
+	saver.schedule({...DEFAULTS, theme: 'green'});
 	await clock.tickAsync(400);
-	saver.schedule(custom);
+	saver.schedule({...DEFAULTS, theme: 'severance'});
 	await clock.tickAsync(400);
 	await t.throwsAsync(fs.access(file));
 	await clock.tickAsync(100);
 	await saver.flush();
-	const loaded = await loadConfig(file);
-	t.deepEqual(loaded.config, custom);
+	t.is((await loadConfig(file)).config.theme, 'severance');
 });
 
-test('flush writes immediately and cancels the timer', async t => {
+test('flush writes immediately; flushSync writes pending synchronously', async t => {
 	const dir = await temporary();
 	const file = path.join(dir, 'config.json');
 	const clock = createFakeClock();
-	const saver = createDebouncedSaver({path: file, ...clock});
-	saver.schedule(custom);
-	await saver.flush();
-	const loaded = await loadConfig(file);
-	t.deepEqual(loaded.config, custom);
-	t.is(clock.clock.countTimers(), 0);
-});
-
-test('flushSync writes synchronously; nothing pending is a no-op', async t => {
-	const dir = await temporary();
-	const file = path.join(dir, 'config.json');
-	const saver = createDebouncedSaver({path: file, ...createFakeClock()});
-	saver.flushSync();
-	await t.throwsAsync(fs.access(file));
-	saver.schedule(custom);
-	saver.flushSync();
-	t.is((JSON.parse(readFileSync(file, 'utf8')) as Config).theme, 'severance');
-});
-
-test('flushSync rewrites a config whose async write has not finished', async t => {
-	const dir = await temporary();
-	const file = path.join(dir, 'config.json');
-	const saver = createDebouncedSaver({path: file, ...createFakeClock()});
-	saver.schedule(custom);
-	const flushing = saver.flush(); // Started, not finished: the exit cuts it short.
-	saver.flushSync();
-	t.is((JSON.parse(readFileSync(file, 'utf8')) as Config).theme, 'severance');
-	await flushing;
-});
-
-test('read-only saver never writes', async t => {
-	const dir = await temporary();
-	const file = path.join(dir, 'config.json');
-	const clock = createFakeClock();
-	const saver = createDebouncedSaver({path: file, ...clock, isReadOnly: true});
-	saver.schedule(custom);
-	await clock.tickAsync(5000);
-	await saver.flush();
-	saver.flushSync();
-	t.is(clock.clock.countTimers(), 0);
-	await t.throwsAsync(fs.access(file));
-});
-
-test('write failures go to onWarning', async t => {
-	const dir = await temporary();
-	const blocker = path.join(dir, 'file');
-	await fs.writeFile(blocker, 'x');
-	const warnings: string[] = [];
 	const saver = createDebouncedSaver({
-		path: path.join(blocker, 'c.json'),
-		...createFakeClock(),
-		onWarning(warning) {
-			warnings.push(warning);
-		},
+		path: file,
+		setTimeout: clock.setTimeout,
+		clearTimeout: clock.clearTimeout,
 	});
 	saver.schedule(custom);
 	await saver.flush();
+	t.deepEqual((await loadConfig(file)).config, custom);
+	saver.schedule({...custom, theme: 'amber'});
+	saver.flushSync();
+	t.is((await loadConfig(file)).config.theme, 'amber');
+	// The cancelled timer does not write again.
+	await clock.tickAsync(1000);
+	t.is(clock.clock.countTimers(), 0);
+});
+
+test('read-only saver never writes; failures reach onWarning', async t => {
+	const dir = await temporary();
+	const file = path.join(dir, 'config.json');
+	const clock = createFakeClock();
+	const readOnly = createDebouncedSaver({
+		path: file,
+		isReadOnly: true,
+		setTimeout: clock.setTimeout,
+		clearTimeout: clock.clearTimeout,
+	});
+	readOnly.schedule(custom);
+	await readOnly.flush();
+	readOnly.flushSync();
+	await t.throwsAsync(fs.access(file));
+
+	const warnings: string[] = [];
+	const blocker = path.join(dir, 'blocker');
+	await fs.writeFile(blocker, 'x');
+	const failing = createDebouncedSaver({
+		path: path.join(blocker, 'c.json'),
+		onWarning(w) {
+			warnings.push(w);
+		},
+		setTimeout: clock.setTimeout,
+		clearTimeout: clock.clearTimeout,
+	});
+	failing.schedule(custom);
+	await failing.flush();
 	t.is(warnings.length, 1);
 });

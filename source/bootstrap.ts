@@ -1,96 +1,174 @@
 /**
-Startup composition: config file, layered settings, platform adapter and the session supervisor with real dependencies.
+Startup composition shared by the TUI and plain mode: the config file (loaded and layered with flag
+overrides), the debounced saver, per-app config sections, the services (real, or deterministic with
+`--demo`) and the app service registry. `composeRuntime` is the synchronous part, so tests build the same
+runtime from an in-memory config.
 */
-import os from 'node:os';
+import {homedir} from 'node:os';
 import process from 'node:process';
-import {createConfigTracker, type ConfigTracker} from './config/merge.js';
-import {configPath} from './config/paths.js';
-import {toSessionOptions} from './config/schema.js';
+import {createAppConfigStore} from './config/app-config-store.js';
+import {configPath, dataDir} from './config/paths.js';
+import {
+	DEFAULTS,
+	type AppConfigStore,
+	type Config,
+	type ConfigTracker,
+	type Overrides,
+} from './config/schema.js';
 import {
 	createDebouncedSaver,
 	loadConfig,
 	type DebouncedSaver,
+	type DebouncedSaverOptions,
 } from './config/store.js';
-import {createSupervisor} from './core/session/supervisor.js';
-import type {SessionController} from './core/session/types.js';
-import type {StartupInput} from './flags.js';
-import {selectAdapter} from './platform/index.js';
-import {isPidAlive} from './platform/process-alive.js';
-import type {Capabilities} from './platform/types.js';
+import {createConfigTracker} from './config/tracker.js';
+import {createServices} from './platform/services.js';
+import type {Services} from './platform/types.js';
+import {
+	createAppServiceRegistry,
+	type AppServiceRegistry,
+} from './shell/app-services.js';
+import {createDemoServices} from './shell/demo-services.js';
+import type {CliFlagValues} from './shell/types.js';
 
-export type Ready = {
-	kind: 'ready';
-	controller: SessionController;
-	capabilities: Capabilities;
-	tracker: ConfigTracker;
-	saver: DebouncedSaver;
+export type Runtime = {
+	readonly configFile: string;
+	readonly tracker: ConfigTracker;
+	readonly saver: DebouncedSaver;
+	readonly appConfig: AppConfigStore;
+	readonly services: Services;
+	readonly appServices: AppServiceRegistry;
 	/**
-	Problems found while loading the config.
+	Config load warnings (shown at startup).
 	*/
-	loadWarnings: string[];
+	readonly loadWarnings: readonly string[];
 	/**
-	Problems found while saving; filled in as they happen.
+	Save and data-file warnings collected while running (printed on exit).
 	*/
-	saveWarnings: string[];
-	path: string;
+	readonly saveWarnings: string[];
+	/**
+	Synchronous last-chance write of the config and every data file (exit paths).
+	*/
+	flushSync(): void;
 };
 
-export type Bootstrapped = Ready | {kind: 'unsupported'; message: string};
+export type ComposeOptions = {
+	readonly configFile: string;
+	readonly file: Config;
+	readonly overrides: Overrides;
+	readonly loadWarnings?: readonly string[];
+	readonly isReadOnly?: boolean;
+	/**
+	Builds the services; receives the collector for save warnings.
+	*/
+	readonly createServices: (onWarning: (warning: string) => void) => Services;
+	readonly deepLink?: {readonly appId: string; readonly flags: CliFlagValues};
+	/**
+	Saver timer injection for tests.
+	*/
+	readonly saverTimers?: Pick<
+		DebouncedSaverOptions,
+		'setTimeout' | 'clearTimeout'
+	>;
+};
 
-export async function bootstrap(input: StartupInput): Promise<Bootstrapped> {
-	const path = configPath({
-		platform: process.platform,
-		env: process.env,
-		homedir: os.homedir(),
-		...(input.configOverride !== undefined && {
-			override: input.configOverride,
-		}),
-	});
-	const loaded = await loadConfig(path);
-	const tracker = createConfigTracker(loaded.config, input.overrides);
+export function composeRuntime({
+	configFile,
+	file,
+	overrides,
+	loadWarnings = [],
+	isReadOnly = false,
+	createServices: makeServices,
+	deepLink,
+	saverTimers = {},
+}: ComposeOptions): Runtime {
 	const saveWarnings: string[] = [];
+	const onWarning = (warning: string) => {
+		saveWarnings.push(warning);
+	};
+
+	const tracker = createConfigTracker(file, overrides);
 	const saver = createDebouncedSaver({
-		path,
-		isReadOnly: loaded.isReadOnly,
-		onWarning(warning) {
-			saveWarnings.push(warning);
+		path: configFile,
+		isReadOnly,
+		onWarning,
+		...saverTimers,
+	});
+	const appConfig = createAppConfigStore({
+		tracker,
+		schedule(config) {
+			saver.schedule(config);
 		},
 	});
-
-	const adapter = selectAdapter();
-	const capabilities = await adapter.detect();
-	if (!capabilities.supported) {
-		return {
-			kind: 'unsupported',
-			message: capabilities.message ?? 'This platform is not supported.',
-		};
-	}
-
-	const controller = createSupervisor(
-		toSessionOptions(tracker.effective().session, input.pid),
-		{
-			adapter,
-			now: Date.now,
-			setInterval: (callback, ms) => setInterval(callback, ms),
-			clearInterval(handle) {
-				clearInterval(handle as NodeJS.Timeout);
-			},
-			setTimeout: (callback, ms) => setTimeout(callback, ms),
-			clearTimeout(handle) {
-				clearTimeout(handle as NodeJS.Timeout);
-			},
-			readBattery: async () => adapter.readBattery(),
-			isPidAlive,
-		},
-	);
+	const services = makeServices(onWarning);
+	const appServices = createAppServiceRegistry({
+		services,
+		appConfig,
+		...(deepLink !== undefined && {deepLink}),
+	});
 	return {
-		kind: 'ready',
-		controller,
-		capabilities,
+		configFile,
 		tracker,
 		saver,
-		loadWarnings: loaded.warnings,
+		appConfig,
+		services,
+		appServices,
+		loadWarnings,
 		saveWarnings,
-		path,
+		flushSync() {
+			for (const flush of [
+				() => {
+					saver.flushSync();
+				},
+				() => {
+					services.data.flushAllSync();
+				},
+			]) {
+				try {
+					flush();
+				} catch {
+					// Exit paths never throw.
+				}
+			}
+		},
 	};
+}
+
+export type BootstrapOptions = {
+	readonly configOverride?: string;
+	readonly overrides: Overrides;
+	/**
+	Deterministic services; the config file is not read or written (flag overrides still apply).
+	*/
+	readonly isDemo: boolean;
+	readonly deepLink?: {readonly appId: string; readonly flags: CliFlagValues};
+};
+
+export async function bootstrap({
+	configOverride,
+	overrides,
+	isDemo,
+	deepLink,
+}: BootstrapOptions): Promise<Runtime> {
+	const configFile = configPath({
+		platform: process.platform,
+		env: process.env,
+		homedir: homedir(),
+		...(configOverride !== undefined && {override: configOverride}),
+	});
+	const loaded = isDemo
+		? {config: DEFAULTS, warnings: [], isReadOnly: true}
+		: await loadConfig(configFile);
+	return composeRuntime({
+		configFile,
+		file: loaded.config,
+		overrides,
+		loadWarnings: loaded.warnings,
+		isReadOnly: loaded.isReadOnly,
+		...(deepLink !== undefined && {deepLink}),
+		createServices(onWarning) {
+			const real = createServices({dataDir: dataDir(configFile), onWarning});
+			return isDemo ? createDemoServices(real) : real;
+		},
+	});
 }

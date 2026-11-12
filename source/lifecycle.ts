@@ -1,8 +1,12 @@
 /**
-Process-level cleanup: `exit`, termination signals and crashes all release the locks. The process object is injected so tests can drive it.
+Process-level cleanup. Every way out (`exit`, SIGINT / SIGTERM / SIGHUP, an uncaught exception or
+unhandled rejection) reaches `releaseAllSync()` on every live app service and the synchronous flush of the
+config and data files. A skipped release can leak an OS lock (Keep Awake keeps a laptop awake forever),
+so each step is attempted on its own and nothing here throws. The process object is injected so tests
+drive every path.
 */
-import type {SessionController} from './core/session/types.js';
-import type {DebouncedSaver} from './config/store.js';
+import {APP} from './app.config.js';
+import type {AppServiceRegistry} from './shell/app-services.js';
 
 /**
 Handled termination signals and their numbers (exit code is 128 + number).
@@ -27,23 +31,30 @@ export type LifecycleProcess = {
 };
 
 export type LifecycleOptions = {
-	controller: Pick<SessionController, 'stop' | 'releaseAllSync'>;
-	saver: Pick<DebouncedSaver, 'flushSync'>;
-	process: LifecycleProcess;
+	readonly appServices: Pick<AppServiceRegistry, 'stopAll' | 'releaseAllSync'>;
 	/**
-	Runs right before a signal-driven exit, after the session stopped (e.g. unmount the dashboard and print the summary). Must be synchronous.
+	Synchronous write of pending config and data files.
 	*/
-	beforeSignalExit?: () => void;
+	readonly flushSync: () => void;
+	readonly process: LifecycleProcess;
+	/**
+	Runs first on a signal, before the services stop (plain mode aborts its runner). Synchronous.
+	*/
+	readonly onSignal?: () => void;
+	/**
+	Runs right before a signal-driven exit, after the services stopped (e.g. unmount the TUI). Synchronous.
+	*/
+	readonly beforeSignalExit?: () => void;
 	/**
 	Best-effort terminal restore on a crash (leave the alternate screen, show the cursor). Must not throw.
 	*/
-	restoreTerminal?: () => void;
+	readonly restoreTerminal?: () => void;
 	/**
 	Writes crash output to stderr.
 	*/
-	writeError?: (text: string) => void;
-	setTimeout?: (callback: () => void, ms: number) => unknown;
-	stopTimeoutMs?: number;
+	readonly writeError?: (text: string) => void;
+	readonly setTimeout?: (callback: () => void, ms: number) => unknown;
+	readonly stopTimeoutMs?: number;
 };
 
 const describeError = (error: unknown): string =>
@@ -61,9 +72,10 @@ function attempt(action: (() => void) | undefined): void {
 Register the hooks. Returns a function that removes every listener it added.
 */
 export function installLifecycle({
-	controller,
-	saver,
+	appServices,
+	flushSync,
 	process: proc,
+	onSignal: beforeStop,
 	beforeSignalExit,
 	restoreTerminal,
 	writeError,
@@ -77,30 +89,37 @@ export function installLifecycle({
 		proc.on(event, listener);
 	};
 
-	listen('exit', () => {
+	const releaseAndFlush = () => {
 		attempt(() => {
-			controller.releaseAllSync();
+			appServices.releaseAllSync();
 		});
-		attempt(() => {
-			saver.flushSync();
-		});
-	});
+		attempt(flushSync);
+	};
+
+	listen('exit', releaseAndFlush);
 
 	const onSignal = (number: number) => () => {
 		if (isExiting) {
 			// A second signal while stopping: give up waiting.
-			attempt(() => {
-				controller.releaseAllSync();
-			});
+			releaseAndFlush();
 			proc.exit(128 + number);
 			return;
 		}
 
 		isExiting = true;
+		attempt(beforeStop);
 		const timeout = new Promise<void>(resolve => {
 			setTimer(resolve, stopTimeoutMs);
 		});
-		void Promise.race([controller.stop('signal'), timeout]).then(() => {
+		const stopped = (async () => {
+			try {
+				await appServices.stopAll('signal');
+			} catch {
+				// Released below anyway.
+			}
+		})();
+		void Promise.race([stopped, timeout]).then(() => {
+			releaseAndFlush();
 			attempt(beforeSignalExit);
 			proc.exit(128 + number);
 		});
@@ -111,12 +130,10 @@ export function installLifecycle({
 	}
 
 	const crash = (error: unknown) => {
-		attempt(() => {
-			controller.releaseAllSync();
-		});
+		releaseAndFlush();
 		attempt(restoreTerminal);
 		attempt(() => {
-			writeError?.(`coffee-term: crashed: ${describeError(error)}\n`);
+			writeError?.(`${APP.command}: crashed: ${describeError(error)}\n`);
 		});
 		proc.exit(1);
 	};

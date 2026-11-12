@@ -1,6 +1,14 @@
 ---
 import SiteLayout from "./SiteLayout.astro";
 import { href } from "../lib/urls";
+import { getDocsNav } from "../lib/docs-nav";
+import {
+  SITE_NAME,
+  APP,
+  REPO_URL,
+  ISSUES_URL,
+  README_URL,
+} from "../config/site.config";
 import "../styles/docs.css";
 
 interface Props {
@@ -8,13 +16,7 @@ interface Props {
   headings: { depth: number; slug: string; text: string }[];
 }
 const { frontmatter, headings: pageHeadings } = Astro.props;
-const navigation = [
-  ["01", "Getting started", "/docs/"],
-  ["02", "Usage", "/docs/usage/"],
-  ["03", "Reference", "/docs/reference/"],
-  ["04", "Configuration", "/docs/configuration/"],
-  ["05", "Platforms & troubleshooting", "/docs/platforms/"],
-];
+const groups = await getDocsNav();
 const headings = pageHeadings.filter((heading) => heading.depth === 2);
 const currentPath = Astro.url.pathname.replace(/\/$/, "");
 ---
@@ -25,31 +27,33 @@ const currentPath = Astro.url.pathname.replace(/\/$/, "");
 >
   <div class="docs-shell">
     <aside class="docs-sidebar">
-      <p class="docs-label">MANUAL / coffee-term</p>
+      <p class="docs-label">MANUAL / {APP.command}</p>
       <nav aria-label="Documentation">
         {
-          navigation.map(([number, label, path]) => (
-            <a
-              href={href(path)}
-              aria-current={
-                currentPath === href(path).replace(/\/$/, "")
-                  ? "page"
-                  : undefined
-              }
-            >
-              <span aria-hidden="true">{number}</span>
-              {label}
-            </a>
+          groups.map((group) => (
+            <section class="docs-group">
+              <h2 class="docs-label">{group.section.toUpperCase()}</h2>
+              {group.items.map((item) => (
+                <a
+                  href={href(item.path)}
+                  aria-current={
+                    currentPath === href(item.path).replace(/\/$/, "")
+                      ? "page"
+                      : undefined
+                  }
+                >
+                  {item.title}
+                </a>
+              ))}
+            </section>
           ))
         }
       </nav>
-      <a class="docs-source" href="https://github.com/areimel/coffee-cli"
-        >View source ↗</a
-      >
+      <a class="docs-source" href={REPO_URL}>View source ↗</a>
     </aside>
     <article class="docs-article">
       <header class="docs-header">
-        <p class="docs-label">USER DOCUMENTATION / v1</p>
+        <p class="docs-label">{SITE_NAME} / DOCUMENTATION</p>
         <h1>{frontmatter.title}</h1>
         {
           frontmatter.description && (
@@ -73,12 +77,8 @@ const currentPath = Astro.url.pathname.replace(/\/$/, "");
       }
       <div class="docs-prose"><slot /></div>
       <footer class="docs-footer">
-        Source of truth: the CLI's <a
-          href="https://github.com/areimel/coffee-cli/blob/main/readme.md"
-          >README and source</a
-        >. Found an issue? <a
-          href="https://github.com/areimel/coffee-cli/issues">Open an issue ↗</a
-        >
+        Source of truth: the project's <a href={README_URL}>README and source</a
+        >. Found an issue? <a href={ISSUES_URL}>Open an issue ↗</a>
       </footer>
     </article>
   </div>

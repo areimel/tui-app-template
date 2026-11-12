@@ -1,162 +1,299 @@
 /**
- Platform contracts. Everything that touches the OS (child processes, sysfs,
- pmset) sits behind `Adapter`. Core and UI code only see these types.
- */
+Platform contract: every OS, network and disk access an app makes goes through `Services`, injected with
+`useServices()` (shell) so screens are testable with `test/helpers/fake-services.ts`.
 
-/**
-Which keep-awake lock: `system` blocks sleep/idle-suspend, `display` keeps the screen on.
+Implementations live in `platform/**` (`services.ts` composes them); pure parsers are `*-parse.ts` and
+`system/cpu.ts`. Nothing here throws for expected failures: they come back as `Result` errors with a
+human-readable message. Absent values are `undefined`, never `null`.
 */
-export type LockKind = 'system' | 'display';
+import type {AppConfigSpec, Validated} from '../config/schema.js';
+import type {Result} from '../core/result.js';
+import type {BatteryInfo} from './battery/types.js';
+
+export type {BatteryInfo, BatteryStatus} from './battery/types.js';
+
+// ---- System -------------------------------------------------------------------------------------
 
 /**
-All lock kinds, in acquisition order (system first).
+Cumulative CPU time of one core since boot, in any consistent unit (ms from `os.cpus()`).
+Usage between two readings is `1 - Δidle / Δtotal` (`cpuUsage` in `system/cpu.ts`).
 */
-export const LOCK_KINDS = [
-	'system',
-	'display',
-] as const satisfies readonly LockKind[];
-
-/**
- Mechanism holding a lock. Shown to the user as a badge.
- A future win32 adapter would add e.g. `'SetThreadExecutionState'`.
- */
-export type LockMethod =
-	'caffeinate' | 'systemd-inhibit' | 'gnome-session-inhibit' | 'xset';
-
-/**
-Adapter identity. A future Windows adapter would add `'win32'`.
-*/
-export type AdapterId = 'linux' | 'darwin' | 'unsupported';
-
-/**
-Normalised battery charge state.
-*/
-export type BatteryStatus =
-	'charging' | 'discharging' | 'full' | 'not-charging' | 'unknown';
-
-/**
-One battery reading. Readers return `undefined` instead when the machine has no battery.
-*/
-export type BatteryInfo = {
-	/**
-	Charge level, 0–100 (may be fractional).
-	*/
-	percent: number;
-	/**
-	True only while actively charging (`status === 'charging'`).
-	*/
-	charging: boolean;
-	/**
-	 Mains power connected. On Linux this comes from the Mains `online` file,
-	 not from battery status (a plugged-in machine can read `Not charging`).
-	 */
-	acOnline: boolean;
-	status: BatteryStatus;
-	/**
-	Estimated minutes until empty; `undefined` when unknown or not discharging (e.g. `power_now = 0`).
-	*/
-	minutesToEmpty: number | undefined;
-	/**
-	Estimated minutes until full; `undefined` when unknown or not charging.
-	*/
-	minutesToFull: number | undefined;
-	/**
-	Current power draw in watts; `undefined` when unknown.
-	*/
-	watts: number | undefined;
+export type CpuTimes = {
+	readonly idle: number;
+	readonly total: number;
 };
 
-/**
-Whether one lock kind can be taken on this machine.
-*/
-export type Avail = {
-	available: boolean;
+export type MemoryInfo = {
+	readonly totalBytes: number;
 	/**
-	Mechanism that `acquire` will use; present when `available`.
+	Memory in use by programs: total minus available (Linux `MemAvailable`), not total minus free.
 	*/
-	method?: LockMethod;
+	readonly usedBytes: number;
 	/**
-	User-presentable reason when not available (e.g. "non-GNOME Wayland: display lock unavailable").
+	`undefined` when the platform does not report swap.
 	*/
-	note?: string;
+	readonly swapTotalBytes: number | undefined;
+	readonly swapUsedBytes: number | undefined;
 };
 
-/**
-Result of `Adapter.detect()`.
-*/
-export type Capabilities = {
+export type SystemSnapshot = {
+	readonly hostname: string;
+	readonly platform: string;
+	readonly uptimeSeconds: number;
+	readonly loadAverage: readonly [number, number, number];
 	/**
-	False on unsupported platforms (Windows, WSL); the app shows `message` and exits.
+	One entry per logical core, in `os.cpus()` order.
 	*/
-	supported: boolean;
-	/**
-	User-presentable explanation, required when `supported` is false.
-	*/
-	message?: string;
-	system: Avail;
-	display: Avail;
-	/**
-	True when a battery was found (battery rules are usable).
-	*/
-	battery: boolean;
+	readonly cores: readonly CpuTimes[];
+	readonly memory: MemoryInfo;
 };
 
-/**
-Information passed to `LockHandle.onDied` listeners when the lock child exits unexpectedly.
-*/
-export type LockDeathInfo = {
+export type ProcessInfo = {
+	readonly pid: number;
 	/**
-	Exit code, or `undefined` when killed by a signal.
+	Command name (no arguments).
 	*/
-	code: number | undefined;
+	readonly name: string;
+	readonly user: string | undefined;
 	/**
-	Captured stderr (possibly empty), for showing to the user.
+	As `ps` reports it: percent of one core, so it can exceed 100 on multi-core machines.
 	*/
-	stderr: string;
+	readonly cpuPercent: number;
+	/**
+	Resident set size.
+	*/
+	readonly memoryBytes: number;
 };
 
-/**
-A lock that is currently held. Obtained from `Adapter.acquire`.
-*/
-export type LockHandle = {
-	readonly kind: LockKind;
-	readonly method: LockMethod;
+export type SystemService = {
 	/**
-	True until the lock is released or its child dies.
+	Cheap synchronous read (os module and `/proc/meminfo`); safe to call every second.
 	*/
-	isHeld(): boolean;
+	readSnapshot(): SystemSnapshot;
 	/**
-	 Subscribe to unexpected death (not fired for `release`/`releaseSync`).
-	 Returns an unsubscribe function.
-	 */
-	onDied(callback: (info: LockDeathInfo) => void): () => void;
-	/**
-	Release the lock (TERM, then KILL after a grace period). Idempotent; never rejects.
+	Runs `ps` (Linux and macOS). Fails with a message when `ps` is missing or its output is unreadable.
 	*/
-	release(): Promise<void>;
-	/**
-	Synchronous best-effort release for exit/signal handlers. Idempotent; never throws.
-	*/
-	releaseSync(): void;
+	listProcesses(): Promise<Result<readonly ProcessInfo[]>>;
 };
 
+// ---- Filesystem (read-only) -----------------------------------------------------------------------
+
+export type DirEntryKind = 'dir' | 'file' | 'symlink' | 'other';
+
+export type DirEntry = {
+	readonly name: string;
+	/**
+	Absolute path (the listed directory joined with `name`).
+	*/
+	readonly path: string;
+	/**
+	For a symlink, the kind of the link itself; `targetKind` is what it points to.
+	*/
+	readonly kind: DirEntryKind;
+	/**
+	What a symlink resolves to (`undefined` when broken, or for non-links).
+	*/
+	readonly targetKind: DirEntryKind | undefined;
+	readonly sizeBytes: number | undefined;
+	readonly modifiedMs: number | undefined;
+	/**
+	Name starts with `.`.
+	*/
+	readonly isHidden: boolean;
+};
+
+export type FilePreview =
+	| {
+			readonly kind: 'text';
+			readonly lines: readonly string[];
+			/**
+			The file is longer than `maxBytes` (only the start is shown).
+			*/
+			readonly isTruncated: boolean;
+	  }
+	| {readonly kind: 'binary'; readonly sizeBytes: number}
+	| {readonly kind: 'dir'; readonly entryCount: number};
+
 /**
-One per platform. Selected by `platform/index.ts`.
+The end of a file as whole lines (`readTail`).
 */
-export type Adapter = {
-	readonly id: AdapterId;
+export type FileTail = {
 	/**
-	Probe what this machine can do. Never rejects; problems are reported in the result.
+	The last bytes of the file, starting on a whole line (a partial first line is dropped).
 	*/
-	detect(): Promise<Capabilities>;
+	readonly text: string;
 	/**
-	 Take a lock. `reason` is human text shown in inhibitor listings.
-	 Rejects with an `Error` whose `message` is user-presentable when the lock
-	 cannot be taken (e.g. child exited during the settle check; stderr included).
-	 */
-	acquire(kind: LockKind, reason: string): Promise<LockHandle>;
-	/**
-	Read the battery. Resolves `undefined` when there is no battery or it cannot be read; never rejects.
+	File size when it was read: pass it to `follow` as `fromBytes` so nothing is missed or repeated.
 	*/
-	readBattery(): Promise<BatteryInfo | undefined>;
+	readonly endBytes: number;
+	/**
+	Earlier content was skipped.
+	*/
+	readonly isTruncated: boolean;
+};
+
+export type FollowOptions = {
+	/**
+	Byte offset to start from (e.g. `FileTail.endBytes`): text appended after it, even before `follow`
+	was called, is delivered. Default: the file's current end.
+	*/
+	readonly fromBytes?: number;
+};
+
+export type FsService = {
+	home(): string;
+	cwd(): string;
+	/**
+	Entries in directory order as the OS returns them (sorting is the caller's, see `fs/entries.ts`).
+	Fails with a message for a missing path, a non-directory or a permission error.
+	*/
+	list(path: string): Promise<Result<readonly DirEntry[]>>;
+	/**
+	First `maxBytes` of a file as text lines, or `binary` when it contains NUL bytes or is not UTF-8.
+	*/
+	preview(path: string, maxBytes: number): Promise<Result<FilePreview>>;
+	/**
+	First `maxBytes` of a file as UTF-8 text.
+	*/
+	readText(path: string, maxBytes: number): Promise<Result<string>>;
+	/**
+	Last `maxBytes` of a file as UTF-8 text starting on a whole line, plus the size read (to continue
+	with `follow`). A large log opens at its latest lines this way.
+	*/
+	readTail(path: string, maxBytes: number): Promise<Result<FileTail>>;
+	/**
+	Watches a file for appended text, starting at its current end (or `options.fromBytes`). `onChunk`
+	gets each appended piece (not split into lines); `onError` gets a message if the file disappears
+	or cannot be read. Returns stop. Truncation restarts from the beginning.
+	*/
+	follow(
+		path: string,
+		onChunk: (text: string) => void,
+		onError?: (message: string) => void,
+		options?: FollowOptions,
+	): () => void;
+};
+
+// ---- HTTP ------------------------------------------------------------------------------------------
+
+export const HTTP_METHODS = [
+	'GET',
+	'POST',
+	'PUT',
+	'PATCH',
+	'DELETE',
+	'HEAD',
+] as const;
+
+export type HttpMethod = (typeof HTTP_METHODS)[number];
+
+export type HttpRequest = {
+	readonly method: HttpMethod;
+	readonly url: string;
+	readonly headers?: Readonly<Record<string, string>>;
+	readonly body?: string;
+	/**
+	Default 30 000.
+	*/
+	readonly timeoutMs?: number;
+};
+
+export type HttpResponse = {
+	readonly status: number;
+	readonly statusText: string;
+	/**
+	Lower-case names.
+	*/
+	readonly headers: Readonly<Record<string, string>>;
+	/**
+	Decoded as UTF-8 (binary bodies come out garbled; the client shows them as raw).
+	*/
+	readonly body: string;
+	readonly durationMs: number;
+	readonly sizeBytes: number;
+};
+
+export type HttpError = {
+	readonly kind: 'network' | 'timeout' | 'aborted' | 'invalid-url';
+	readonly message: string;
+};
+
+export type HttpService = {
+	/**
+	Any HTTP status (including 4xx/5xx) is a successful `Result`; only transport problems fail.
+	Aborting `signal` fails with `aborted`.
+	*/
+	send(
+		request: HttpRequest,
+		signal?: AbortSignal,
+	): Promise<Result<HttpResponse, HttpError>>;
+};
+
+// ---- Battery ---------------------------------------------------------------------------------------
+
+export type BatteryService = {
+	/**
+	`undefined` when the machine has no battery or it cannot be read.
+	*/
+	read(): Promise<BatteryInfo | undefined>;
+};
+
+// ---- App data files --------------------------------------------------------------------------------
+
+/**
+One JSON file in the app data directory (next to the config file), e.g. the tasks list.
+*/
+export type JsonStore<T> = {
+	/**
+	Missing file: `{value: spec.defaults, warnings: []}`. Unparseable file: moved aside as
+	`<name>.corrupt-<timestamp>.json`, defaults plus a warning.
+	*/
+	load(): Promise<Validated<T>>;
+	/**
+	Queue a write (debounced, atomic). Never throws; failures are reported through `onWarning`.
+	*/
+	save(value: T): void;
+	/**
+	Write a queued value now.
+	*/
+	flush(): Promise<void>;
+	/**
+	Write a queued value synchronously (exit paths).
+	*/
+	flushSync(): void;
+};
+
+export type DataService = {
+	/**
+	The store for `<dataDir>/<name>` (`name` like `tasks.json`). The same name returns the same store.
+	*/
+	file<T>(name: string, spec: AppConfigSpec<T>): JsonStore<T>;
+	/**
+	Flush every store this service handed out (the shell calls these on exit).
+	*/
+	flushAll(): Promise<void>;
+	flushAllSync(): void;
+};
+
+// ---- All services ----------------------------------------------------------------------------------
+
+export type Services = {
+	readonly system: SystemService;
+	readonly fs: FsService;
+	readonly http: HttpService;
+	readonly battery: BatteryService;
+	readonly data: DataService;
+	/**
+	Wall clock in ms. Use it instead of `Date.now()` so tests control time.
+	*/
+	readonly now: () => number;
+	/**
+	`process.platform` (`'linux'`, `'darwin'`, ...).
+	*/
+	readonly platform: string;
+	/**
+	True for the `--demo` services: canned data, nothing read from or written to the machine. An app
+	with side effects of its own (keep-awake's sleep locks) must simulate them when this is set.
+	*/
+	readonly isDemo?: boolean;
 };

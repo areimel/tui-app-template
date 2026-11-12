@@ -98,7 +98,7 @@ test('BorderRule length renders an exact run', t => {
 });
 
 test('bodyOffsetUnderTop aligns content under the top item', t => {
-	const top = 'COFFEE';
+	const top = 'HEADING';
 	const rest = 'rest';
 	for (const width of [60, 61, 107, 108]) {
 		const r = renderThemed(

@@ -1,30 +1,28 @@
 {
-	"name": "coffee-term",
+	"name": "tui-app-template",
 	"version": "0.1.0",
-	"description": "Keep your machine awake from a terminal dashboard: a caffeinate you can see and steer",
+	"description": "A starting point for Ink 8 / React 19 terminal apps: a menu, example apps, a themed component kit, input scopes, config and a matching website.",
 	"keywords": [
-		"caffeinate",
-		"keep-awake",
-		"sleep",
-		"inhibit",
-		"idle",
 		"terminal",
 		"cli",
 		"tui",
-		"ink"
+		"ink",
+		"react",
+		"template",
+		"starter"
 	],
-	"homepage": "https://areimel.github.io/coffee-cli/",
+	"homepage": "https://areimel.github.io/tui-app-template/",
 	"bugs": {
-		"url": "https://github.com/areimel/coffee-cli/issues"
+		"url": "https://github.com/areimel/tui-app-template/issues"
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/areimel/coffee-cli.git"
+		"url": "git+https://github.com/areimel/tui-app-template.git"
 	},
 	"author": "Alec Reimel (https://github.com/areimel)",
 	"license": "MIT",
 	"bin": {
-		"coffee-term": "dist/cli.js"
+		"tui-app": "dist/cli.js"
 	},
 	"type": "module",
 	"engines": {
@@ -39,9 +37,10 @@
 		"build:watch": "tsc --watch",
 		"dev": "tsx source/cli.tsx",
 		"start": "node dist/cli.js",
+		"init": "tsx scripts/init.ts",
 		"test": "prettier --check . && xo && tsc -p tsconfig.test.json && TSX_TSCONFIG_PATH=tsconfig.test.json ava",
 		"ava": "TSX_TSCONFIG_PATH=tsconfig.test.json ava",
-		"prepublishOnly": "rm -rf dist && npm run build"
+		"prepublishOnly": "rm -rf dist && pnpm run build"
 	},
 	"files": [
 		"dist",
@@ -84,9 +83,5 @@
 		"timeout": "30s"
 	},
 	"prettier": "@vdemedes/prettier-config",
-	"overrides": {
-		"minimatch": "^11.0.5",
-		"glob": "^14.0.4",
-		"katex": "^0.19.1"
-	}
+	"packageManager": "pnpm@11.22.0"
 }
