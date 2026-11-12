@@ -7,6 +7,8 @@ on:
       [
         'site/**',
         'source/app.config.ts',
+        'package.json',
+        'tsconfig.json',
         'pnpm-lock.yaml',
         '.github/workflows/site.yml',
       ]
@@ -15,6 +17,8 @@ on:
       [
         'site/**',
         'source/app.config.ts',
+        'package.json',
+        'tsconfig.json',
         'pnpm-lock.yaml',
         '.github/workflows/site.yml',
       ]

@@ -44,7 +44,7 @@ const ENV: Record<string, string | undefined> =
 /**
 Google Tag Manager container ID. Google Analytics (GA4) is configured inside the GTM container, not
 here. Override per build with `PUBLIC_GTM_ID`; set it to an empty string to emit no tag at all.
-Forks: replace this with your own container ID (or "") — `pnpm run init` does not rewrite it.
+Forks: `pnpm run init` clears the template's own container ID (analytics off); put your own here.
 */
 export const GTM_ID: string = ENV["PUBLIC_GTM_ID"] ?? "GTM-WSPXM88X";
 

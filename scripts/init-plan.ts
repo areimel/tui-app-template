@@ -14,6 +14,7 @@ export const FILES = {
 	appConfig: 'source/app.config.ts',
 	packageJson: 'package.json',
 	sitePackageJson: 'site/package.json',
+	siteConfig: 'site/src/config/site.config.ts',
 	license: 'LICENSE',
 	heading: 'source/shell/brand/heading-art.ts',
 	readme: 'readme.md',
@@ -22,6 +23,11 @@ export const FILES = {
 export const README_START = '<!-- init:identity:start -->';
 export const README_END = '<!-- init:identity:end -->';
 export const INITIAL_VERSION = '0.1.0';
+/**
+The template author's Google Tag Manager container. A new app must not report into it, so init
+clears it (analytics off) and leaves any other container ID alone.
+*/
+export const TEMPLATE_GTM_ID = 'GTM-WSPXM88X';
 
 const PRINT_WIDTH = 80;
 const TAB_WIDTH = 2;
@@ -170,6 +176,12 @@ export function planInit(
 				editJson(source, data => {
 					data['name'] = `${id.name}-site`;
 				}),
+			),
+		],
+		[
+			FILES.siteConfig,
+			optional(currentFiles[FILES.siteConfig], source =>
+				source.replace(`"${TEMPLATE_GTM_ID}"`, '""'),
 			),
 		],
 		[

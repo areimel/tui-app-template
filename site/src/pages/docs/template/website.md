@@ -47,7 +47,7 @@ PUBLIC_GTM_ID=GTM-XXXXXXX pnpm --dir site run build
 
 An empty string turns analytics off completely: no tag is emitted, the consent banner does not appear and the footer has no Cookie settings link.
 
-Forks must replace the container ID with their own, or set it to `""`. `pnpm run init` does not rewrite `GTM_ID`, so a renamed app keeps sending data to this template's container until you change it.
+`pnpm run init` clears the template's own container ID, so a new app ships with analytics off and never reports into the template's container. Set `GTM_ID` to your own container ID to turn it on (an ID that isn't the template's is left alone by later `init` runs).
 
 The CI workflow deliberately does not pass `PUBLIC_GTM_ID`. An unset Actions variable expands to an empty string, which would disable the tag. Deployed builds use the default in `site.config.ts`.
 

@@ -79,6 +79,7 @@ Running it twice with the same answers changes nothing ("Already up to date").
 | `source/app.config.ts`              | The `APP` constant, rewritten whole.                                                                                                                             |
 | `package.json`                      | `name`, `version` (reset to `0.1.0`), `description`, `homepage`, `bugs.url`, `repository.url`, `author` and `bin` (the command).                                 |
 | `site/package.json`                 | `name`, set to `<name>-site`.                                                                                                                                    |
+| `site/src/config/site.config.ts`    | `GTM_ID`: the template's own Google Tag Manager container is cleared (analytics off). Any other ID is kept. |
 | `LICENSE`                           | The copyright holder on the `Copyright (c) <years>` line.                                                                                                        |
 | `source/shell/brand/heading-art.ts` | Regenerated ANSI Shadow art for the heading text.                                                                                                                |
 | `readme.md`                         | Only the block between `<!-- init:identity:start -->` and `<!-- init:identity:end -->`. If the markers are missing the script says so and leaves the file alone. |
@@ -96,7 +97,8 @@ The script cannot do these, so go through the list:
 5. **Site copy.** The landing page text is in `site/src/data/home.ts`. Its examples list, counts and the terminal preview's menu come from the example guide pages, so they need no edits. `site/README.md` describes the template's site; rewrite it.
 6. **Rewrite the docs.** The pages under `site/src/pages/docs/` are plain Markdown content, and they write the template's values (`tui-app-template`, `tui-app`, the author's repository URL) literally. Replace them with documentation for your own app; the template's example and template pages are a starting point, not something to keep unchanged.
 7. **Keep Awake's credits.** If you keep Keep Awake, the credits under its cup name the original author (`source/apps/keep-awake/features/cup/credits.ts` and its tests). Change them or leave them as attribution.
-8. **Provenance.** `site/TEMPLATE.md` and `site/LICENSE` describe where the site's design came from. Keep the licence; edit the notes to suit.
+8. **Analytics and contact.** Analytics is off after init. To turn it on, set `GTM_ID` in `site/src/config/site.config.ts` to your own Google Tag Manager container. To turn on the contact form, add your Web3Forms key as the `PUBLIC_WEB3FORMS_KEY` repository variable. See [Website](../website/).
+9. **Provenance.** `site/TEMPLATE.md` and `site/LICENSE` describe where the site's design came from. Keep the licence; edit the notes to suit.
 
 After the script runs, a search such as `grep -ri "tui-app\|tui app template" --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=dist .` finds only the items above: the readme outside its identity block, `CLAUDE.md`, the docs pages, `site/README.md`, `site/TEMPLATE.md`, the social card, the Keep Awake credits and the design notes under `docs/`.
 
