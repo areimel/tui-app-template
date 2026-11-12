@@ -1,0 +1,53 @@
+---
+import "../styles/consent.css";
+import { GTM_ID, CONSENT_STORAGE_KEY } from "../config/site.config";
+
+const script = `(function(){
+var b=document.querySelector(".consent-banner");if(!b)return;
+var key=b.dataset.consentKey,v="";
+try{v=localStorage.getItem(key)}catch(e){}
+document.querySelectorAll("[data-consent-reopen]").forEach(function(o){
+o.hidden=false;
+o.addEventListener("click",function(){b.hidden=false;b.querySelector("button").focus()});
+});
+if(v!=="granted"&&v!=="denied")b.hidden=false;
+b.querySelectorAll("[data-consent]").forEach(function(btn){
+btn.addEventListener("click",function(){
+var c=btn.dataset.consent;
+if(window.gtag)window.gtag("consent","update",{ad_storage:c,analytics_storage:c,ad_user_data:c,ad_personalization:c});
+try{localStorage.setItem(key,c)}catch(e){}
+if(window.dataLayer)window.dataLayer.push({event:"consent_update",consent:c});
+var had=b.contains(document.activeElement);
+b.hidden=true;
+var m=document.getElementById("main-content");
+if(had&&m)m.focus();
+});
+});
+})();`;
+---
+
+{
+  GTM_ID !== "" && (
+    <section
+      class="consent-banner"
+      aria-label="Cookie consent"
+      data-consent-key={CONSENT_STORAGE_KEY}
+      hidden
+    >
+      <p>
+        We use Google Analytics cookies to understand how the site is used, only
+        if you allow it.
+      </p>
+      <div class="consent-actions">
+        <button type="button" class="button" data-consent="granted">
+          Accept
+        </button>
+        <button type="button" class="button" data-consent="denied">
+          Decline
+        </button>
+      </div>
+    </section>
+  )
+}
+
+{GTM_ID !== "" && <script is:inline set:html={script} />}

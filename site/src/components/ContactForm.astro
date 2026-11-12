@@ -24,7 +24,7 @@ import {
   <input
     type="checkbox"
     name="botcheck"
-    class="visually-hidden"
+    class="contact-honeypot"
     tabindex="-1"
     autocomplete="off"
     aria-hidden="true"
@@ -74,7 +74,7 @@ import {
 
     for (const field of form.querySelectorAll<
       HTMLInputElement | HTMLTextAreaElement
-    >("input:not([type=hidden]):not(.visually-hidden), textarea")) {
+    >("input:not([type=hidden]):not(.contact-honeypot), textarea")) {
       field.addEventListener("blur", () => {
         field.setAttribute("aria-invalid", String(!field.validity.valid));
       });

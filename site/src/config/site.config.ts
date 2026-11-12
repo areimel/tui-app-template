@@ -57,9 +57,6 @@ export const WEB3FORMS_KEY: string = ENV["PUBLIC_WEB3FORMS_KEY"] ?? "";
 export const WEB3FORMS_ENDPOINT = "https://api.web3forms.com/submit";
 export const CONTACT_ENABLED = WEB3FORMS_KEY !== "";
 
-/** localStorage key holding the visitor's analytics consent: "granted" or "denied". */
-export const CONSENT_STORAGE_KEY = `${STORAGE_PREFIX}-consent`;
-
 /** Social preview image (in `public/`), its size and alt text, and the content locale. */
 export const OG_IMAGE_PATH = "og-image.png";
 export const OG_IMAGE_WIDTH = 1200;
@@ -71,6 +68,8 @@ export const LOCALE = "en_US";
 export const STORAGE_PREFIX = APP.command;
 export const THEME_STORAGE_KEY = `${STORAGE_PREFIX}-site-theme`;
 export const PREVIEW_STORAGE_KEY = `${STORAGE_PREFIX}-preview-theme`;
+/** Analytics consent choice: "granted" or "denied". */
+export const CONSENT_STORAGE_KEY = `${STORAGE_PREFIX}-consent`;
 
 /** Browser chrome colour: matches `--background` in the dark palette (`kojima.css`). */
 export const THEME_COLOR = "#141310";

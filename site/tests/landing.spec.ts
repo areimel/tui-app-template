@@ -8,7 +8,14 @@ import {
   PREVIEW_PALETTES,
   PREVIEW_STORAGE_KEY,
   SITE_NAME,
+  blockThirdParty,
+  seedConsent,
 } from "./helpers";
+
+test.beforeEach(async ({ page }) => {
+  await seedConsent(page);
+  await blockThirdParty(page);
+});
 
 test("hero names the app and links to the docs", async ({ page }) => {
   await page.goto(HOME);
@@ -31,6 +38,7 @@ test("run commands appear on the landing page", async ({ page }) => {
   await page.goto(HOME);
   const main = page.locator("main");
   await expect(main).toContainText(NPX_COMMAND);
+  await expect(main).toContainText("After publishing, run it without cloning");
   await expect(main).toContainText(`git clone ${APP.repoUrl}`);
   await expect(main).toContainText("pnpm run init");
   expect(INSTALL_COMMAND).toContain(APP.name);

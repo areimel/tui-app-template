@@ -1,0 +1,22 @@
+---
+import { GTM_ID, CONSENT_STORAGE_KEY } from "../config/site.config";
+
+const grant = {
+  ad_storage: "granted",
+  analytics_storage: "granted",
+  ad_user_data: "granted",
+  ad_personalization: "granted",
+};
+const denied = Object.fromEntries(
+  Object.keys(grant).map((key) => [key, "denied"]),
+);
+const script = `window.dataLayer=window.dataLayer||[];
+window.gtag=function gtag(){window.dataLayer.push(arguments)};
+gtag("consent","default",${JSON.stringify({ ...denied, wait_for_update: 500 })});
+try{if(localStorage.getItem(${JSON.stringify(CONSENT_STORAGE_KEY)})==="granted")gtag("consent","update",${JSON.stringify(grant)})}catch(e){}
+dataLayer.push({"gtm.start":new Date().getTime(),event:"gtm.js"});
+var s=document.createElement("script");s.async=true;s.src="https://www.googletagmanager.com/gtm.js?id="+${JSON.stringify(GTM_ID)};
+document.head.appendChild(s);`;
+---
+
+{GTM_ID !== "" && <script is:inline set:html={script} />}

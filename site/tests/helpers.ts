@@ -1,7 +1,9 @@
+import type { Page } from "@playwright/test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import {
   APP,
+  CONSENT_STORAGE_KEY,
   DOCS_SECTIONS,
   INSTALL_COMMAND,
   NPX_COMMAND,
@@ -13,6 +15,7 @@ import {
 
 export {
   APP,
+  CONSENT_STORAGE_KEY,
   DOCS_SECTIONS,
   INSTALL_COMMAND,
   NPX_COMMAND,
@@ -99,4 +102,29 @@ export function builtHtmlFiles(dir = DIST_DIR): string[] {
         ? [join(dir, entry.name)]
         : [],
   );
+}
+
+/** Stores a consent choice before any page script runs, so the banner stays hidden. */
+export async function seedConsent(page: Page, value = "denied") {
+  await page.addInitScript(
+    ([key, choice]) => {
+      localStorage.setItem(key as string, choice as string);
+    },
+    [CONSENT_STORAGE_KEY, value],
+  );
+}
+
+/** Answers Google requests locally so tests never reach the network. */
+export async function blockThirdParty(page: Page) {
+  for (const pattern of [
+    "**/*googletagmanager.com/**",
+    "**/*google-analytics.com/**",
+  ])
+    await page.route(pattern, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/javascript",
+        body: "",
+      }),
+    );
 }

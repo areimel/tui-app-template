@@ -1,5 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { ALL_ROUTES, DOC_PAGES } from "./helpers";
+import { ALL_ROUTES, DOC_PAGES, blockThirdParty, seedConsent } from "./helpers";
+
+test.beforeEach(async ({ page }) => {
+  await seedConsent(page);
+  await blockThirdParty(page);
+});
 
 for (const width of [320, 375, 768, 1440]) {
   test(`pages fit a ${width}px viewport`, async ({ page }) => {

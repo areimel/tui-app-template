@@ -1,6 +1,16 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
-import { ALL_ROUTES, THEME_STORAGE_KEY } from "./helpers";
+import {
+  ALL_ROUTES,
+  THEME_STORAGE_KEY,
+  blockThirdParty,
+  seedConsent,
+} from "./helpers";
+
+test.beforeEach(async ({ page }) => {
+  await seedConsent(page);
+  await blockThirdParty(page);
+});
 
 for (const route of ALL_ROUTES) {
   for (const theme of ["dark", "light"]) {

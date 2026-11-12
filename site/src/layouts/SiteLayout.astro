@@ -1,6 +1,8 @@
 ---
 import "../styles/global.css";
 import { href } from "../lib/urls";
+import Analytics from "../components/Analytics.astro";
+import ConsentBanner from "../components/ConsentBanner.astro";
 import {
   SITE_NAME,
   SITE_DESCRIPTION,
@@ -9,6 +11,7 @@ import {
   LICENSE_LABEL,
   THEME_COLOR,
   THEME_STORAGE_KEY,
+  GTM_ID,
 } from "../config/site.config";
 interface Props {
   title: string;
@@ -23,6 +26,7 @@ const docsActive = Astro.url.pathname.startsWith(href("docs/"));
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <Analytics />
     <meta name="description" content={description} />
     <meta name="theme-color" content={THEME_COLOR} />
     <title>{title === SITE_NAME ? title : `${title} | ${SITE_NAME}`}</title>
@@ -76,9 +80,22 @@ const docsActive = Astro.url.pathname.startsWith(href("docs/"));
           <a href={href("docs/")}>Documentation</a><a href={REPO_URL}
             >Source ↗</a
           ><span>{LICENSE_LABEL}</span>
+          {
+            GTM_ID !== "" && (
+              <button
+                type="button"
+                class="footer-link-button"
+                data-consent-reopen
+                hidden
+              >
+                Cookie settings
+              </button>
+            )
+          }
         </div>
       </div>
     </footer>
+    <ConsentBanner />
     <script is:inline define:vars={{ themeKey: THEME_STORAGE_KEY }}>
       const button = document.querySelector(".theme-toggle");
       if (button) {

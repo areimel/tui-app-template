@@ -1,5 +1,15 @@
 import { expect, test } from "@playwright/test";
-import { HOME, THEME_STORAGE_KEY } from "./helpers";
+import {
+  HOME,
+  THEME_STORAGE_KEY,
+  blockThirdParty,
+  seedConsent,
+} from "./helpers";
+
+test.beforeEach(async ({ page }) => {
+  await seedConsent(page);
+  await blockThirdParty(page);
+});
 
 const toLight = { name: "Switch to light mode", exact: true } as const;
 const toDark = { name: "Switch to dark mode", exact: true } as const;
