@@ -1,0 +1,126 @@
+---
+import "../styles/contact.css";
+import {
+  ISSUES_URL,
+  SITE_NAME,
+  WEB3FORMS_ENDPOINT,
+  WEB3FORMS_KEY,
+} from "../config/site.config";
+---
+
+<form
+  method="POST"
+  action={WEB3FORMS_ENDPOINT}
+  class="contact-form"
+  data-issues-url={ISSUES_URL}
+>
+  <input type="hidden" name="access_key" value={WEB3FORMS_KEY} />
+  <input
+    type="hidden"
+    name="subject"
+    value={`New message from ${SITE_NAME} site`}
+  />
+  <input type="hidden" name="from_name" value={SITE_NAME} />
+  <input
+    type="checkbox"
+    name="botcheck"
+    class="visually-hidden"
+    tabindex="-1"
+    autocomplete="off"
+    aria-hidden="true"
+  />
+  <div class="field">
+    <label for="contact-name">Name</label>
+    <input
+      id="contact-name"
+      name="name"
+      type="text"
+      autocomplete="name"
+      required
+      maxlength="100"
+    />
+  </div>
+  <div class="field">
+    <label for="contact-email">Email</label>
+    <input
+      id="contact-email"
+      name="email"
+      type="email"
+      autocomplete="email"
+      required
+      maxlength="254"
+    />
+  </div>
+  <div class="field">
+    <label for="contact-message">Message</label>
+    <textarea id="contact-message" name="message" required maxlength="5000"
+    ></textarea>
+  </div>
+  <button type="submit" class="button button-primary">Send message</button>
+  <p class="form-status" role="status" aria-live="polite"></p>
+</form>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>(".contact-form");
+  if (form) {
+    const status = form.querySelector<HTMLElement>(".form-status");
+    const button = form.querySelector<HTMLButtonElement>(
+      'button[type="submit"]',
+    );
+    const issues = form.dataset["issuesUrl"] ?? "";
+    const show = (text: string) => {
+      if (status) status.textContent = text;
+    };
+
+    for (const field of form.querySelectorAll<
+      HTMLInputElement | HTMLTextAreaElement
+    >("input:not([type=hidden]):not(.visually-hidden), textarea")) {
+      field.addEventListener("blur", () => {
+        field.setAttribute("aria-invalid", String(!field.validity.valid));
+      });
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const trap = form.querySelector<HTMLInputElement>(
+        'input[name="botcheck"]',
+      );
+      if (trap?.checked) return;
+      form.setAttribute("aria-busy", "true");
+      if (button) button.disabled = true;
+      show("Sending…");
+      try {
+        const response = await fetch(form.action, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(Object.fromEntries(new FormData(form))),
+        });
+        const result = (await response.json()) as {
+          success: boolean;
+          message?: string;
+        };
+        if (response.ok && result.success) {
+          show("Thanks — your message was sent.");
+          form.reset();
+          for (const field of form.querySelectorAll("[aria-invalid]")) {
+            field.removeAttribute("aria-invalid");
+          }
+        } else {
+          show(
+            `Error: ${result.message ?? "your message could not be sent."} You can also open an issue on GitHub: ${issues}`,
+          );
+        }
+      } catch {
+        show(
+          `Error: could not reach the server. Try again, or open an issue on GitHub: ${issues}`,
+        );
+      } finally {
+        form.removeAttribute("aria-busy");
+        if (button) button.disabled = false;
+      }
+    });
+  }
+</script>

@@ -18,5 +18,7 @@ export default defineConfig({
     url: `${ORIGIN}${HOME}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    // Tests build with a dummy Web3Forms key so the contact form renders; submissions are mocked.
+    env: { PUBLIC_WEB3FORMS_KEY: "test-access-key" },
   },
 });

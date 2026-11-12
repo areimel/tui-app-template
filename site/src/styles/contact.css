@@ -1,0 +1,76 @@
+.contact-page {
+  padding-block: 72px 100px;
+}
+.contact-page h1 {
+  font-size: clamp(2.25rem, 5vw, 4rem);
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  font-weight: 500;
+  margin: 0.4rem 0 1rem;
+}
+.contact-page p {
+  max-width: 42rem;
+  overflow-wrap: anywhere;
+}
+.contact-note {
+  margin-top: 32px;
+  color: var(--muted-foreground);
+}
+.contact-form {
+  display: grid;
+  gap: 20px;
+  max-width: 42rem;
+  margin-top: 32px;
+}
+.contact-form .field {
+  display: grid;
+  gap: 8px;
+}
+.contact-form label {
+  font: 500 0.75rem/1.5 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.contact-form input:not([type="hidden"]),
+.contact-form textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--input);
+  border-radius: 0;
+  background: var(--card);
+  color: var(--foreground);
+  font: inherit;
+}
+.contact-form textarea {
+  min-height: 10rem;
+  resize: vertical;
+}
+.contact-form input[aria-invalid="true"],
+.contact-form textarea[aria-invalid="true"] {
+  border-color: var(--destructive);
+  border-width: 2px;
+}
+.contact-form button[type="submit"] {
+  justify-self: start;
+}
+.contact-form button[type="submit"]:disabled {
+  opacity: 0.6;
+}
+.contact-form .form-status {
+  min-height: 1.5em;
+  margin: 0;
+  font-weight: 500;
+}
+.contact-form .visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
