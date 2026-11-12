@@ -80,7 +80,14 @@ The access key is public by design. It ends up in the page HTML and only allows 
 
 Without a key, the contact page shows a fallback that points to GitHub issues, and the Contact links in the header and footer are hidden.
 
-Privacy: the template ships no privacy policy. If you serve EU or UK visitors, link a policy that describes Google Analytics and the contact form.
+### Privacy policy
+
+`/privacy/` is a plain draft policy for EU and UK visitors, built from the config values. The analytics section appears only when `GTM_ID` is set, the contact form section only when a Web3Forms key is set, and the hosting section always. The footer links to it, and so do the consent banner and the contact form.
+
+- `PRIVACY_EMAIL` in `site/src/config/site.config.ts` (or the `PUBLIC_PRIVACY_EMAIL` repository variable in CI) is the address for privacy requests. It is empty in the repository so forks never inherit it. If it is empty, the page points to the contact page, or to GitHub issues when the form is off.
+- `PRIVACY_UPDATED` is the "Last updated" date (`YYYY-MM-DD`). Update it whenever you edit the policy.
+
+This is a draft, not legal advice. Review `site/src/pages/privacy.astro` against what your site actually does (retention period set in Google Analytics, legal basis, data controller) before relying on it.
 
 ## Where content lives
 

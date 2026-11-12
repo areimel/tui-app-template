@@ -52,7 +52,7 @@ After running `pnpm run init` at the repository root (which rewrites `source/app
 3. **Docs pages.** Rewrite `src/pages/docs/**`. They are plain content and name the template's values (`tui-app-template`, `tui-app`) literally; delete the example pages for examples you removed.
 4. **Public assets (manual swaps).** Replace `public/og-image.svg` and `public/og-image.png` (the social card) and `public/favicon.svg`.
 5. **Theme colour.** Set `THEME_COLOR` in `src/config/site.config.ts` if you change the dark background.
-6. **Analytics and contact.** `pnpm run init` clears the template's Google Tag Manager container ID (analytics off). To turn analytics on, set `GTM_ID` in `src/config/site.config.ts` to your own container ID. For the contact page, add your Web3Forms access key as the `PUBLIC_WEB3FORMS_KEY` repository variable. See "Analytics, consent and contact" on the Website docs page.
+6. **Analytics and contact.** `pnpm run init` clears the template's Google Tag Manager container ID (analytics off). To turn analytics on, set `GTM_ID` in `src/config/site.config.ts` to your own container ID. For the contact page, add your Web3Forms access key as the `PUBLIC_WEB3FORMS_KEY` repository variable. Set your privacy contact (`PRIVACY_EMAIL` or the `PUBLIC_PRIVACY_EMAIL` repository variable) and review the draft policy in `src/pages/privacy.astro`, which is not legal advice. See "Analytics, consent and contact" on the Website docs page.
 7. **Provenance.** Edit `TEMPLATE.md`, and keep `LICENSE`.
 
 ## Deploy

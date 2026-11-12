@@ -1,5 +1,6 @@
 ---
 import "../styles/contact.css";
+import { href } from "../lib/urls";
 import {
   ISSUES_URL,
   SITE_NAME,
@@ -57,6 +58,9 @@ import {
     ></textarea>
   </div>
   <button type="submit" class="button button-primary">Send message</button>
+  <p class="form-privacy">
+    How we handle your message: <a href={href("privacy/")}>Privacy policy</a>
+  </p>
   <p class="form-status" role="status" aria-live="polite"></p>
 </form>
 
